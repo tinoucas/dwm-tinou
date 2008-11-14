@@ -534,15 +534,20 @@ drawbar(void) {
 		dc.w = ww - x;
 	}
 	drawtext(stext, dc.norm, False);
-	if (lt[sellt]->arrange == &monocle)
+	if (lt[sellt]->arrange == &monocle && !(sel && sel->isfloating))
 	{
-		if((dc.w = clients_count > 0 ? (dc.x - x) / clients_count : dc.x - x) > bh) {
+
+		int tbclients = 0;
+		for(c = clients; c; c = c->next)
+			if(ISVISIBLE(c) && !c->isfloating)
+				tbclients++;
+		if((dc.w = tbclients > 0 ? (dc.x - x) / tbclients : dc.x - x) > bh) {
 			dc.x = x;
 			if (lt[sellt] == &layouts[3])
 			{
 				if(sel)
 					for(c = clients; c; c = c->next) {
-						if(ISVISIBLE(c)) {
+						if(ISVISIBLE(c) && !c->isfloating) {
 							drawtext(c->name, c == sel ? dc.sel : dc.norm, False);
 							drawsquare(c->isfixed, c->isfloating, False, c == sel ? dc.sel : dc.norm);
 							dc.x += dc.w;
