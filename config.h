@@ -159,11 +159,12 @@ static Button buttons[] = {
 	//{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
 	{ ClkLtSymbol,          0,              Button4,        focusstack,     {.i = -1 } },
 	{ ClkLtSymbol,          0,              Button5,        focusstack,     {.i = +1 } },
-	{ ClkWinTitle,          0,              Button1,        ttbarclick,     {.i = -1 } },
-	{ ClkWinTitle,          0,              Button3,        ttbarclick,     {.i = +1 } },
-	//{ ClkWinTitle,          0,              Button3,        togglefloating, {0} },
-	{ ClkWinTitle,          0,              Button4,        setmfact,       {.f = -0.05 } },
-	{ ClkWinTitle,          0,              Button5,        setmfact,       {.f = +0.05 } },
+	{ ClkWinTitle,          0,              Button1,        zoom,           {0} },
+	{ ClkWinTitle,          0,              Button3,        togglefloating, {0} },
+	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
+	{ ClkWinTitle,          0,              Button5,        ttbarclick,     {.f = +0.05 } },
+	//{ ClkWinTitle,          0,              Button4,        setmfact,       {.f = -0.05 } },
+	//{ ClkWinTitle,          0,              Button5,        setmfact,       {.f = +0.05 } },
 	{ ClkStatusText,        0,              Button4,        spawn,           SHCMD("/home/tinou/hack/scripts/Volume.sh up") },
 	{ ClkStatusText,        0,              Button5,        spawn,           SHCMD("/home/tinou/hack/scripts/Volume.sh down") },
 	//{ ClkStatusText,        0,              Button1,        spawn,           SHCMD("/home/tinou/bin/inc -w 3 /tmp/isvol && pkill dwm_sleep") },
@@ -187,14 +188,7 @@ ttbarclick(const Arg *arg) {
 	if (lt[sellt]->arrange == &monocle && arg)
 		focusstack(arg);
 	else
-	{
-		if (arg && arg->i == 1) { // XXX right button click
-			togglefloating(NULL);
-		}
-		else {
-			zoom(NULL);
-		}
-	}
+		setmfact(arg);
 }
 
 static void
@@ -228,6 +222,8 @@ countvisible(Client *c)
 {
 	if (c && ISVISIBLE(c))
 		return 1 + countvisible(c->next);
+	if (c)
+		return 0 + countvisible(c->next);
 	return 0;
 }
 

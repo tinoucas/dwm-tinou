@@ -132,6 +132,7 @@ typedef struct {
 /* function declarations */
 static void applyrules(Client *c);
 static void arrange(void);
+static void arrangefloating(Client *c);
 static void attach(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
@@ -169,6 +170,7 @@ static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static void monocle(void);
 static void movemouse(const Arg *arg);
+static Client *nextfloating(Client *c);
 static Client *nexttiled(Client *c);
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
@@ -285,6 +287,44 @@ arrange(void) {
 	if(lt[sellt]->arrange)
 		lt[sellt]->arrange();
 	restack();
+}
+
+void
+arrangefloating(Client *c) {
+	int x, y, w, h;
+	Client *oc;
+	int foundslot=0;
+
+	x = c->x;
+	y = c->y;
+	w = c->w;
+	h = c->h;
+
+	while(!foundslot) {
+		for(oc = nextfloating(clients); oc; oc = nextfloating(oc->next)) {
+			if(x + w <= oc->x) continue;
+			if(x >= oc->x + oc->w) continue;
+			if(y + h <= oc->y) continue;
+			if(y >= oc->y + oc->h) continue;
+			x = oc->x + oc->w;
+		}
+
+		if(x + w > sw) {
+			x = c->x;
+			y++;
+			if(y + h > sh)
+				break;
+		}
+		else
+			foundslot=1;
+	}
+
+	if(!foundslot) {
+		x = rand() % (sw - w);
+		y = rand() % (sh - h);
+	}
+
+	resize(c, x, y, w, h, resizehints[curtag]);
 }
 
 void
@@ -938,6 +978,10 @@ manage(Window w, XWindowAttributes *wa) {
 		c->isfloating = trans != None || c->isfixed;
 	if(c->isfloating)
 		XRaiseWindow(dpy, c->win);
+	if(!lt[sellt]->arrange) {
+		c->isfloating = True;
+		arrangefloating(c);
+	}
 	attach(c);
 	attachstack(c);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
@@ -1034,6 +1078,12 @@ movemouse(const Arg *arg) {
 	}
 	while(ev.type != ButtonRelease);
 	XUngrabPointer(dpy, CurrentTime);
+}
+
+Client *
+nextfloating(Client *c) {
+	for(; c && (!c->isfloating || !ISVISIBLE(c)); c = c->next);
+	return c;
 }
 
 Client *
