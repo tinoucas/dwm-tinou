@@ -138,7 +138,7 @@ static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void checkotherwm(void);
 static void cleanup(void);
-static void clearurgent(void);
+static void clearurgent(Client *c);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
@@ -217,6 +217,7 @@ static int wx, wy, ww, wh; /* window area geometry x, y, width, height, bar excl
 static unsigned int seltags = 0, sellt = 0;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
+static unsigned long urgentcolor;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress] = buttonpress,
 	[ConfigureRequest] = configurerequest,
@@ -412,20 +413,16 @@ cleanup(void) {
 }
 
 void
-clearurgent(void) {
+clearurgent(Client *c) {
 	XWMHints *wmh;
-	Client *c;
-
-	for(c = clients; c; c = c->next)
-		if(ISVISIBLE(c) && c->isurgent) {
-			c->isurgent = False;
-			if (!(wmh = XGetWMHints(dpy, c->win)))
-				continue;
-
-			wmh->flags &= ~XUrgencyHint;
-			XSetWMHints(dpy, c->win, wmh);
-			XFree(wmh);
-		}
+	if(c && c->isurgent) {
+		c->isurgent = False;
+		if (!(wmh = XGetWMHints(dpy, c->win)))
+			return;
+		wmh->flags &= ~XUrgencyHint;
+		XSetWMHints(dpy, c->win, wmh);
+		XFree(wmh);
+	}
 }
 
 void
@@ -588,8 +585,8 @@ drawbar(void) {
 				if(sel)
 					for(c = clients; c; c = c->next) {
 						if(ISVISIBLE(c) && !c->isfloating) {
-							drawtext(c->name, c == sel ? dc.sel : dc.norm, False);
-							drawsquare(c->isfixed, c->isfloating, False, c == sel ? dc.sel : dc.norm);
+							drawtext(c->name, c == sel ? dc.sel : dc.norm, c->isurgent);
+							drawsquare(c->isfixed, c->isfloating, c->isurgent, c == sel ? dc.sel : dc.norm);
 							dc.x += dc.w;
 						}
 					}
@@ -689,6 +686,7 @@ focus(Client *c) {
 		XSetWindowBorder(dpy, sel->win, dc.norm[ColBorder]);
 	}
 	if(c) {
+		clearurgent(c);
 		detachstack(c);
 		attachstack(c);
 		grabbuttons(c, True);
@@ -1435,6 +1433,7 @@ setup(void) {
 	dc.sel[ColBorder] = getcolor(selbordercolor);
 	dc.sel[ColBG] = getcolor(selbgcolor);
 	dc.sel[ColFG] = getcolor(selfgcolor);
+	urgentcolor = getcolor(urgentbordercolor);
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, 0);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
@@ -1679,7 +1678,6 @@ toggleview(const Arg *arg) {
 		mfact = mfacts[curtag];
 		if (showbar != showbars[curtag])
 			togglebar(NULL);
-		clearurgent();
 		arrange();
 	}
 }
@@ -1832,13 +1830,9 @@ updatewmhints(Client *c) {
 	XWMHints *wmh;
 
 	if((wmh = XGetWMHints(dpy, c->win))) {
-		if(ISVISIBLE(c) && wmh->flags & XUrgencyHint) {
-			wmh->flags &= ~XUrgencyHint;
-			XSetWMHints(dpy, c->win, wmh);
-		}
-		else
-			c->isurgent = (wmh->flags & XUrgencyHint) ? True : False;
-
+		c->isurgent = (c != sel && wmh->flags & XUrgencyHint) ? True : False;
+		if(c->isurgent)
+			XSetWindowBorder(dpy, c->win, urgentcolor);
 		XFree(wmh);
 	}
 }
@@ -1868,7 +1862,6 @@ view(const Arg *arg) {
 	mfact = mfacts[curtag];
 	if(showbar != showbars[curtag])
 		togglebar(NULL);
-	clearurgent();
 	arrange();
 }
 
