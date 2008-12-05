@@ -64,6 +64,7 @@ enum { NetSupported, NetWMName, NetLast };              /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast };             /* clicks */
+enum { Normal, Floating, NoFocus=3 };                   /* Client flags for Rules */
 
 typedef union {
 	int i;
@@ -88,7 +89,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;
 	int bw, oldbw;
 	unsigned int tags;
-	Bool isfixed, isfloating, isurgent;
+	Bool isfixed, isfloating, isurgent, nofocus;
 	Client *next;
 	Client *snext;
 	Window win;
@@ -126,7 +127,7 @@ typedef struct {
 	const char *instance;
 	const char *title;
 	unsigned int tags;
-	Bool isfloating;
+	unsigned int flags;
 } Rule;
 
 /* function declarations */
@@ -268,7 +269,8 @@ applyrules(Client *c) {
 			if((!r->title || strstr(c->name, r->title))
 			&& (!r->class || (ch.res_class && strstr(ch.res_class, r->class)))
 			&& (!r->instance || (ch.res_name && strstr(ch.res_name, r->instance)))) {
-				c->isfloating = r->isfloating;
+				c->isfloating = (r->flags&Floating)!=0;
+				c->nofocus = (r->flags&NoFocus)!=0;
 				c->tags |= r->tags & TAGMASK;
 			}
 		}
@@ -542,7 +544,8 @@ drawbar(void) {
 	Client *c;
 
 	for(c = clients; c; c = c->next) {
-		occ |= c->tags;
+		if(c->tags!=TAGMASK)
+			occ |= c->tags;
 		if(c->isurgent)
 			urg |= c->tags;
 		if(ISVISIBLE(c))
@@ -554,7 +557,7 @@ drawbar(void) {
 		dc.w = TEXTW(tags[i]);
 		col = tagset[seltags] & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
-		drawsquare(sel && sel->tags & 1 << i, occ & 1 << i, urg & 1 << i, col);
+		drawsquare(sel && tagset[seltags] & sel->tags & 1 << i, occ & 1 << i, urg & 1 << i, col);
 		dc.x += dc.w;
 	}
 	if(blw > 0) {
@@ -679,6 +682,7 @@ expose(XEvent *e) {
 
 void
 focus(Client *c) {
+	Client *inc=c;
 	if(!c || !ISVISIBLE(c))
 		for(c = stack; c && !ISVISIBLE(c); c = c->snext);
 	if(sel && sel != c) {
@@ -689,6 +693,9 @@ focus(Client *c) {
 		clearurgent(c);
 		detachstack(c);
 		attachstack(c);
+	}
+	while( !inc && c && c->nofocus ) c=c->next;
+	if(c) {
 		grabbuttons(c, True);
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
@@ -714,17 +721,17 @@ focusstack(const Arg *arg) {
 	if(!sel)
 		return;
 	if (arg->i > 0) {
-		for(c = sel->next; c && !ISVISIBLE(c); c = c->next);
+		for(c = sel->next; c && (!ISVISIBLE(c) || c->nofocus); c = c->next);
 		if(!c)
-			for(c = clients; c && !ISVISIBLE(c); c = c->next);
+			for(c = clients; c && (!ISVISIBLE(c) || c->nofocus); c = c->next);
 	}
 	else {
 		for(i = clients; i != sel; i = i->next)
-			if(ISVISIBLE(i))
+			if(ISVISIBLE(i) && !i->nofocus)
 				c = i;
 		if(!c)
 			for(; i; i = i->next)
-				if(ISVISIBLE(i))
+				if(ISVISIBLE(i) && !i->nofocus)
 					c = i;
 	}
 	if(c) {
