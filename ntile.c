@@ -39,8 +39,11 @@ ntile(void) {
 		nmasters[curtag] = NMASTER;
 	for(n = 0, c = nexttiled(clients); c; c = nexttiled(c->next), ++n);
 	c = nexttiled(clients);
-	if(n <= nmasters[curtag])
-		/*ntilecol(c, nmasters[curtag], wx, wy, ww, wh);*/
+	if (n == 0)
+		return ;
+	else if (n == 1)
+		resize(c, wx - 1, wy - 1, ww, wh, resizehints[curtag]);
+	else if(n <= nmasters[curtag])
 		ntilecol(c, n, wx, wy, ww, wh);
 	else {
 		mw = mfact * ww;

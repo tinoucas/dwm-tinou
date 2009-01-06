@@ -45,7 +45,8 @@ static Rule rules[] = {
 	{	"Audacious",	NULL,			NULL,			0,			Floating	},
 	{	"MPlayer",		NULL,			NULL,			0,			Floating	},
 	{	NULL,			"gqmpeg",		NULL,			1 << 5,		Floating	},
-	{	"GQmpeg",		NULL,			NULL,			1 << 1,		Normal		},
+	{	"GQmpeg",		"playlist",		NULL,			1 << 1,		Normal		},
+	{	"Conky",		NULL,			NULL,			1 << 5,		NoFocus		},
 	{	NULL,			"oclock",		NULL,			~0,			NoFocus		},
 };
 
@@ -88,6 +89,7 @@ static void updatewindow(const Arg *arg);
 
 /* commands */
 static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
 
 static Key keys[] = {
@@ -120,9 +122,11 @@ static Key keys[] = {
 	{ MODKEY,                       XK_f,      setlayout,      {.v = &layouts[2]} },
 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[3]} },
 	{ MODKEY,                       XK_o,      setlayout,      {.v = &layouts[4]} },
-	{ MODKEY,                       XK_space,  rhtoggle,       {0} },
-	//{ MODKEY,                       XK_space,  setlayout,      {0} },
+	{ MODKEY,                       XK_space,  setlayout,      {0} },
+	{ MODKEY|ControlMask,           XK_space,  rhtoggle,       {0} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+	{ MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
+	{ MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 	TAGKEYS(                        XK_1,                               0)

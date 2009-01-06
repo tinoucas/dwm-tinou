@@ -86,6 +86,7 @@ struct Client {
 	char name[256];
 	float mina, maxa;
 	int x, y, w, h;
+	int sfx, sfy, sfw, sfh; /* stored float geometry, used on mode revert */
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh;
 	int bw, oldbw;
 	unsigned int tags;
@@ -327,7 +328,11 @@ arrangefloating(Client *c) {
 		y = rand() % (sh - h);
 	}
 
-	resize(c, x, y, w, h, resizehints[curtag]);
+	if(!c->isfloating)
+		/*restore last known float dimensions*/
+		resize(c, c->sfx, c->sfy, c->sfw, c->sfh, True);
+	else
+		resize(c, x, y, w, h, resizehints[curtag]);
 }
 
 void
@@ -970,6 +975,10 @@ manage(Window w, XWindowAttributes *wa) {
 	XSetWindowBorder(dpy, w, dc.norm[ColBorder]);
 	configure(c); /* propagates border_width, if size doesn't change */
 	updatesizehints(c);
+	c->sfx = c->x;
+	c->sfy = c->y;
+	c->sfw = c->w;
+	c->sfh = c->h;
 	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, False);
 	updatetitle(c);
@@ -1415,8 +1424,8 @@ setup(void) {
 	sw = DisplayWidth(dpy, screen);
 	sh = DisplayHeight(dpy, screen);
 	bh = dc.h = dc.font.height + 2;
-	lt[0] = &layouts[3];
-	lt[1] = &layouts[3];
+	lt[0] = &layouts[0]; //&layouts[3];
+	lt[1] = &layouts[0]; //&layouts[3];
 	/*lt[0] = &layouts[0];*/
 	/*lt[1] = &layouts[1 % LENGTH(layouts)];*/
 	updategeom();
@@ -1454,7 +1463,8 @@ setup(void) {
 
 	/* init layouts */
 	for(i=0; i < LENGTH(tags) + 1; i++) {
-		lts[i] = &layouts[3];
+		lts[i] = &layouts[0];
+		/*lts[i] = &layouts[3];*/
 	}
 
 	/* init bar */
@@ -1571,7 +1581,10 @@ tile(void) {
 	/* master */
 	c = nexttiled(clients);
 	mw = mfact * ww;
-	resize(c, wx, wy, NOBORDER(n == 1 ? ww : mw), NOBORDER(wh), resizehints[curtag]);
+	if(n == 1)
+		resize(c, wx - 1, wy - 1, ww, wh, resizehints[curtag]);
+	else
+		resize(c, wx, wy, NOBORDER(n == 1 ? ww : mw), NOBORDER(wh), resizehints[curtag]);
 
 	if(--n == 0)
 		return;
@@ -1647,7 +1660,15 @@ togglefloating(const Arg *arg) {
 		return;
 	sel->isfloating = !sel->isfloating || sel->isfixed;
 	if(sel->isfloating)
-		resize(sel, sel->x, sel->y, sel->w, sel->h, True);
+		/*restore last known float dimensions*/
+		resize(sel, sel->sfx, sel->sfy, sel->sfw, sel->sfh, True);
+	else {
+		/*save last known float dimensions*/
+		sel->sfx = sel->x;
+		sel->sfy = sel->y;
+		sel->sfw = sel->w;
+		sel->sfh = sel->h;
+	}
 	arrange();
 }
 
