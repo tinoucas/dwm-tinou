@@ -28,26 +28,33 @@ static const char tags[][MAXTAGLEN] = { "1", "2", "3", "4", "5", "6", "7", "8", 
 static unsigned int tagset[] = {1, ~1}; /* after start, first tag is selected */
 
 static Rule rules[] = {
-	/* class			instance		title			tags mask	isfloating */
-	{	"Gimp",			NULL,			NULL,			1 << 4,		Floating	},
-	{	"Firefox",		NULL,			NULL,			1 << 8,		Normal		},
-	{	"Opera",		NULL,			NULL,			1 << 8,		Normal		},
-	{	NULL,			"pidgin",		NULL,			1 << 1,		Normal		},
-	{	NULL,			"sonata",		NULL,			1 << 1,		Normal		},
-	{	NULL,			"screen",		NULL,			1,			Normal		},
-	{	"feh",			NULL,			NULL,			0,			Floating	},
-	{	NULL,			"savebox",		NULL,			0,			Floating	},
-	{	NULL,			NULL,			"Renommer",		0,			Floating	},
-	{	NULL,			NULL,			"Supprimer",	0,			Floating	},
-	{	NULL,			NULL,			"Copier",		0,			Floating	},
-	{	NULL,			NULL,			"Déplacer",		0,			Floating	},
-	{	NULL,			NULL,			"Monter",		0,			Floating	},
-	{	"Audacious",	NULL,			NULL,			0,			Floating	},
-	{	"MPlayer",		NULL,			NULL,			0,			Floating	},
-	{	NULL,			"gqmpeg",		NULL,			1 << 5,		Floating	},
-	{	"GQmpeg",		"playlist",		NULL,			1 << 1,		Normal		},
-	{	"Conky",		NULL,			NULL,			1 << 5,		NoFocus		},
-	{	NULL,			"oclock",		NULL,			~0,			NoFocus		},
+	/*	class				instance		title			tags mask	isfloating	*/
+	{	"Gimp",				NULL,			NULL,			1 << 4,		Floating		},
+	{	"Firefox",			NULL,			NULL,			1 << 8,		Normal			},
+	{	NULL,				"Navigator",	NULL,			1 << 8,		False			},
+	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False			},
+	{	"Opera",			NULL,			NULL,			1 << 8,		Normal			},
+	{	NULL,				"pidgin",		NULL,			1 << 1,		Normal			},
+	{	NULL,				"sonata",		NULL,			1 << 1,		Normal			},
+	{	NULL,				"screen",		NULL,			1,			Normal			},
+	{	"feh",				NULL,			NULL,			0,			Floating		},
+	{	NULL,				"savebox",		NULL,			0,			Floating		},
+	{	NULL,				NULL,			"Rename",		0,			Floating		},
+	{	NULL,				NULL,			"Delete",		0,			Floating		},
+	{	NULL,				NULL,			"Copy",			0,			Floating		},
+	{	NULL,				NULL,			"Move",			0,			Floating		},
+	{	NULL,				NULL,			"Mount",		0,			Floating		},
+	{	NULL,				NULL,			"Renommer",		0,			Floating		},
+	{	NULL,				NULL,			"Supprimer",	0,			Floating		},
+	{	NULL,				NULL,			"Copier",		0,			Floating		},
+	{	NULL,				NULL,			"DÃ©placer",		0,			Floating		},
+	{	NULL,				NULL,			"Monter",		0,			Floating		},
+	{	"Audacious",		NULL,			NULL,			1 << 5,		Floating		},
+	{	"MPlayer",			NULL,			NULL,			0,			Floating		},
+	{	NULL,				"gqmpeg",		NULL,			1 << 5,		Floating		},
+	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		Normal			},
+	{	"Conky",			NULL,			NULL,			1 << 5,		NoFocus			},
+	{	NULL,				"oclock",		NULL,			~0,			NoFocus|Floating},
 };
 
 /* layout(s) */
@@ -63,7 +70,7 @@ static Layout layouts[] = {
 	/* symbol	arrange function */
 	{ "[=]=",	ntile },   /* first entry is default */
 	{ "[-]=",	tile },
-	{ "><(°>",	NULL },    /* no layout function means floating behavior */
+	{ "><(Â°>",	NULL },    /* no layout function means floating behavior */
 	{ "[<O>]",	monocle },
 	{ "[-]/",	tileo },
 };
