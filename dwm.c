@@ -64,7 +64,7 @@ enum { NetSupported, NetWMName, NetLast };              /* EWMH atoms */
 enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
        ClkClientWin, ClkRootWin, ClkLast };             /* clicks */
-enum { Normal, Floating, NoFocus=3 };                   /* Client flags for Rules */
+enum { Normal, Floating, NoFocus=2 };                   /* Client flags for Rules */
 
 typedef union {
 	int i;
