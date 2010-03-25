@@ -1540,12 +1540,6 @@ setup(void) {
 			m->lts[i] = &layouts[0];
 		}
 	}
-	/* init bars */
-	/*for (m = mons; m; m = m->next) {*/
-		/*for (i = 0; i < LENGTH(tags) + 1; i++) {*/
-			/*m->showbars[i] = m->showbar;*/
-		/*}*/
-	/*}*/
 	updatebars();
 	updatestatus();
 	/* EWMH support per view */
@@ -1656,7 +1650,7 @@ tile(Monitor *m) {
 
 void
 togglebar(const Arg *arg) {
-	selmon->showbar = /*selmon->showbars[selmon->curtag] =*/ !selmon->showbar;
+	selmon->showbar = !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
 	arrange();
@@ -1694,8 +1688,6 @@ toggletag(const Arg *arg) {
 		selmon->sel->tags = newtags;
 		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag];
 		selmon->mfact = selmon->mfacts[selmon->curtag];
-		/*if (selmon->showbar != selmon->showbars[selmon->curtag])*/
-			/*togglebar(NULL);*/
 		arrange();
 	}
 }
@@ -1981,8 +1973,6 @@ view(const Arg *arg) {
 	}
 	selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag];
 	selmon->mfact = selmon->mfacts[selmon->curtag];
-	/*if (selmon->showbar != selmon->showbars[selmon->curtag])*/
-		/*togglebar(NULL);*/
 	arrange();
 }
 
