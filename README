@@ -3,7 +3,7 @@
 Patches from suckless.org/dwm/patches
 
     * bottom stack
-    * pertag
+    * pertag (except for showbar)
 
 From the mailing list
 
@@ -16,7 +16,9 @@ Custom patches
       – ctrl-$ => ctrl-]
       – ctrl-* => ctrl-\
     * Toggle resize hints (ctrl+mod4+space).
+	* Center windows smaller than space provided due to resize hints.
     * Volume control using mouse wheel over status text (needs a Volume.sh [up|down|mute]).
+	* Other minor changes...
 
 
 ============================
