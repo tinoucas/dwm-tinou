@@ -8,7 +8,7 @@ static const char normfgcolor[]     = "#b0b4ac";
 static const char selbordercolor[]  = "#ff0000";
 static const char selbgcolor[]      = "#464646";
 static const char selfgcolor[]      = "#d3d7cf";
-static const unsigned int borderpx  = 1;        /* border pixel of windows */
+static const unsigned int borderpx  = 2;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;     /* False means bottom bar */
@@ -19,12 +19,13 @@ static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 static const Rule rules[] = {
 	/*	class				instance		title			tags mask	isfloating	monitor */
 	{   "URxvt",            NULL,           NULL,           0,          False,      -1 },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		 1 },
-	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		 1 },
-	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		 1 },
-	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		True,		 1 },
+	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		 0 },
+	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		 0 },
+	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		 0 },
+	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		True,		 0 },
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		-1 },
-	{	NULL,				"pidgin",		NULL,			1 << 1,		False,		 0 },
+	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		 0 },
+	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		-1 },
 	{	NULL,				"sonata",		NULL,			1 << 1,		False,		-1 },
 	{	NULL,				"screen",		NULL,			1,			False,		-1 },
 	{	"feh",				NULL,			NULL,			0,			True,		-1 },
@@ -45,6 +46,7 @@ static const Rule rules[] = {
 	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		-1 },
 	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		-1 },
 	{	NULL,				"oclock",		NULL,			1 << 5,		True,		-1 },
+	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		-1 },
 };
 
 /* layout(s) */
@@ -62,8 +64,8 @@ static const Layout layouts[] = {
 	{ "[]=",      tile },    /* first entry is default */
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
-    { "TTT",      bstack },
-    { "===",      bstackhoriz },
+	{ "TTT",      bstack },
+	{ "===",      bstackhoriz },
 };
 
 /* key definitions */
@@ -95,6 +97,7 @@ static Key keys[] = {
 	{ ControlMask,                  XK_dollar,   sendbracketright,{0} },
 	{ ControlMask,                  XK_asterisk, sendbackslash,   {0} },
 	{ ControlMask,           XK_dead_circumflex, sendbracketleft, {0} },
+	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
@@ -112,7 +115,7 @@ static Key keys[] = {
 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[2]} },
 	{ MODKEY,                       XK_t,      setlayout,      {.v = &layouts[3]} },
 	{ MODKEY|ShiftMask,             XK_h,      setlayout,      {.v = &layouts[4]} },
-	{ MODKEY,                       XK_space,  setlayout,      {0} },
+	{ MODKEY,                       XK_space,  toggleview,     {.ui = 1 << 5} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 	{ MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
 	{ MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
@@ -154,7 +157,8 @@ static Button buttons[] = {
 	/* click                event mask      button          function        argument */
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
-	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
+	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
+	{ ClkWinTitle,          0,              Button3,        zoom,           {0} },
 	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
 	{ ClkWinTitle,          0,              Button5,        ttbarclick,     {.f = +0.05 } },
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },

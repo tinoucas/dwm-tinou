@@ -1308,10 +1308,12 @@ quit(const Arg *arg) {
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	XWindowChanges wc;
+	const int worig = w;
+	const int horig = h;
 
 	if(applysizehints(c, &x, &y, &w, &h, interact)) {
-		c->x = wc.x = x;
-		c->y = wc.y = y;
+		c->x = wc.x = x + (worig - w) / 2;
+		c->y = wc.y = y + (horig - h) / 2;
 		c->w = wc.width = w;
 		c->h = wc.height = h;
 		wc.border_width = c->bw;
@@ -1458,7 +1460,10 @@ setclientstate(Client *c, long state) {
 void
 setlayout(const Arg *arg) {
 	if(!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
+	{
 		selmon->sellt ^= 1;
+		selmon->lts[selmon->curtag] = selmon->lt[selmon->sellt];
+	}
 	if(arg && arg->v)
 		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = (Layout *)arg->v;
 	if(selmon->sel)
@@ -1536,11 +1541,11 @@ setup(void) {
 		}
 	}
 	/* init bars */
-	for (m = mons; m; m = m->next) {
-		for (i = 0; i < LENGTH(tags) + 1; i++) {
-			m->showbars[i] = m->showbar;
-		}
-	}
+	/*for (m = mons; m; m = m->next) {*/
+		/*for (i = 0; i < LENGTH(tags) + 1; i++) {*/
+			/*m->showbars[i] = m->showbar;*/
+		/*}*/
+	/*}*/
 	updatebars();
 	updatestatus();
 	/* EWMH support per view */
@@ -1651,7 +1656,7 @@ tile(Monitor *m) {
 
 void
 togglebar(const Arg *arg) {
-	selmon->showbar = selmon->showbars[selmon->curtag] = !selmon->showbar;
+	selmon->showbar = /*selmon->showbars[selmon->curtag] =*/ !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
 	arrange();
@@ -1689,8 +1694,8 @@ toggletag(const Arg *arg) {
 		selmon->sel->tags = newtags;
 		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag];
 		selmon->mfact = selmon->mfacts[selmon->curtag];
-		if (selmon->showbar != selmon->showbars[selmon->curtag])
-			togglebar(NULL);
+		/*if (selmon->showbar != selmon->showbars[selmon->curtag])*/
+			/*togglebar(NULL);*/
 		arrange();
 	}
 }
@@ -1976,8 +1981,8 @@ view(const Arg *arg) {
 	}
 	selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag];
 	selmon->mfact = selmon->mfacts[selmon->curtag];
-	if (selmon->showbar != selmon->showbars[selmon->curtag])
-		togglebar(NULL);
+	/*if (selmon->showbar != selmon->showbars[selmon->curtag])*/
+		/*togglebar(NULL);*/
 	arrange();
 }
 
