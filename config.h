@@ -6,12 +6,13 @@ static const char normbordercolor[] = "#262626";
 static const char normbgcolor[]     = "#262626";
 static const char normfgcolor[]     = "#b0b4ac";
 static const char selbordercolor[]  = "#ff0000";
+static const char selbordercolorsingle[]  = "#000000";
 static const char selbgcolor[]      = "#464646";
 static const char selfgcolor[]      = "#d3d7cf";
 static const unsigned int borderpx  = 2;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const Bool showbar           = True;     /* False means no bar */
-static const Bool topbar            = True;     /* False means bottom bar */
+static const Bool topbar            = False;     /* False means bottom bar */
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };

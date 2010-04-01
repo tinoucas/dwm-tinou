@@ -23,3 +23,26 @@ kbmvresize(const Arg *arg) {
 			selmon->sel->w + ((int *)arg->v)[2],
 			selmon->sel->h + ((int *)arg->v)[3], True);
 }
+
+void
+resetborders(Client *c)
+{
+	if (c && ISVISIBLE(c)) {
+		if(c->mon->sel == c)
+			XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
+		else
+			XSetWindowBorder(dpy, c->win, dc.norm[ColBorder]);
+	}
+	if (c)
+		resetborders(c->next);
+}
+
+int
+countvisible(Client *c)
+{
+	if (c && ISVISIBLE(c))
+		return 1 + countvisible(c->next);
+	if (c)
+		return countvisible(c->next);
+	return 0;
+}

@@ -392,6 +392,11 @@ arrange(void) {
 		showhide(m->stack);
 	focus(NULL);
 	for(m = mons; m; m = m->next) {
+		if (m->lt[m->sellt]->arrange != monocle && countvisible(m->clients) > 1)
+			dc.sel[ColBorder] = getcolor(selbordercolor);
+		else
+			dc.sel[ColBorder] = getcolor(selbordercolorsingle);
+		resetborders(m->clients);
 		if(m->lt[m->sellt]->arrange)
 			m->lt[m->sellt]->arrange(m);
 		restack(m);
