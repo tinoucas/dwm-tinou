@@ -1,10 +1,4 @@
 static void
-rhtoggle(const Arg *arg) {
-	resizehints ^= 1;
-	arrange();
-}
-
-static void
 ttbarclick(const Arg *arg) {
 	if (selmon->lt[selmon->sellt]->arrange == &monocle && arg)
 		focusstack(arg);
@@ -13,36 +7,24 @@ ttbarclick(const Arg *arg) {
 }
 
 static void
-kbmvresize(const Arg *arg) {
-	if(!selmon->sel)
-		return;
-	if (!selmon->sel->isfloating)
-		togglefloating(NULL);
-	resize(selmon->sel, selmon->sel->x + ((int *)arg->v)[0],
-			selmon->sel->y + ((int *)arg->v)[1],
-			selmon->sel->w + ((int *)arg->v)[2],
-			selmon->sel->h + ((int *)arg->v)[3], True);
-}
-
-void
-resetborders(Client *c)
-{
-	if (c && ISVISIBLE(c)) {
-		if(c->mon->sel == c)
-			XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
-		else
-			XSetWindowBorder(dpy, c->win, dc.norm[ColBorder]);
+opacitychange(const Arg *arg) {
+	if (selmon->sel)
+	{
+		double opacity = selmon->sel->opacity;
+		selmon->sel->opacity = MAX(0, MIN(1, opacity + arg->f));
+		client_opacity_set(selmon->sel, selmon->sel->opacity);
 	}
-	if (c)
-		resetborders(c->next);
 }
 
-int
-countvisible(Client *c)
-{
-	if (c && ISVISIBLE(c))
-		return 1 + countvisible(c->next);
-	if (c)
-		return countvisible(c->next);
-	return 0;
+static void
+focuslast(const Arg *arg) {
+	if (lastclient)
+		focus(lastclient);
+}
+
+static void
+toggleviews(const Arg *arg) {
+	toggleview(arg);
+	cleartags(selmon);
+	drawbar(selmon);
 }

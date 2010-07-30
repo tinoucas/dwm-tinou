@@ -33,7 +33,7 @@ pushup(const Arg *arg) {
 		c->next = sel;
 	}
 	focus(sel);
-	arrange();
+	arrange(selmon);
 }
 
 static void
@@ -54,5 +54,5 @@ pushdown(const Arg *arg) {
 		attach(sel);
 	}
 	focus(sel);
-	arrange();
+	arrange(selmon);
 }

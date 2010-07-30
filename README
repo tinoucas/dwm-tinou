@@ -1,29 +1,3 @@
-= Patches & features =
-
-Patches from suckless.org/dwm/patches
-
-	* bottom stack
-	* pertag (except for showbar)
-
-From the mailing list
-
-	* dclip (ctrl+mod4+c/v): dmenu driven copy and paste.
-
-Custom patches
-
-	* ctrlmap: maps some keys as on a qwerty:
-	  – ctrl-^ => ctrl-[
-	  – ctrl-$ => ctrl-]
-	  – ctrl-* => ctrl-\
-	* Toggle resize hints (ctrl+mod4+space).
-	* Center windows smaller than space provided due to resize hints.
-	* Volume control using mouse wheel over status text (needs a Volume.sh [up|down|mute]).
-	* Other minor changes...
-
-
-============================
-Original README:
-============================
 dwm - dynamic window manager
 ============================
 dwm is an extremely fast, small, and dynamic window manager for X.
