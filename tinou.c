@@ -28,3 +28,12 @@ toggleviews(const Arg *arg) {
 	cleartags(selmon);
 	drawbar(selmon);
 }
+
+void
+allnonfloat(const Arg *arg) {
+	Client* c;
+
+	for(c = selmon->clients; c; c = c->next)
+		c->isfloating = False;
+	arrange(selmon);
+}
