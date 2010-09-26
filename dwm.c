@@ -1426,6 +1426,8 @@ clientmessage(XEvent *e) {
 			c->isfloating = True;
 			resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 			XRaiseWindow(dpy, c->win);
+			if (selmon->showbar)
+				togglebar(NULL);
 		}
 		else {
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
@@ -1437,7 +1439,10 @@ clientmessage(XEvent *e) {
 			c->w = c->oldw;
 			c->h = c->oldh;
 			resizeclient(c, c->x, c->y, c->w, c->h);
-			arrange(c->mon);
+			if (showbar && !selmon->showbar)
+				togglebar(NULL);
+			else
+				arrange(c->mon);
 		}
 	}
 }

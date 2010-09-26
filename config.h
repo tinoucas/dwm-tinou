@@ -63,6 +63,7 @@ static const Rule rules[] = {
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	 1 },
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	 1 },
 	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	 1 },
+	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		True,	 1 },
 };
 
 static const int layoutaxis[] = {
