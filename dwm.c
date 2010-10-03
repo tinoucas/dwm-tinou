@@ -1418,6 +1418,8 @@ clientmessage(XEvent *e) {
 	&& (cme->message_type == netatom[NetWMState] && cme->data.l[1] == netatom[NetWMFullscreen]))
 	{
 		if(cme->data.l[0]) {
+			if (selmon->showbar)
+				togglebar(NULL);
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
 			                PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 			c->oldstate = c->isfloating;
@@ -1426,8 +1428,6 @@ clientmessage(XEvent *e) {
 			c->isfloating = True;
 			resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 			XRaiseWindow(dpy, c->win);
-			if (selmon->showbar)
-				togglebar(NULL);
 		}
 		else {
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
