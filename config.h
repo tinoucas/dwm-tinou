@@ -59,6 +59,7 @@ static const Rule rules[] = {
 	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		False,	-1 },
 	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		False,	-1 },
 	{	NULL,				"gvim",			NULL,			1 << 3,		False,		True,	-1 },
+	{	NULL,				"vim",			NULL,			1 << 3,		False,		True,	-1 },
 	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		False,	 1 },
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	 1 },
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	 1 },
