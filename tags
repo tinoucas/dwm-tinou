@@ -46,8 +46,8 @@ NetWMName	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity
 NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NetWMWindowOpacity	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	906;"	d	file:
-OPAQUE	dwm.c	905;"	d	file:
+OPACITY	dwm.c	900;"	d	file:
+OPAQUE	dwm.c	899;"	d	file:
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
 SHCMD	config.h	108;"	d
@@ -159,7 +159,7 @@ isfloating	dwm.c	/^	Bool isfloating;$/;"	m	struct:__anon12	file:
 isprotodel	dwm.c	/^isprotodel(Client *c) {$/;"	f
 istransparent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
 istransparent	dwm.c	/^	Bool istransparent;$/;"	m	struct:__anon12	file:
-isuniquegeom	dwm.c	/^isuniquegeom(XineramaScreenInfo *unique, size_t len, XineramaScreenInfo *info) {$/;"	f	file:
+isuniquegeom	dwm.c	/^isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {$/;"	f	file:
 isurgent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
 keypress	dwm.c	/^keypress(XEvent *e) {$/;"	f
 keys	config.def.h	/^static Key keys[] = {$/;"	v
@@ -229,7 +229,6 @@ oldx	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 oldy	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 opacity	dwm.c	/^	double opacity;$/;"	m	struct:Client	file:
 opacitychange	tinou.c	/^opacitychange(const Arg *arg) {$/;"	f	file:
-otherwm	dwm.c	/^static Bool otherwm;$/;"	v	file:
 prevtag	dwm.c	/^	int prevtag;$/;"	m	struct:Monitor	file:
 prevtiled	push.c	/^prevtiled(Client *c) {$/;"	f	file:
 propertynotify	dwm.c	/^propertynotify(XEvent *e) {$/;"	f

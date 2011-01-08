@@ -287,7 +287,6 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[UnmapNotify] = unmapnotify
 };
 static Atom wmatom[WMLast], netatom[NetLast];
-static Bool otherwm;
 static Bool running = True;
 static Cursor cursor[CurLast];
 static Display *dpy;
@@ -523,13 +522,10 @@ buttonpress(XEvent *e) {
 
 void
 checkotherwm(void) {
-	otherwm = False;
 	xerrorxlib = XSetErrorHandler(xerrorstart);
 	/* this causes an error if some other window manager is running */
 	XSelectInput(dpy, DefaultRootWindow(dpy), SubstructureRedirectMask);
 	XSync(dpy, False);
-	if(otherwm)
-		die("dwm: another window manager is already running\n");
 	XSetErrorHandler(xerror);
 	XSync(dpy, False);
 }
@@ -1124,7 +1120,7 @@ grabkeys(void) {
 void
 initfont(const char *fontstr) {
 	char *def, **missing;
-	int i, n;
+	int n;
 
 	missing = NULL;
 	dc.font.set = XCreateFontSet(dpy, fontstr, &missing, &n, &def);
@@ -1134,14 +1130,13 @@ initfont(const char *fontstr) {
 		XFreeStringList(missing);
 	}
 	if(dc.font.set) {
-		XFontSetExtents *font_extents;
 		XFontStruct **xfonts;
 		char **font_names;
 
 		dc.font.ascent = dc.font.descent = 0;
-		font_extents = XExtentsOfFontSet(dc.font.set);
+		XExtentsOfFontSet(dc.font.set);
 		n = XFontsOfFontSet(dc.font.set, &xfonts, &font_names);
-		for(i = 0, dc.font.ascent = 0, dc.font.descent = 0; i < n; i++) {
+		while (n--) {
 			dc.font.ascent = MAX(dc.font.ascent, (*xfonts)->ascent);
 			dc.font.descent = MAX(dc.font.descent,(*xfonts)->descent);
 			xfonts++;
@@ -1159,13 +1154,13 @@ initfont(const char *fontstr) {
 
 Bool
 isprotodel(Client *c) {
-	int i, n;
+	int n;
 	Atom *protocols;
 	Bool ret = False;
 
 	if(XGetWMProtocols(dpy, c->win, &protocols, &n)) {
-		for(i = 0; !ret && i < n; i++)
-			if(protocols[i] == wmatom[WMDelete])
+		while (!ret && n--)
+			if(protocols[n] == wmatom[WMDelete])
 				ret = True;
 		XFree(protocols);
 	}
@@ -1174,12 +1169,10 @@ isprotodel(Client *c) {
 
 #ifdef XINERAMA
 static Bool
-isuniquegeom(XineramaScreenInfo *unique, size_t len, XineramaScreenInfo *info) {
-	unsigned int i;
-
-	for(i = 0; i < len; i++)
-		if(unique[i].x_org == info->x_org && unique[i].y_org == info->y_org
-		&& unique[i].width == info->width && unique[i].height == info->height)
+isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {
+	while (n--)
+		if(unique[n].x_org == info->x_org && unique[n].y_org == info->y_org
+		&& unique[n].width == info->width && unique[n].height == info->height)
 			return False;
 	return True;
 }
@@ -1228,14 +1221,12 @@ killclient(const Arg *arg) {
 
 void
 manage(Window w, XWindowAttributes *wa) {
-	static Client cz;
 	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
 
-	if(!(c = malloc(sizeof(Client))))
+	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
-	*c = cz;
 	c->win = w;
 	updatetitle(c);
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
@@ -2267,7 +2258,6 @@ xerrordummy(Display *dpy, XErrorEvent *ee) {
  * is already running. */
 int
 xerrorstart(Display *dpy, XErrorEvent *ee) {
-	otherwm = True;
 	return -1;
 }
 
