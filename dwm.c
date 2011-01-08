@@ -656,16 +656,10 @@ configurerequest(XEvent *e) {
 			if(ev->value_mask & CWHeight)
 				c->h = ev->height;
 			if((c->x + c->w) > m->mx + m->mw && c->isfloating) {
-				if (!c->nofocus)
-					c->x = m->mx + (m->mw / 2 - c->w / 2); /* center in x direction */
-				else
-					c->x = m->mx + (m->mw - c->w);
+				c->x = m->mx + (m->mw / 2 - c->w / 2); /* center in x direction */
 			}
 			if((c->y + c->h) > m->my + m->mh && c->isfloating) {
-				if (!c->nofocus)
-					c->y = m->my + (m->mh / 2 - c->h / 2); /* center in y direction */
-				else
-					c->y = m->my + (m->mh - c->h);
+				c->y = m->my + (m->mh / 2 - c->h / 2); /* center in y direction */
 			}
 			if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
 				configure(c);
