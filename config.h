@@ -12,57 +12,59 @@ static const char selfgcolor[]      = "#d0d0d0";
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const Bool showbar           = True;     /* False means no bar */
-static const Bool topbar            = True;     /* False means bottom bar */
+static const Bool topbar            = False;    /* False means bottom bar */
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
-	/* class				instance		title			tags mask	isfloating	transp,	monitor */
-	{	"URxvt",			NULL,			NULL,			0,			False,		True,	-1 },
-	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		True,	-1 },
-	{	NULL,				"xterm",		NULL,			0,			False,		True,	-1 },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		True,		False,	 0 },
-	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		False,	 0 },
-	{	NULL,				"Download",		NULL,			1 << 7,		False,		False,	 0 },
-	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		False,	 0 },
-	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		False,	 0 },
-	{	"Opera",			NULL,			NULL,			1 << 8,		False,		False,	-1 },
-	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		False,	 0 },
-	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		False,	 0 },
-	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		True,	-1 },
-	{	NULL,				"sonata",		NULL,			1 << 5,		False,		True,	-1 },
-	{	"Gmpc",				NULL,			NULL,			1 << 5,		False,		True,	-1 },
-	{	"Shredder",			NULL,			NULL,			1 << 1,		False,		True,	 0 },
-	{	NULL,				"screen",		NULL,			1,			False,		True,	-1 },
-	{	"feh",				NULL,			NULL,			0,			True,		False,	-1 },
-	{	NULL,				"savebox",		NULL,			0,			True,		True,	-1 },
-	{	"Xfe",				NULL,			NULL,			1 << 2,		False,		True,	-1 },
-	{	NULL,				"ROX-Filer",	NULL,			1 << 2,		False,		True,	-1 },
-	{	NULL,				NULL,			"Rename",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Delete",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Copy",			0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Move",			0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Mount",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Renommer",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Supprimer",	0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Copier",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Déplacer",		0,			True,		True,	-1 },
-	{	NULL,				NULL,			"Monter",		0,			True,		True,	-1 },
-	{	"Audacious",		NULL,			NULL,			1 << 6,		True,		False,	-1 },
-	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		False,	-1 },
-	{	"Vlc",				NULL,			NULL,			0,			False,		False,	-1 },
-	{	"Gcalctool",		NULL,			NULL,			0,			True,		False,	-1 },
-	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		False,	-1 },
-	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		False,	-1 },
-	{	NULL,				"oclock",		NULL,			1 << 5,		True,		False,	-1 },
-	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		False,	-1 },
-	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		False,	-1 },
-	{	NULL,				"gvim",			NULL,			1 << 3,		False,		True,	-1 },
-	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		False,	 1 },
-	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	 1 },
-	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	 1 },
-	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	 1 },
+	/* class				instance		title			tags mask	isfloating	transp	nofocus	monitor */
+	{	"URxvt",			NULL,			NULL,			0,			False,		True,	False, -1 },
+	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		True,	False, -1 },
+	{	NULL,				"xterm",		NULL,			0,			False,		True,	False, -1 },
+	{	"Gimp",				NULL,			NULL,			1 << 4,		True,		False,	False,  0 },
+	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		False,	False,  0 },
+	{	NULL,				"Download",		NULL,			1 << 7,		False,		False,	False,  0 },
+	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		False,	False,  0 },
+	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		False,	False,  0 },
+	{	"Opera",			NULL,			NULL,			1 << 8,		False,		False,	False, -1 },
+	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		False,	False,  0 },
+	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		False,	False,  0 },
+	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		True,	False, -1 },
+	{	NULL,				"sonata",		NULL,			1 << 5,		False,		True,	False, -1 },
+	{	"Gmpc",				NULL,			NULL,			1 << 5,		False,		True,	False, -1 },
+	{	"Shredder",			NULL,			NULL,			1 << 1,		False,		True,	False,  0 },
+	{	NULL,				"screen",		NULL,			1,			False,		True,	False, -1 },
+	{	"feh",				NULL,			NULL,			0,			True,		False,	False, -1 },
+	{	NULL,				"savebox",		NULL,			0,			True,		True,	False, -1 },
+	{	"Xfe",				NULL,			NULL,			1 << 2,		False,		True,	False, -1 },
+	{	NULL,				"ROX-Filer",	NULL,			1 << 2,		False,		True,	False, -1 },
+	{	NULL,				NULL,			"Rename",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Delete",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Copy",			0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Move",			0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Mount",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Renommer",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Supprimer",	0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Copier",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Déplacer",		0,			True,		True,	False, -1 },
+	{	NULL,				NULL,			"Monter",		0,			True,		True,	False, -1 },
+	{	"Audacious",		NULL,			NULL,			1 << 5,		False,		True,	False, -1 },
+	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		False,	False, -1 },
+	{	"Vlc",				NULL,			NULL,			0,			False,		False,	False, -1 },
+	{	"Gcalctool",		NULL,			NULL,			0,			True,		False,	False, -1 },
+	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		False,	False, -1 },
+	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		False,	False, -1 },
+	{	NULL,				"oclock",		NULL,			1 << 5,		True,		False,	False, -1 },
+	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		False,	False, -1 },
+	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		False,	False, -1 },
+	{	NULL,				"gvim",			NULL,			1 << 3,		False,		True,	False, -1 },
+	{	NULL,				"vim",			NULL,			1 << 3,		False,		True,	False, -1 },
+	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		False,	False,  1 },
+	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	False,  1 },
+	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	False,  1 },
+	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	False,  1 },
+	{	NULL,				"stalonetray",	NULL,			1 << 1,		True,		False,	True,   1 },
 };
 
 static const int layoutaxis[] = {
@@ -89,7 +91,7 @@ static const Layout layouts[] = {
  	{ "[]\\",      dwindle },
 };
 
-static int initlayout = 4;
+static int initlayout = 2;
 static double clientOpacity = 0.75;
 static double barOpacity = 0.65;
 
@@ -109,7 +111,7 @@ static double barOpacity = 0.65;
 
 /* commands */
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
-static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *dmenucmd[] = { "dmenu_run", "-b", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
 
 static Key keys[] = {

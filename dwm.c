@@ -90,7 +90,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, istransparent, isurgent, oldstate;
+	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;
 	Client *snext;
 	Monitor *mon;
 	Window win;
@@ -160,6 +160,7 @@ typedef struct {
 	unsigned int tags;
 	Bool isfloating;
 	Bool istransparent;
+	Bool nofocus;
 	int monitor;
 } Rule;
 
@@ -294,6 +295,7 @@ static DC dc;
 static Monitor *mons = NULL, *selmon = NULL;
 static Window root;
 static Client* lastclient = NULL;
+static Bool startup = True;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -323,6 +325,7 @@ applyrules(Client *c) {
 			{
 				c->isfloating = r->isfloating;
 				c->istransparent = r->istransparent;
+				c->nofocus = r->nofocus;
 				c->tags |= r->tags;
 				c->opacity = r->istransparent ? clientOpacity : 1.;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
@@ -336,7 +339,7 @@ applyrules(Client *c) {
 			XFree(ch.res_name);
 	}
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
-	if (c->mon)
+	if (c->mon && !startup)
 	{
 		Bool alone = True;
 		Client *cother;
@@ -345,12 +348,12 @@ applyrules(Client *c) {
 			if (cother != c && (cother->tags & c->tags))
 				alone = False;
 		}
-		if (alone)
+		if (alone && !c->nofocus)
 		{
 			c->mon->tagset[c->mon->seltags] = c->mon->tagset[c->mon->seltags] | (c->tags);
 			arrange(c->mon);
 		}
-		else
+		else if (!c->nofocus)
 		{
 			c->isurgent = True;
 			drawbar(c->mon);
@@ -582,7 +585,7 @@ cleartags(Monitor *m){
 	unsigned int newtags = 0;
 
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c))
+		if (ISVISIBLE(c) && !c->nofocus)
 			newtags |= c->tags;
 	if (newtags)
 		m->tagset[m->seltags] = newtags;
@@ -658,10 +661,18 @@ configurerequest(XEvent *e) {
 				c->w = ev->width;
 			if(ev->value_mask & CWHeight)
 				c->h = ev->height;
-			if((c->x + c->w) > m->mx + m->mw && c->isfloating)
-				c->x = m->mx + (m->mw / 2 - c->w / 2); /* center in x direction */
-			if((c->y + c->h) > m->my + m->mh && c->isfloating)
-				c->y = m->my + (m->mh / 2 - c->h / 2); /* center in y direction */
+			if((c->x + c->w) > m->mx + m->mw && c->isfloating) {
+				if (!c->nofocus)
+					c->x = m->mx + (m->mw / 2 - c->w / 2); /* center in x direction */
+				else
+					c->x = m->mx + (m->mw - c->w);
+			}
+			if((c->y + c->h) > m->my + m->mh && c->isfloating) {
+				if (!c->nofocus)
+					c->y = m->my + (m->mh / 2 - c->h / 2); /* center in y direction */
+				else
+					c->y = m->my + (m->mh - c->h);
+			}
 			if((ev->value_mask & (CWX|CWY)) && !(ev->value_mask & (CWWidth|CWHeight)))
 				configure(c);
 			if(ISVISIBLE(c))
@@ -768,7 +779,8 @@ drawbar(Monitor *m) {
 	Client *c;
 
 	for(c = m->clients; c; c = c->next) {
-		occ |= c->tags;
+		if(c->tags != TAGMASK && !c->nofocus)
+			occ |= c->tags;
 		if(c->isurgent)
 			urg |= c->tags;
 	}
@@ -777,7 +789,7 @@ drawbar(Monitor *m) {
 		dc.w = TEXTW(tags[i]);
 		col = m->tagset[m->seltags] & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
-		drawsquare(m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
+		drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags & 1 << i,
 		           occ & 1 << i, urg & 1 << i, col);
 		dc.x += dc.w;
 	}
@@ -909,6 +921,8 @@ window_opacity_set(Window win, double opacity)
 
 void
 focus(Client *c) {
+	Client *inc = c;
+
 	if(!c || !ISVISIBLE(c))
 		for(c = selmon->stack; c && !ISVISIBLE(c); c = c->snext);
 	/* was if(selmon->sel) */
@@ -921,6 +935,12 @@ focus(Client *c) {
 			clearurgent(c);
 		detachstack(c);
 		attachstack(c);
+	}
+	while (!inc && c && c->nofocus)
+		c = c->next;
+	if (c && !ISVISIBLE(c))
+		c = NULL;
+	if (c) {
 		grabbuttons(c, True);
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
@@ -959,17 +979,31 @@ focusstack(const Arg *arg) {
 	if(!selmon->sel)
 		return;
 	if(arg->i > 0) {
-		for(c = selmon->sel->next; c && !ISVISIBLE(c); c = c->next);
+		c = selmon->sel->next;
+		while (c)
+		{
+			if (ISVISIBLE(c) && !c->nofocus)
+				break;
+			c = c->next;
+		}
 		if(!c)
-			for(c = selmon->clients; c && !ISVISIBLE(c); c = c->next);
+		{
+			c = selmon->clients;
+			while (c != selmon->sel)
+			{
+				if (ISVISIBLE(c) && !c->nofocus)
+					break;
+				c = c->next;
+			}
+		}
 	}
 	else {
 		for(i = selmon->clients; i != selmon->sel; i = i->next)
-			if(ISVISIBLE(i))
+			if(ISVISIBLE(i) && !i->nofocus)
 				c = i;
 		if(!c)
 			for(; i; i = i->next)
-				if(ISVISIBLE(i))
+				if(ISVISIBLE(i) && !i->nofocus)
 					c = i;
 	}
 	if(c) {
@@ -1237,7 +1271,7 @@ manage(Window w, XWindowAttributes *wa) {
 		/* only fix client y-offset, if the client center might cover the bar */
 		c->y = MAX(c->y, ((c->mon->by == 0) && (c->x + (c->w / 2) >= c->mon->wx)
 		           && (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bh : c->mon->my);
-		c->bw = borderpx;
+		c->bw = c->nofocus ? 0 : borderpx;
 	}
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
@@ -1248,7 +1282,9 @@ manage(Window w, XWindowAttributes *wa) {
 	grabbuttons(c, False);
 	if(!c->isfloating)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
-	if(c->isfloating)
+	if (c->nofocus)
+		XLowerWindow(dpy, c->win);
+	else if(c->isfloating)
 		XRaiseWindow(dpy, c->win);
 	attachabove(c);
 	attachstack(c);
@@ -1558,7 +1594,9 @@ restack(Monitor *m) {
 	drawbar(m);
 	if(!m->sel)
 		return;
-	if(m->sel->isfloating || !m->lt[m->sellt]->arrange)
+	if(m->sel->nofocus)
+		XLowerWindow(dpy, m->sel->win);
+	else if(m->sel->isfloating || !m->lt[m->sellt]->arrange)
 		XRaiseWindow(dpy, m->sel->win);
 	if(m->lt[m->sellt]->arrange) {
 		wc.stack_mode = Below;
@@ -2262,6 +2300,7 @@ main(int argc, char *argv[]) {
 	checkotherwm();
 	setup();
 	scan();
+	startup = False;
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
