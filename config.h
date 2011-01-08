@@ -64,6 +64,7 @@ static const Rule rules[] = {
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	False,  1 },
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	False,  1 },
 	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	False,  1 },
+	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		True,	False,  1 },
 	{	NULL,				"stalonetray",	NULL,			1 << 1,		True,		False,	True,   1 },
 };
 
@@ -138,6 +139,7 @@ static Key keys[] = {
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[4]} },
 	{ MODKEY,                       XK_space,  toggleviews,    {.ui = (1 << 5 | 1 << 6)} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
+	{ MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
 	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
 	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },

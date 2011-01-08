@@ -35,7 +35,7 @@ Layout	dwm.c	/^} Layout;$/;"	t	typeref:struct:__anon11	file:
 MAX	dwm.c	49;"	d	file:
 MIN	dwm.c	50;"	d	file:
 MODKEY	config.def.h	40;"	d
-MODKEY	config.h	99;"	d
+MODKEY	config.h	100;"	d
 MOUSEMASK	dwm.c	51;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
 Monitor	dwm.c	/^typedef struct Monitor Monitor;$/;"	t	typeref:struct:Monitor	file:
@@ -50,9 +50,9 @@ OPACITY	dwm.c	906;"	d	file:
 OPAQUE	dwm.c	905;"	d	file:
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
-SHCMD	config.h	107;"	d
+SHCMD	config.h	108;"	d
 TAGKEYS	config.def.h	41;"	d
-TAGKEYS	config.h	100;"	d
+TAGKEYS	config.h	101;"	d
 TAGMASK	dwm.c	54;"	d	file:
 TEXTW	dwm.c	55;"	d	file:
 WIDTH	dwm.c	52;"	d	file:
@@ -60,7 +60,7 @@ WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* def
 WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WORKSPACE	config.h	109;"	d
+WORKSPACE	config.h	110;"	d
 applyrules	dwm.c	/^applyrules(Client *c) {$/;"	f
 applysizehints	dwm.c	/^applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {$/;"	f
 arg	dwm.c	/^	const Arg arg;$/;"	m	struct:__anon10	file:
