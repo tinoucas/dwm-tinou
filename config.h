@@ -12,7 +12,7 @@ static const char selfgcolor[]      = "#d0d0d0";
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const Bool showbar           = True;     /* False means no bar */
-static const Bool topbar            = False;    /* False means bottom bar */
+static const Bool topbar            = True;    /* False means bottom bar */
 
 /* tagging */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
@@ -55,7 +55,7 @@ static const Rule rules[] = {
 	{	"Gcalctool",		NULL,			NULL,			0,			True,		False,	False, -1 },
 	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		False,	False, -1 },
 	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		False,	False, -1 },
-	{	NULL,				"oclock",		NULL,			1 << 5,		True,		False,	False, -1 },
+	{	NULL,				"oclock",		NULL,			~0,			True,		False,	True,  -1 },
 	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		False,	False, -1 },
 	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		False,	False, -1 },
 	{	NULL,				"gvim",			NULL,			1 << 3,		False,		True,	False, -1 },
@@ -65,7 +65,7 @@ static const Rule rules[] = {
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		True,	False,  1 },
 	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	False,  1 },
 	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		True,	False,  1 },
-	{	NULL,				"stalonetray",	NULL,			1 << 1,		True,		False,	True,   1 },
+	{	NULL,				"stalonetray",	NULL,			~0,			True,		False,	True,   1 },
 };
 
 static const int layoutaxis[] = {
@@ -92,7 +92,7 @@ static const Layout layouts[] = {
  	{ "[]\\",      dwindle },
 };
 
-static int initlayout = 2;
+static int initlayout = 0;
 static double clientOpacity = 0.75;
 static double barOpacity = 0.65;
 
@@ -112,7 +112,8 @@ static double barOpacity = 0.65;
 
 /* commands */
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
-static const char *dmenucmd[] = { "dmenu_run", "-b", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+//static const char *dmenucmd[] = { "dmenu_run", "-b", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
 
 static Key keys[] = {
@@ -195,9 +196,9 @@ static Button buttons[] = {
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },
 	{ ClkStatusText,        0,              Button3,        spawn,          SHCMD("/home/tinou/bin/toggle /var/lock/tinou/isnet && pkill dwm_sleep") },
 	{ ClkStatusText,        0,              Button1,        toggleviews,    {.ui = (1 << 5 | 1 << 6)} },
-	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hack/scripts/Volume.sh up") },
-	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hack/scripts/Volume.sh down") },
-	{ ClkStatusText,        0,              Button2,        spawn,           SHCMD("/home/tinou/hack/scripts/Volume.sh mute") },
+	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+	{ ClkStatusText,        0,              Button2,        spawn,           SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
 	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
 	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },

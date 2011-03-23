@@ -113,7 +113,7 @@ detachstack	dwm.c	/^detachstack(Client *c) {$/;"	f
 die	dwm.c	/^die(const char *errstr, ...) {$/;"	f
 dirtomon	dwm.c	/^dirtomon(int dir) {$/;"	f
 dmenucmd	config.def.h	/^static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };$/;"	v
-dmenucmd	config.h	/^static const char *dmenucmd[] = { "dmenu_run", "-b", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };$/;"	v
+dmenucmd	config.h	/^static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };$/;"	v
 dpy	dwm.c	/^static Display *dpy;$/;"	v	file:
 drawable	dwm.c	/^	Drawable drawable;$/;"	m	struct:__anon8	file:
 drawbar	dwm.c	/^drawbar(Monitor *m) {$/;"	f
@@ -151,7 +151,7 @@ i	dwm.c	/^	int i;$/;"	m	union:__anon6	file:
 inch	dwm.c	/^	int basew, baseh, incw, inch, maxw, maxh, minw, minh;$/;"	m	struct:Client	file:
 incw	dwm.c	/^	int basew, baseh, incw, inch, maxw, maxh, minw, minh;$/;"	m	struct:Client	file:
 initfont	dwm.c	/^initfont(const char *fontstr) {$/;"	f
-initlayout	config.h	/^static int initlayout = 2;$/;"	v
+initlayout	config.h	/^static int initlayout = 0;$/;"	v
 instance	dwm.c	/^	const char *instance;$/;"	m	struct:__anon12	file:
 isfixed	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
 isfloating	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
@@ -308,7 +308,7 @@ togglefloating	dwm.c	/^togglefloating(const Arg *arg) {$/;"	f
 toggletag	dwm.c	/^toggletag(const Arg *arg) {$/;"	f
 toggleview	dwm.c	/^toggleview(const Arg *arg) {$/;"	f
 topbar	config.def.h	/^static const Bool topbar            = True;     \/* False means bottom bar *\/$/;"	v
-topbar	config.h	/^static const Bool topbar            = False;    \/* False means bottom bar *\/$/;"	v
+topbar	config.h	/^static const Bool topbar            = True;    \/* False means bottom bar *\/$/;"	v
 topbar	dwm.c	/^	Bool topbar;$/;"	m	struct:Monitor	file:
 ttbarclick	tinou.c	/^ttbarclick(const Arg *arg) {$/;"	f	file:
 ui	dwm.c	/^	unsigned int ui;$/;"	m	union:__anon6	file:

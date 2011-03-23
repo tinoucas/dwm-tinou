@@ -344,7 +344,7 @@ applyrules(Client *c) {
 		Client *cother;
 
 		for(cother = c->mon->clients; alone && cother; cother = cother->next) {
-			if (cother != c && (cother->tags & c->tags))
+			if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
 				alone = False;
 		}
 		if (alone && !c->nofocus)
@@ -1306,10 +1306,10 @@ monocle(Monitor *m) {
 	Client *c;
 
 	for(c = m->clients; c; c = c->next)
-		if(ISVISIBLE(c))
+		if(ISVISIBLE(c) && !c->nofocus)
 			n++;
 	if(n > 0) /* override layout symbol */
-		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n);
+		snprintf(m->ltsymbol, sizeof m->ltsymbol, ">%d<", n);
 	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
 		resize(c, m->wx - 1, m->wy - 1, m->ww, m->wh, False);
 }
@@ -1547,8 +1547,10 @@ resizemouse(const Arg *arg) {
 		case MotionNotify:
 			nw = MAX(ev.xmotion.x - ocx - 2 * c->bw + 1, 1);
 			nh = MAX(ev.xmotion.y - ocy - 2 * c->bw + 1, 1);
-			if(snap && nw >= selmon->wx && nw <= selmon->wx + selmon->ww
-			&& nh >= selmon->wy && nh <= selmon->wy + selmon->wh)
+			if(snap && c->mon->wx + nw >= selmon->wx
+					&& c->mon->wx + nw <= selmon->wx + selmon->ww
+					&& c->mon->wy + nh >= selmon->wy
+					&& c->mon->wy + nh <= selmon->wy + selmon->wh)
 			{
 				if(!c->isfloating && selmon->lt[selmon->sellt]->arrange
 				&& (abs(nw - c->w) > snap || abs(nh - c->h) > snap))
@@ -1943,6 +1945,8 @@ unmanage(Client *c, Bool destroyed) {
 	free(c);
 	focus(NULL);
 	cleartags(m);
+	if (showbar && !m->showbar)
+		togglebar(NULL);
 	arrange(m);
 }
 
