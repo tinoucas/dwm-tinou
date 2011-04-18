@@ -39,15 +39,16 @@ MODKEY	config.h	100;"	d
 MOUSEMASK	dwm.c	51;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
 Monitor	dwm.c	/^typedef struct Monitor Monitor;$/;"	t	typeref:struct:Monitor	file:
-NetLast	dwm.c	/^	   NetWMFullscreen, NetLast };                      \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
+NetActiveWindow	dwm.c	/^	   NetWMFullscreen, NetActiveWindow, NetLast };                      \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
+NetLast	dwm.c	/^	   NetWMFullscreen, NetActiveWindow, NetLast };                      \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
 NetSupported	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
-NetWMFullscreen	dwm.c	/^	   NetWMFullscreen, NetLast };                      \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
+NetWMFullscreen	dwm.c	/^	   NetWMFullscreen, NetActiveWindow, NetLast };                      \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
 NetWMName	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NetWMWindowOpacity	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	894;"	d	file:
-OPAQUE	dwm.c	893;"	d	file:
+OPACITY	dwm.c	936;"	d	file:
+OPAQUE	dwm.c	935;"	d	file:
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
 SHCMD	config.h	108;"	d
@@ -56,10 +57,11 @@ TAGKEYS	config.h	101;"	d
 TAGMASK	dwm.c	54;"	d	file:
 TEXTW	dwm.c	55;"	d	file:
 WIDTH	dwm.c	52;"	d	file:
-WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
+WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
+WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
+WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
+WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
+WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WORKSPACE	config.h	110;"	d
 applyrules	dwm.c	/^applyrules(Client *c) {$/;"	f
 applysizehints	dwm.c	/^applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {$/;"	f
@@ -153,14 +155,13 @@ incw	dwm.c	/^	int basew, baseh, incw, inch, maxw, maxh, minw, minh;$/;"	m	struct
 initfont	dwm.c	/^initfont(const char *fontstr) {$/;"	f
 initlayout	config.h	/^static int initlayout = 0;$/;"	v
 instance	dwm.c	/^	const char *instance;$/;"	m	struct:__anon12	file:
-isfixed	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
-isfloating	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
+isfixed	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
+isfloating	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 isfloating	dwm.c	/^	Bool isfloating;$/;"	m	struct:__anon12	file:
-isprotodel	dwm.c	/^isprotodel(Client *c) {$/;"	f
-istransparent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
+istransparent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 istransparent	dwm.c	/^	Bool istransparent;$/;"	m	struct:__anon12	file:
 isuniquegeom	dwm.c	/^isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {$/;"	f	file:
-isurgent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
+isurgent	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 keypress	dwm.c	/^keypress(XEvent *e) {$/;"	f
 keys	config.def.h	/^static Key keys[] = {$/;"	v
 keys	config.h	/^static Key keys[] = {$/;"	v
@@ -207,10 +208,11 @@ mx	dwm.c	/^	int mx, my, mw, mh;   \/* screen size *\/$/;"	m	struct:Monitor	file:
 my	dwm.c	/^	int mx, my, mw, mh;   \/* screen size *\/$/;"	m	struct:Monitor	file:
 name	dwm.c	/^	char name[256];$/;"	m	struct:Client	file:
 netatom	dwm.c	/^static Atom wmatom[WMLast], netatom[NetLast];$/;"	v	file:
+neverfocus	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 next	dwm.c	/^	Client *next;$/;"	m	struct:Client	file:
 next	dwm.c	/^	Monitor *next;$/;"	m	struct:Monitor	file:
 nexttiled	dwm.c	/^nexttiled(Client *c) {$/;"	f
-nofocus	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
+nofocus	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 nofocus	dwm.c	/^	Bool nofocus;$/;"	m	struct:__anon12	file:
 norm	dwm.c	/^	unsigned long norm[ColLast];$/;"	m	struct:__anon8	file:
 normbgcolor	config.def.h	/^static const char normbgcolor[]     = "#cccccc";$/;"	v
@@ -223,12 +225,13 @@ num	dwm.c	/^	int num;$/;"	m	struct:Monitor	file:
 numlockmask	dwm.c	/^static unsigned int numlockmask = 0;$/;"	v	file:
 oldbw	dwm.c	/^	int bw, oldbw;$/;"	m	struct:Client	file:
 oldh	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
-oldstate	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, oldstate, nofocus;$/;"	m	struct:Client	file:
+oldstate	dwm.c	/^	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;$/;"	m	struct:Client	file:
 oldw	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 oldx	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 oldy	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 opacity	dwm.c	/^	double opacity;$/;"	m	struct:Client	file:
 opacitychange	tinou.c	/^opacitychange(const Arg *arg) {$/;"	f	file:
+pop	dwm.c	/^pop(Client *c) {$/;"	f
 prevtag	dwm.c	/^	int prevtag;$/;"	m	struct:Monitor	file:
 prevtiled	push.c	/^prevtiled(Client *c) {$/;"	f	file:
 propertynotify	dwm.c	/^propertynotify(XEvent *e) {$/;"	f
@@ -266,9 +269,11 @@ sendKey	ctrlmap.c	/^void sendKey(KeyCode keycode, int modifiers)$/;"	f
 sendbackslash	ctrlmap.c	/^static void sendbackslash(const Arg *arg)$/;"	f	file:
 sendbracketleft	ctrlmap.c	/^static void sendbracketleft(const Arg *arg)$/;"	f	file:
 sendbracketright	ctrlmap.c	/^static void sendbracketright(const Arg *arg)$/;"	f	file:
+sendevent	dwm.c	/^sendevent(Client *c, Atom proto) {$/;"	f
 sendmon	dwm.c	/^sendmon(Client *c, Monitor *m) {$/;"	f
 set	dwm.c	/^		XFontSet set;$/;"	m	struct:__anon8::__anon9	file:
 setclientstate	dwm.c	/^setclientstate(Client *c, long state) {$/;"	f
+setfocus	dwm.c	/^setfocus(Client *c) {$/;"	f
 setlayout	dwm.c	/^setlayout(const Arg *arg) {$/;"	f
 setmfact	dwm.c	/^setmfact(const Arg *arg) {$/;"	f
 setup	dwm.c	/^setup(void) {$/;"	f
