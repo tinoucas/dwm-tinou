@@ -1,4 +1,22 @@
 static void
+togglemonocle(const Arg *arg) {
+	/*static void (*arrange)(Monitor *) = NULL;*/
+	static Layout* layout;
+	Arg argFuck;
+
+	if (selmon->lt[selmon->sellt]->arrange != &monocle) {
+		/*arrange = selmon->lt[selmon->sellt]->arrange;*/
+		layout = (Layout*)selmon->lt[selmon->sellt];
+		argFuck.v = &layouts[MONOCLE];
+		setlayout(&argFuck);
+	}
+	else {
+		argFuck.v = layout;
+		setlayout(&argFuck);
+	}
+}
+
+static void
 ttbarclick(const Arg *arg) {
 	if (selmon->lt[selmon->sellt]->arrange == &monocle && arg)
 		focusstack(arg);

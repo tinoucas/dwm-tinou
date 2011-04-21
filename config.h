@@ -78,7 +78,6 @@ static const float mfact      = 0.55; /* factor of master area size [0.05..0.95]
 static const Bool resizehints = True; /* True means respect size hints in tiled resizals */
 
 #include "flextile.h"
-#include "tinou.c"
 #include "push.c"
 #include "ctrlmap.c"
 #include "fibonacci.c"
@@ -91,6 +90,16 @@ static const Layout layouts[] = {
  	{ "[]@",      spiral },
  	{ "[]\\",      dwindle },
 };
+
+enum layout {
+	TILE = 0,
+	FLOAT,
+	MONOCLE,
+	SPIRAL,
+	DWINDLE
+};
+
+#include "tinou.c"
 
 static int initlayout = 0;
 static double clientOpacity = 0.75;
@@ -121,6 +130,7 @@ static Key keys[] = {
 	{ ControlMask,                  XK_dollar,   sendbracketright,{0} },
 	{ ControlMask,                  XK_asterisk, sendbackslash,   {0} },
 	{ ControlMask,           XK_dead_circumflex, sendbracketleft, {0} },
+	{ MODKEY,                       XK_o,      togglemonocle,  {0} },
 	{ MODKEY,                       XK_Menu,   focuslast,      {0} },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
