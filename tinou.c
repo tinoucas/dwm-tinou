@@ -2,17 +2,17 @@ static void
 togglemonocle(const Arg *arg) {
 	/*static void (*arrange)(Monitor *) = NULL;*/
 	static Layout* layout;
-	Arg argFuck;
+	Arg layoutarg;
 
 	if (selmon->lt[selmon->sellt]->arrange != &monocle) {
 		/*arrange = selmon->lt[selmon->sellt]->arrange;*/
 		layout = (Layout*)selmon->lt[selmon->sellt];
-		argFuck.v = &layouts[MONOCLE];
-		setlayout(&argFuck);
+		layoutarg.v = &layouts[MONOCLE];
+		setlayout(&layoutarg);
 	}
 	else {
-		argFuck.v = layout;
-		setlayout(&argFuck);
+		layoutarg.v = layout;
+		setlayout(&layoutarg);
 	}
 }
 
