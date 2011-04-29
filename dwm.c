@@ -90,7 +90,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus;
+	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus, isfullscreen;
 	Client *snext;
 	Monitor *mon;
 	Window win;
@@ -610,6 +610,7 @@ clientmessage(XEvent *e) {
 		if(cme->data.l[0]) {
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
 			                PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
+			c->isfullscreen = True;
 			c->oldstate = c->isfloating;
 			c->oldbw = c->bw;
 			c->bw = 0;
@@ -620,6 +621,7 @@ clientmessage(XEvent *e) {
 		else {
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
 			                PropModeReplace, (unsigned char*)0, 0);
+			c->isfullscreen = False;
 			c->isfloating = c->oldstate;
 			c->bw = c->oldbw;
 			c->x = c->oldx;
@@ -1798,7 +1800,7 @@ showhide(Client *c) {
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if(!c->mon->lt[c->mon->sellt]->arrange || c->isfloating)
+		if(!c->mon->lt[c->mon->sellt]->arrange || c->isfloating && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
