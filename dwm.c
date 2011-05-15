@@ -1351,7 +1351,7 @@ movemouse(const Arg *arg) {
 		return;
 	do {
 		XMaskEvent(dpy, MOUSEMASK|ExposureMask|SubstructureRedirectMask, &ev);
-		switch (ev.type) {
+		switch(ev.type) {
 		case ConfigureRequest:
 		case Expose:
 		case MapRequest:
@@ -1422,7 +1422,7 @@ propertynotify(XEvent *e) {
 	else if(ev->state == PropertyDelete)
 		return; /* ignore */
 	else if((c = wintoclient(ev->window))) {
-		switch (ev->atom) {
+		switch(ev->atom) {
 		default: break;
 		case XA_WM_TRANSIENT_FOR:
 				 if(!c->isfloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
@@ -1800,7 +1800,7 @@ showhide(Client *c) {
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if(!c->mon->lt[c->mon->sellt]->arrange || c->isfloating && !c->isfullscreen)
+		if(!c->mon->lt[c->mon->sellt]->arrange || (c->isfloating && !c->isfullscreen))
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
@@ -1827,7 +1827,7 @@ spawn(const Arg *arg) {
 		execvp(((char **)arg->v)[0], (char **)arg->v);
 		fprintf(stderr, "dwm: execvp %s", ((char **)arg->v)[0]);
 		perror(" failed");
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 }
 
@@ -1981,11 +1981,12 @@ unmapnotify(XEvent *e) {
 void
 updatebars(void) {
 	Monitor *m;
-	XSetWindowAttributes wa;
+	XSetWindowAttributes wa = {
+		.override_redirect = True,
+		.background_pixmap = ParentRelative,
+		.event_mask = ButtonPressMask|ExposureMask
+	};
 
-	wa.override_redirect = True;
-	wa.background_pixmap = ParentRelative;
-	wa.event_mask = ButtonPressMask|ExposureMask;
 	for(m = mons; m; m = m->next) {
 		m->barwin = XCreateWindow(dpy, root, m->wx, m->by, m->ww, bh, 0, DefaultDepth(dpy, screen),
 		                          CopyFromParent, DefaultVisual(dpy, screen),
@@ -2313,5 +2314,5 @@ main(int argc, char *argv[]) {
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
-	return 0;
+	return EXIT_SUCCESS;
 }
