@@ -985,6 +985,8 @@ focus(Client *c) {
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		setfocus(c);
 	}
+	else
+		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 	selmon->sel = c;
 	drawbars();
 }
