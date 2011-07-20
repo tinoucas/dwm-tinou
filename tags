@@ -7,7 +7,10 @@
 Arg	dwm.c	/^} Arg;$/;"	t	typeref:union:__anon6	file:
 BUTTONMASK	dwm.c	44;"	d	file:
 Button	dwm.c	/^} Button;$/;"	t	typeref:struct:__anon7	file:
+CC	config.mk	/^CC = cc$/;"	m
+CFLAGS	config.mk	/^CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}$/;"	m
 CLEANMASK	dwm.c	45;"	d	file:
+CPPFLAGS	config.mk	/^CPPFLAGS = -DVERSION=\\"${VERSION}\\" ${XINERAMAFLAGS}$/;"	m
 Client	dwm.c	/^struct Client {$/;"	s	file:
 Client	dwm.c	/^typedef struct Client Client;$/;"	t	typeref:struct:Client	file:
 ClkClientWin	dwm.c	/^       ClkClientWin, ClkRootWin, ClkLast };             \/* clicks *\/$/;"	e	enum:__anon5	file:
@@ -29,11 +32,15 @@ DC	dwm.c	/^} DC; \/* draw context *\/$/;"	t	typeref:struct:__anon8	file:
 DWINDLE	config.h	/^	DWINDLE$/;"	e	enum:layout
 FLOAT	config.h	/^	FLOAT,$/;"	e	enum:layout
 HEIGHT	dwm.c	53;"	d	file:
+INCS	config.mk	/^INCS = -I. -I\/usr\/include -I${X11INC}$/;"	m
 INRECT	dwm.c	46;"	d	file:
 ISVISIBLE	dwm.c	47;"	d	file:
 Key	dwm.c	/^} Key;$/;"	t	typeref:struct:__anon10	file:
+LDFLAGS	config.mk	/^LDFLAGS = -g ${LIBS}$/;"	m
 LENGTH	dwm.c	48;"	d	file:
+LIBS	config.mk	/^LIBS = -L\/usr\/lib -lc -L${X11LIB} -lX11 ${XINERAMALIBS}$/;"	m
 Layout	dwm.c	/^} Layout;$/;"	t	typeref:struct:__anon11	file:
+MANPREFIX	config.mk	/^MANPREFIX = ${PREFIX}\/share\/man$/;"	m
 MAX	dwm.c	49;"	d	file:
 MIN	dwm.c	50;"	d	file:
 MODKEY	config.def.h	40;"	d
@@ -52,6 +59,7 @@ NetWMWindowOpacity	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWind
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
 OPACITY	dwm.c	952;"	d	file:
 OPAQUE	dwm.c	951;"	d	file:
+PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
 SHCMD	config.h	117;"	d
@@ -61,6 +69,7 @@ TAGKEYS	config.h	110;"	d
 TAGMASK	dwm.c	54;"	d	file:
 TEXTW	dwm.c	55;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
+VERSION	config.mk	/^VERSION = 5.9$/;"	m
 WIDTH	dwm.c	52;"	d	file:
 WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
@@ -68,6 +77,10 @@ WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast }
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WORKSPACE	config.h	119;"	d
+X11INC	config.mk	/^X11INC = \/usr\/X11R6\/include$/;"	m
+X11LIB	config.mk	/^X11LIB = \/usr\/X11R6\/lib$/;"	m
+XINERAMAFLAGS	config.mk	/^XINERAMAFLAGS = -DXINERAMA$/;"	m
+XINERAMALIBS	config.mk	/^XINERAMALIBS = -L${X11LIB} -lXinerama$/;"	m
 allnonfloat	tinou.c	/^allnonfloat(const Arg *arg) {$/;"	f
 applyrules	dwm.c	/^applyrules(Client *c) {$/;"	f
 applysizehints	dwm.c	/^applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {$/;"	f

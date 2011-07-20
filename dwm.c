@@ -634,8 +634,8 @@ clientmessage(XEvent *e) {
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
-			c->mon->seltags ^= 1;                                   
-			c->mon->tagset[c->mon->seltags] = c->tags;   
+			c->mon->seltags ^= 1;
+			c->mon->tagset[c->mon->seltags] = c->tags;
 		}
 		pop(c);
 	}
@@ -1582,7 +1582,16 @@ restack(Monitor *m) {
 	XWindowChanges wc;
 
 	drawbar(m);
-	if(!m->sel)
+	if(!m->sel) {
+		for(c = m->clients; c; c = c->next)
+			if(!c->nofocus && ISVISIBLE(c))
+				break;
+		if (c && m == selmon)
+			focus(c);
+		else
+			m->sel = c;
+	}
+	if (!m->sel)
 		return;
 	if(m->sel->nofocus)
 		XLowerWindow(dpy, m->sel->win);
@@ -1675,7 +1684,7 @@ sendevent(Client *c, Atom proto) {
 			exists = protocols[n] == proto;
 		XFree(protocols);
 	}
-	if (exists) {
+	if(exists) {
 		ev.type = ClientMessage;
 		ev.xclient.window = c->win;
 		ev.xclient.message_type = wmatom[WMProtocols];
@@ -1689,7 +1698,7 @@ sendevent(Client *c, Atom proto) {
 
 void
 setfocus(Client *c) {
-	if (!c->neverfocus)
+	if(!c->neverfocus)
 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
 	sendevent(c, wmatom[WMTakeFocus]);
 }
@@ -1816,7 +1825,7 @@ showhide(Client *c) {
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if(!c->mon->lt[c->mon->sellt]->arrange || (c->isfloating && !c->isfullscreen))
+		if((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && !c->isfullscreen)
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
@@ -1825,7 +1834,6 @@ showhide(Client *c) {
 		XMoveWindow(dpy, c->win, c->x + 2 * sw, c->y);
 	}
 }
-
 
 void
 sigchld(int unused) {
