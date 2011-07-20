@@ -936,7 +936,7 @@ enternotify(XEvent *e) {
 	}
 	else if(c == selmon->sel || c == NULL)
 		return;
-	focus(wintoclient(ev->window));
+	focus(c);
 }
 
 void
