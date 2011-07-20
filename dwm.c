@@ -42,7 +42,7 @@
 
 /* macros */
 #define BUTTONMASK              (ButtonPressMask|ButtonReleaseMask)
-#define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask))
+#define CLEANMASK(mask)         (mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
 #define INRECT(X,Y,RX,RY,RW,RH) ((X) >= (RX) && (X) < (RX) + (RW) && (Y) >= (RY) && (Y) < (RY) + (RH))
 #define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]))
 #define LENGTH(X)               (sizeof X / sizeof X[0])
@@ -507,7 +507,7 @@ buttonpress(XEvent *e) {
 		}
 		else if(ev->x < x + blw)
 			click = ClkLtSymbol;
-		else if(ev->x > selmon->wx + selmon->ww - TEXTW(stext))
+		else if(ev->x > selmon->ww - TEXTW(stext))
 			click = ClkStatusText;
 		else
 			click = ClkWinTitle;
@@ -607,7 +607,7 @@ clientmessage(XEvent *e) {
 	if(!c)
 		return;
 	if(cme->message_type == netatom[NetWMState] && cme->data.l[1] == netatom[NetWMFullscreen]) {
-		if(cme->data.l[0]) {
+		if(cme->data.l[0] && !c->isfullscreen) {
 			XChangeProperty(dpy, cme->window, netatom[NetWMState], XA_ATOM, 32,
 			                PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 			c->isfullscreen = True;
@@ -663,11 +663,13 @@ void
 configurenotify(XEvent *e) {
 	Monitor *m;
 	XConfigureEvent *ev = &e->xconfigure;
+	Bool dirty;
 
 	if(ev->window == root) {
+		dirty = (sw != ev->width);
 		sw = ev->width;
 		sh = ev->height;
-		if(updategeom()) {
+		if(updategeom() || dirty) {
 			if(dc.drawable != 0)
 				XFreePixmap(dpy, dc.drawable);
 			dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
@@ -921,15 +923,19 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 
 void
 enternotify(XEvent *e) {
+	Client *c;
 	Monitor *m;
 	XCrossingEvent *ev = &e->xcrossing;
 
 	if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;
+	c = wintoclient(ev->window);
 	if((m = wintomon(ev->window)) && m != selmon) {
 		unfocus(selmon->sel, True);
 		selmon = m;
 	}
+	else if(c == selmon->sel || c == NULL)
+		return;
 	focus(wintoclient(ev->window));
 }
 
