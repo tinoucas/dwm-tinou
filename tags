@@ -44,7 +44,7 @@ MANPREFIX	config.mk	/^MANPREFIX = ${PREFIX}\/share\/man$/;"	m
 MAX	dwm.c	49;"	d	file:
 MIN	dwm.c	50;"	d	file:
 MODKEY	config.def.h	40;"	d
-MODKEY	config.h	109;"	d
+MODKEY	config.h	111;"	d
 MONOCLE	config.h	/^	MONOCLE,$/;"	e	enum:layout
 MOUSEMASK	dwm.c	51;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
@@ -62,10 +62,10 @@ OPAQUE	dwm.c	949;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
-SHCMD	config.h	117;"	d
+SHCMD	config.h	119;"	d
 SPIRAL	config.h	/^	SPIRAL,$/;"	e	enum:layout
 TAGKEYS	config.def.h	41;"	d
-TAGKEYS	config.h	110;"	d
+TAGKEYS	config.h	112;"	d
 TAGMASK	dwm.c	54;"	d	file:
 TEXTW	dwm.c	55;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
@@ -76,7 +76,7 @@ WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };    
 WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };        \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WORKSPACE	config.h	119;"	d
+WORKSPACE	config.h	121;"	d
 X11INC	config.mk	/^X11INC = \/usr\/X11R6\/include$/;"	m
 X11LIB	config.mk	/^X11LIB = \/usr\/X11R6\/lib$/;"	m
 XINERAMAFLAGS	config.mk	/^XINERAMAFLAGS = -DXINERAMA$/;"	m
@@ -152,7 +152,7 @@ focuslast	tinou.c	/^focuslast(const Arg *arg) {$/;"	f	file:
 focusmon	dwm.c	/^focusmon(const Arg *arg) {$/;"	f
 focusstack	dwm.c	/^focusstack(const Arg *arg) {$/;"	f
 font	config.def.h	/^static const char font[]            = "-*-terminus-medium-r-*-*-16-*-*-*-*-*-*-*";$/;"	v
-font	config.h	/^static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";$/;"	v
+font	config.h	/^static const char font[]            = "-*-clean-medium-r-normal-*-12-*-*-*-*-*-iso8859-1";$/;"	v
 font	dwm.c	/^	} font;$/;"	m	struct:__anon8	typeref:struct:__anon8::__anon9	file:
 func	dwm.c	/^	void (*func)(const Arg *);$/;"	m	struct:__anon10	file:
 func	dwm.c	/^	void (*func)(const Arg *arg);$/;"	m	struct:__anon7	file:

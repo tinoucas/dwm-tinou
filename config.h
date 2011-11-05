@@ -1,8 +1,10 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-// static const char font[]            = "-*-helvetica-bold-r-*-*-12-*-*-*-*-*-*-1";
-static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";
+//static const char font[]            = "-*-helvetica-bold-r-*-*-12-*-*-*-*-*-*-1";
+//static const char font[]            = "-*-freemono-medium-r-normal-*-*-*-*-*-*-*-*-1";
+static const char font[]            = "-*-clean-medium-r-normal-*-12-*-*-*-*-*-iso8859-1";
+//static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";
 static const char normbordercolor[] = "#000000";
 static const char normbgcolor[]     = "#d0d0d0";
 static const char normfgcolor[]     = "#34363f";
