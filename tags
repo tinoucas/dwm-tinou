@@ -57,8 +57,8 @@ NetWMName	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity
 NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NetWMWindowOpacity	dwm.c	/^enum { NetSupported, NetWMName, NetWMState, NetWMWindowOpacity,$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	952;"	d	file:
-OPAQUE	dwm.c	951;"	d	file:
+OPACITY	dwm.c	950;"	d	file:
+OPAQUE	dwm.c	949;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	48;"	d
@@ -275,6 +275,7 @@ run	dwm.c	/^run(void) {$/;"	f
 running	dwm.c	/^static Bool running = True;$/;"	v	file:
 scan	dwm.c	/^scan(void) {$/;"	f
 screen	dwm.c	/^static int screen;$/;"	v	file:
+screencmd	config.h	/^static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };$/;"	v
 sel	dwm.c	/^	Client *sel;$/;"	m	struct:Monitor	file:
 sel	dwm.c	/^	unsigned long sel[ColLast];$/;"	m	struct:__anon8	file:
 selbgcolor	config.def.h	/^static const char selbgcolor[]      = "#0066ff";$/;"	v
