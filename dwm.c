@@ -215,6 +215,7 @@ static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
+static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
 static void pop(Client *c);
@@ -289,6 +290,7 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[KeyPress] = keypress,
 	[MappingNotify] = mappingnotify,
 	[MapRequest] = maprequest,
+	[MotionNotify] = motionnotify,
 	[PropertyNotify] = propertynotify,
 	[UnmapNotify] = unmapnotify
 };
@@ -1337,6 +1339,21 @@ monocle(Monitor *m) {
 }
 
 void
+motionnotify(XEvent *e) {
+	static Monitor *mon = NULL;
+	Monitor *m;
+	XMotionEvent *ev = &e->xmotion;
+
+	if (ev->window != root)
+		return;
+	if((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
+		selmon = m;
+		focus(NULL);
+	}
+	mon = m;
+}
+
+void
 movemouse(const Arg *arg) {
 	int x, y, ocx, ocy, nx, ny;
 	Client *c, *c2;
@@ -1834,9 +1851,8 @@ setup(void) {
 			PropModeReplace, (unsigned char *) netatom, NetLast);
 	/* select for events */
 	wa.cursor = cursor[CurNormal];
-	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|ButtonPressMask
-					|EnterWindowMask|LeaveWindowMask|StructureNotifyMask
-					|PropertyChangeMask;
+	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|ButtonPressMask|PointerMotionMask
+					|EnterWindowMask|LeaveWindowMask|StructureNotifyMask|PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask|CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys();
