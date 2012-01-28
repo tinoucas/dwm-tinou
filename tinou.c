@@ -1,4 +1,42 @@
 static void
+rotateclients (const Arg *arg) {
+	Client *base = selmon->clients;
+	Client **pc;
+	Client *c;
+	Client *loopbase = base;
+
+	do
+	{
+		if (base) {
+			if (selmon->lt[selmon->sellt]->arrange != &monocle) {
+				if (arg->i > 0) {
+					selmon->clients = base->next;
+					pc = &selmon->clients;
+					while (*pc)
+						pc = &(*pc)->next;
+					*pc = base;
+					base->next = NULL;
+				}
+				else {
+					c = selmon->clients;
+					while (c->next)
+						c = c->next;
+					detach(c);
+					attach(c);
+				}
+			}
+			else {
+				focusstack(arg);
+			}
+		}
+		base = selmon->clients;
+		if (base == loopbase)
+			break;
+	} while (base && (!ISVISIBLE(base) || base->nofocus));
+	arrange(selmon);
+}
+
+static void
 togglemonocle(const Arg *arg) {
 	/*static void (*arrange)(Monitor *) = NULL;*/
 	static Layout* layout;

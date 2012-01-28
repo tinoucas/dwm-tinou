@@ -5,6 +5,7 @@
 //static const char font[]            = "-*-freemono-medium-r-normal-*-*-*-*-*-*-*-*-1";
 static const char font[]            = "-*-clean-medium-r-normal-*-12-*-*-*-*-*-iso8859-1";
 //static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";
+static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
 static const char normbgcolor[]     = "#222222";
 static const char normfgcolor[]     = "#bbbbbb";
@@ -20,6 +21,10 @@ static const Bool topbar            = True;    /* False means bottom bar */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
+	/* xprop(1):
+	 *	WM_CLASS(STRING) = instance, class
+	 *	WM_NAME(STRING) = title
+	 */
 	/* class				instance		title			tags mask	isfloating	transp	nofocus	monitor */
 	{	"URxvt",			NULL,			NULL,			0,			False,		True,	False, -1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		True,	False, -1 },
@@ -90,7 +95,7 @@ static const Layout layouts[] = {
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
  	{ "[]@",      spiral },
- 	{ "[]\\",      dwindle },
+ 	{ "[]G",      dwindle },
 };
 
 enum layout {
@@ -124,7 +129,7 @@ static double barOpacity = 0.65;
 /* commands */
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-b", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, "-hist", histfile, NULL };
 static const char *termcmd[]  = { "urxvt", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 
@@ -195,6 +200,11 @@ static Key keys[] = {
 	{ MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
 };
 
+#define Button6 (Button1 + 5)
+#define Button7 (Button1 + 6)
+#define Button8 (Button1 + 7)
+#define Button9 (Button1 + 8)
+
 /* button definitions */
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
@@ -205,6 +215,10 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button3,        zoom,           {0} },
 	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
 	{ ClkWinTitle,          0,              Button5,        ttbarclick,     {.f = +0.05 } },
+	{ ClkWinTitle,          0,              Button6,        shiftmastersplit,  {.i = +1} },
+	{ ClkWinTitle,          0,              Button7,        shiftmastersplit,  {.i = -1} },
+	{ ClkWinTitle,          0,              Button8,        rotateclients,  {.i = +1} },
+	{ ClkWinTitle,          0,              Button9,        rotateclients,  {.i = -1} },
 	{ ClkWinTitle,          MODKEY,         Button4,        opacitychange,  {.f = -0.05 } },
 	{ ClkWinTitle,          MODKEY,         Button5,        opacitychange,  {.f = +0.05 } },
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },

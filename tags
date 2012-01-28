@@ -7,6 +7,10 @@
 Arg	dwm.c	/^} Arg;$/;"	t	typeref:union:__anon6	file:
 BUTTONMASK	dwm.c	44;"	d	file:
 Button	dwm.c	/^} Button;$/;"	t	typeref:struct:__anon7	file:
+Button6	config.h	203;"	d
+Button7	config.h	204;"	d
+Button8	config.h	205;"	d
+Button9	config.h	206;"	d
 CC	config.mk	/^CC = cc$/;"	m
 CFLAGS	config.mk	/^CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}$/;"	m
 CLEANMASK	dwm.c	45;"	d	file:
@@ -43,8 +47,8 @@ Layout	dwm.c	/^} Layout;$/;"	t	typeref:struct:__anon11	file:
 MANPREFIX	config.mk	/^MANPREFIX = ${PREFIX}\/share\/man$/;"	m
 MAX	dwm.c	50;"	d	file:
 MIN	dwm.c	51;"	d	file:
-MODKEY	config.def.h	40;"	d
-MODKEY	config.h	111;"	d
+MODKEY	config.def.h	44;"	d
+MODKEY	config.h	116;"	d
 MONOCLE	config.h	/^	MONOCLE,$/;"	e	enum:layout
 MOUSEMASK	dwm.c	52;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
@@ -58,26 +62,26 @@ NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState,$/;"	e	enum:__anon
 NetWMWindowType	dwm.c	/^       NetWMFullscreen, NetActiveWindow, NetWMWindowType,$/;"	e	enum:__anon3	file:
 NetWMWindowTypeDialog	dwm.c	/^       NetWMWindowTypeDialog, NetLast };     \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	933;"	d	file:
-OPAQUE	dwm.c	932;"	d	file:
+OPACITY	dwm.c	937;"	d	file:
+OPAQUE	dwm.c	936;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
-SHCMD	config.def.h	48;"	d
-SHCMD	config.h	119;"	d
+SHCMD	config.def.h	52;"	d
+SHCMD	config.h	124;"	d
 SPIRAL	config.h	/^	SPIRAL,$/;"	e	enum:layout
-TAGKEYS	config.def.h	41;"	d
-TAGKEYS	config.h	112;"	d
+TAGKEYS	config.def.h	45;"	d
+TAGKEYS	config.h	117;"	d
 TAGMASK	dwm.c	55;"	d	file:
 TEXTW	dwm.c	56;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
-VERSION	config.mk	/^VERSION = 5.9$/;"	m
+VERSION	config.mk	/^VERSION = 6.0$/;"	m
 WIDTH	dwm.c	53;"	d	file:
 WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WORKSPACE	config.h	121;"	d
+WORKSPACE	config.h	126;"	d
 X11INC	config.mk	/^X11INC = \/usr\/X11R6\/include$/;"	m
 X11LIB	config.mk	/^X11LIB = \/usr\/X11R6\/lib$/;"	m
 XINERAMAFLAGS	config.mk	/^XINERAMAFLAGS = -DXINERAMA$/;"	m
@@ -135,7 +139,7 @@ detachstack	dwm.c	/^detachstack(Client *c) {$/;"	f
 die	dwm.c	/^die(const char *errstr, ...) {$/;"	f
 dirtomon	dwm.c	/^dirtomon(int dir) {$/;"	f
 dmenucmd	config.def.h	/^static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };$/;"	v
-dmenucmd	config.h	/^static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };$/;"	v
+dmenucmd	config.h	/^static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, "-hist", histfile, NULL };$/;"	v
 dpy	dwm.c	/^static Display *dpy;$/;"	v	file:
 drawable	dwm.c	/^	Drawable drawable;$/;"	m	struct:__anon8	file:
 drawbar	dwm.c	/^drawbar(Monitor *m) {$/;"	f
@@ -170,6 +174,7 @@ h	dwm.c	/^	int x, y, w, h;$/;"	m	struct:Client	file:
 h	dwm.c	/^	int x, y, w, h;$/;"	m	struct:__anon8	file:
 handler	dwm.c	/^static void (*handler[LASTEvent]) (XEvent *) = {$/;"	v	file:
 height	dwm.c	/^		int height;$/;"	m	struct:__anon8::__anon9	file:
+histfile	config.h	/^static const char histfile[]        = "\/home\/tinou\/.surf\/history.dmenu";$/;"	v
 i	dwm.c	/^	int i;$/;"	m	union:__anon6	file:
 inch	dwm.c	/^	int basew, baseh, incw, inch, maxw, maxh, minw, minh;$/;"	m	struct:Client	file:
 incw	dwm.c	/^	int basew, baseh, incw, inch, maxw, maxh, minw, minh;$/;"	m	struct:Client	file:
@@ -223,6 +228,7 @@ mon	dwm.c	/^	Monitor *mon;$/;"	m	struct:Client	file:
 monitor	dwm.c	/^	int monitor;$/;"	m	struct:__anon12	file:
 monocle	dwm.c	/^monocle(Monitor *m) {$/;"	f
 mons	dwm.c	/^static Monitor *mons = NULL, *selmon = NULL;$/;"	v	file:
+motionnotify	dwm.c	/^motionnotify(XEvent *e) {$/;"	f
 movemouse	dwm.c	/^movemouse(const Arg *arg) {$/;"	f
 msplit	dwm.c	/^	unsigned int msplit;$/;"	m	struct:Monitor	file:
 msplits	dwm.c	/^	unsigned int msplits[10];$/;"	m	struct:Monitor	file:
@@ -270,6 +276,7 @@ resizehints	config.h	/^static const Bool resizehints = True; \/* True means resp
 resizemouse	dwm.c	/^resizemouse(const Arg *arg) {$/;"	f
 restack	dwm.c	/^restack(Monitor *m) {$/;"	f
 root	dwm.c	/^static Window root;$/;"	v	file:
+rotateclients	tinou.c	/^rotateclients (const Arg *arg) {$/;"	f	file:
 rotatelayoutaxis	flextile.h	/^rotatelayoutaxis(const Arg *arg) {$/;"	f
 rules	config.def.h	/^static const Rule rules[] = {$/;"	v
 rules	config.h	/^static const Rule rules[] = {$/;"	v

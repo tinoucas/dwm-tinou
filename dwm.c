@@ -353,7 +353,9 @@ applyrules(Client *c) {
 
 		for(cother = c->mon->clients; alone && cother; cother = cother->next) {
 			if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
+			{
 				alone = False;
+			}
 		}
 		if (alone && !c->nofocus)
 		{
@@ -1344,7 +1346,7 @@ motionnotify(XEvent *e) {
 	Monitor *m;
 	XMotionEvent *ev = &e->xmotion;
 
-	if (ev->window != root)
+	if(ev->window != root)
 		return;
 	if((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
 		selmon = m;
@@ -2051,6 +2053,8 @@ updatebars(void) {
 	};
 
 	for(m = mons; m; m = m->next) {
+		if(m->barwin)
+			continue;
 		m->barwin = XCreateWindow(dpy, root, m->wx, m->by, m->ww, bh, 0, DefaultDepth(dpy, screen),
 								  CopyFromParent, DefaultVisual(dpy, screen),
 								  CWOverrideRedirect|CWBackPixmap|CWEventMask, &wa);
@@ -2257,7 +2261,7 @@ updatewmhints(Client *c) {
 			XSetWMHints(dpy, c->win, wmh);
 		}
 		else
-			c->isurgent = (wmh->flags & XUrgencyHint) ? True : False;
+			c->isurgent = (wmh->flags & XUrgencyHint) ? True : c->isurgent;
 		if(wmh->flags & InputHint)
 			c->neverfocus = !wmh->input;
 		else
@@ -2375,7 +2379,7 @@ zoom(const Arg *arg) {
 int
 main(int argc, char *argv[]) {
 	if(argc == 2 && !strcmp("-v", argv[1]))
-		die("dwm-"VERSION", © 2006-2010 dwm engineers, see LICENSE for details\n");
+		die("dwm-"VERSION", © 2006-2012 dwm engineers, see LICENSE for details\n");
 	else if(argc != 1)
 		die("usage: dwm [-v]\n");
 	if(!setlocale(LC_CTYPE, "") || !XSupportsLocale())
