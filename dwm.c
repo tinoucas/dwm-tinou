@@ -450,9 +450,10 @@ arrange(Monitor *m) {
 	else for(m = mons; m; m = m->next)
 		showhide(m->stack);
 	focus(NULL);
-	if(m)
+	if(m) {
 		arrangemon(m);
-	else for(m = mons; m; m = m->next)
+		restack(m);
+	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
 }
 
@@ -1604,7 +1605,7 @@ restack(Monitor *m) {
 		else
 			m->sel = c;
 	}
-	if (!m->sel)
+	if(!m->sel)
 		return;
 	if(m->sel->nofocus)
 		XLowerWindow(dpy, m->sel->win);
