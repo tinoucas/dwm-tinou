@@ -334,7 +334,7 @@ applyrules(Client *c) {
 				c->istransparent = r->istransparent;
 				c->nofocus = r->nofocus;
 				c->tags |= r->tags;
-				c->opacity = r->istransparent ? clientOpacity : 1.;
+				c->opacity = r->istransparent ? clientOpacity : 0.95;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -940,7 +940,7 @@ expose(XEvent *e) {
 void
 window_opacity_set(Window win, double opacity)
 {
-	if(opacity >= 0 && opacity <= 1)
+	if(opacity >= 0 && opacity < 1)
 	{
 		unsigned int copacity = (unsigned int)(opacity * OPAQUE);
 		XChangeProperty(dpy, win, XInternAtom(dpy, OPACITY, False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &copacity, 1L);
@@ -1301,7 +1301,7 @@ manage(Window w, XWindowAttributes *wa) {
 	setclientstate(c, NormalState);
 	cleartags(c->mon);
 	arrange(c->mon);
-	if (c->istransparent)
+	if (c->istransparent || c->opacity != 1.)
 		client_opacity_set(c, c->opacity);
 }
 
@@ -1719,6 +1719,7 @@ setfocus(Client *c) {
 void
 setfullscreen(Client *c, Bool fullscreen) {
 	if(fullscreen) {
+		window_opacity_set(c->win, 1.);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 		c->isfullscreen = True;
@@ -1730,6 +1731,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		XRaiseWindow(dpy, c->win);
 	}
 	else {
+		window_opacity_set(c->win, c->opacity);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)0, 0);
 		c->isfullscreen = False;
