@@ -940,14 +940,12 @@ expose(XEvent *e) {
 void
 window_opacity_set(Window win, double opacity)
 {
-	if(opacity >= 0 && opacity < 1)
+	if(opacity >= 0. && opacity <= 1.)
 	{
 		unsigned int copacity = (unsigned int)(opacity * OPAQUE);
 		XChangeProperty(dpy, win, XInternAtom(dpy, OPACITY, False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &copacity, 1L);
   XSync(dpy, False);
 	}
-	else
-		XDeleteProperty (dpy, win, XInternAtom(dpy, OPACITY, False));
 	XSync(dpy, False);
 }
 
@@ -1301,7 +1299,7 @@ manage(Window w, XWindowAttributes *wa) {
 	setclientstate(c, NormalState);
 	cleartags(c->mon);
 	arrange(c->mon);
-	if (c->istransparent || c->opacity != 1.)
+	if ((c->istransparent || c->opacity != 1.) && !c->isfloating)
 		client_opacity_set(c, c->opacity);
 }
 
