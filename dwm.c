@@ -92,7 +92,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, istransparent, isurgent, neverfocus, oldstate, nofocus, isfullscreen;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, nofocus, isfullscreen;
 	Client *snext;
 	Monitor *mon;
 	Window win;
@@ -161,7 +161,7 @@ typedef struct {
 	const char *title;
 	unsigned int tags;
 	Bool isfloating;
-	Bool istransparent;
+	double istransparent;
 	Bool nofocus;
 	int monitor;
 } Rule;
@@ -331,10 +331,9 @@ applyrules(Client *c) {
 			&& (!r->instance || strstr(instance, r->instance)))
 			{
 				c->isfloating = r->isfloating;
-				c->istransparent = r->istransparent;
 				c->nofocus = r->nofocus;
 				c->tags |= r->tags;
-				c->opacity = r->istransparent ? clientOpacity : 0.95;
+				c->opacity = r->istransparent;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -1299,7 +1298,7 @@ manage(Window w, XWindowAttributes *wa) {
 	setclientstate(c, NormalState);
 	cleartags(c->mon);
 	arrange(c->mon);
-	if ((c->istransparent || c->opacity != 1.) && !c->isfloating)
+	if (c->opacity != 1.)
 		client_opacity_set(c, c->opacity);
 }
 
