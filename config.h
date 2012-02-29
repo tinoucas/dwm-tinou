@@ -21,6 +21,7 @@ static const Bool topbar            = True;    /* False means bottom bar */
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 #define TRANS 0.75
+#define OPAQU 1.0
 
 static const Rule rules[] = {
 	/* xprop(1):
@@ -28,23 +29,25 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class				instance		title			tags mask	isfloating	transp	nofocus	monitor */
+	{	NULL,				NULL,			NULL,			0,			False,		OPAQU,	False, -1 },
+	{	"Sublime_text",		NULL,			NULL,			0,			False,		TRANS,	False, -1 },
 	{	"URxvt",			NULL,			NULL,			0,			False,		TRANS,	False, -1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False, -1 },
 	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False, -1 },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		True,		False,	False,  0 },
-	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		False,	False,  0 },
-	{	NULL,				"Download",		NULL,			1 << 7,		False,		False,	False,  0 },
-	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		False,	False,  0 },
-	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		False,	False,  0 },
-	{	"Opera",			NULL,			NULL,			1 << 8,		False,		False,	False, -1 },
-	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		False,	False,  0 },
+	{	"Gimp",				NULL,			NULL,			1 << 4,		True,		OPAQU,	False,  0 },
+	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  0 },
+	{	NULL,				"Download",		NULL,			1 << 7,		False,		OPAQU,	False,  0 },
+	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		OPAQU,	False,  0 },
+	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  0 },
+	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False, -1 },
+	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,  0 },
 	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		0.95,	False,  0 },
 	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		TRANS,	False, -1 },
 	{	NULL,				"sonata",		NULL,			1 << 5,		False,		TRANS,	False, -1 },
 	{	"Gmpc",				NULL,			NULL,			1 << 5,		False,		TRANS,	False, -1 },
 	{	"Shredder",			NULL,			NULL,			1 << 1,		False,		TRANS,	False,  0 },
 	{	NULL,				"screen",		NULL,			1,			False,		TRANS,	False, -1 },
-	{	"feh",				NULL,			NULL,			0,			True,		False,	False, -1 },
+	{	"feh",				NULL,			NULL,			0,			True,		OPAQU,	False, -1 },
 	{	NULL,				"savebox",		NULL,			0,			True,		TRANS,	False, -1 },
 	{	"Xfe",				NULL,			NULL,			1 << 2,		False,		TRANS,	False, -1 },
 	{	NULL,				"ROX-Filer",	NULL,			1 << 2,		False,		TRANS,	False, -1 },
@@ -59,22 +62,22 @@ static const Rule rules[] = {
 	{	NULL,				NULL,			"Déplacer",		0,			True,		TRANS,	False, -1 },
 	{	NULL,				NULL,			"Monter",		0,			True,		TRANS,	False, -1 },
 	{	"Audacious",		NULL,			NULL,			1 << 5,		False,		TRANS,	False, -1 },
-	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		False,	False, -1 },
-	{	"Vlc",				NULL,			NULL,			0,			False,		False,	False, -1 },
-	{	"Gcalctool",		NULL,			NULL,			0,			True,		False,	False, -1 },
-	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		False,	False, -1 },
-	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		False,	False, -1 },
-	{	NULL,				"oclock",		NULL,			~0,			True,		False,	True,  -1 },
-	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		False,	False, -1 },
-	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		False,	False, -1 },
+	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		OPAQU,	False, -1 },
+	{	"Vlc",				NULL,			NULL,			0,			False,		OPAQU,	False, -1 },
+	{	"Gcalctool",		NULL,			NULL,			0,			True,		OPAQU,	False, -1 },
+	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		OPAQU,	False, -1 },
+	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		OPAQU,	False, -1 },
+	{	NULL,				"oclock",		NULL,			~0,			True,		OPAQU,	True,  -1 },
+	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		OPAQU,	False, -1 },
+	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		OPAQU,	False, -1 },
 	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False, -1 },
 	{	NULL,				"vim",			NULL,			1 << 3,		False,		TRANS,	False, -1 },
-	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		False,	False,  1 },
-	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		False,	False,  1 },
+	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		OPAQU,	False,  1 },
+	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		OPAQU,	False,  1 },
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		TRANS,	False,  1 },
-	{	"Evince",			NULL,			NULL,			1 << 4,		False,		False,	False,  1 },
+	{	"Evince",			NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  1 },
 	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		TRANS,	False,  1 },
-	{	NULL,				"stalonetray",	NULL,			~0,			True,		False,	True,   1 },
+	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,   1 },
 };
 
 static const int layoutaxis[] = {
