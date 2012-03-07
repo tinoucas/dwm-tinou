@@ -30,7 +30,6 @@ static const Rule rules[] = {
 	 */
 	/* class				instance		title			tags mask	isfloating	transp	nofocus	monitor */
 	{	NULL,				NULL,			NULL,			0,			False,		OPAQU,	False, -1 },
-	{	"Sublime_text",		NULL,			NULL,			0,			False,		TRANS,	False, -1 },
 	{	"URxvt",			NULL,			NULL,			0,			False,		TRANS,	False, -1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False, -1 },
 	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False, -1 },
@@ -72,6 +71,7 @@ static const Rule rules[] = {
 	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		OPAQU,	False, -1 },
 	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False, -1 },
 	{	NULL,				"vim",			NULL,			1 << 3,		False,		TRANS,	False, -1 },
+	{	"Sublime_text",		NULL,			NULL,			1 << 3,		False,		TRANS,	False, -1 },
 	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		OPAQU,	False,  1 },
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		OPAQU,	False,  1 },
 	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		TRANS,	False,  1 },
