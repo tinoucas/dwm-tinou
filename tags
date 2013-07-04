@@ -7,10 +7,10 @@
 Arg	dwm.c	/^} Arg;$/;"	t	typeref:union:__anon6	file:
 BUTTONMASK	dwm.c	45;"	d	file:
 Button	dwm.c	/^} Button;$/;"	t	typeref:struct:__anon7	file:
-Button6	config.h	207;"	d
-Button7	config.h	208;"	d
-Button8	config.h	209;"	d
-Button9	config.h	210;"	d
+Button6	config.h	213;"	d
+Button7	config.h	214;"	d
+Button8	config.h	215;"	d
+Button9	config.h	216;"	d
 CC	config.mk	/^CC = cc$/;"	m
 CFLAGS	config.mk	/^CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}$/;"	m
 CLEANMASK	dwm.c	46;"	d	file:
@@ -48,7 +48,7 @@ MANPREFIX	config.mk	/^MANPREFIX = ${PREFIX}\/share\/man$/;"	m
 MAX	dwm.c	51;"	d	file:
 MIN	dwm.c	52;"	d	file:
 MODKEY	config.def.h	44;"	d
-MODKEY	config.h	120;"	d
+MODKEY	config.h	123;"	d
 MONOCLE	config.h	/^	MONOCLE,$/;"	e	enum:layout
 MOUSEMASK	dwm.c	53;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
@@ -63,16 +63,16 @@ NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState,$/;"	e	enum:__anon
 NetWMWindowType	dwm.c	/^       NetWMFullscreen, NetActiveWindow, NetWMWindowType,$/;"	e	enum:__anon3	file:
 NetWMWindowTypeDialog	dwm.c	/^       NetWMWindowTypeDialog, NetClientList, NetLast };     \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	939;"	d	file:
+OPACITY	dwm.c	945;"	d	file:
 OPAQU	config.h	24;"	d
-OPAQUE	dwm.c	938;"	d	file:
+OPAQUE	dwm.c	944;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	52;"	d
-SHCMD	config.h	128;"	d
+SHCMD	config.h	131;"	d
 SPIRAL	config.h	/^	SPIRAL,$/;"	e	enum:layout
 TAGKEYS	config.def.h	45;"	d
-TAGKEYS	config.h	121;"	d
+TAGKEYS	config.h	124;"	d
 TAGMASK	dwm.c	56;"	d	file:
 TEXTW	dwm.c	57;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
@@ -84,7 +84,7 @@ WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \
 WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WORKSPACE	config.h	130;"	d
+WORKSPACE	config.h	133;"	d
 X11INC	config.mk	/^X11INC = \/usr\/X11R6\/include$/;"	m
 X11LIB	config.mk	/^X11LIB = \/usr\/X11R6\/lib$/;"	m
 XINERAMAFLAGS	config.mk	/^XINERAMAFLAGS = -DXINERAMA$/;"	m
@@ -303,6 +303,7 @@ sendbackslash	ctrlmap.c	/^static void sendbackslash(const Arg *arg)$/;"	f	file:
 sendbracketleft	ctrlmap.c	/^static void sendbracketleft(const Arg *arg)$/;"	f	file:
 sendbracketright	ctrlmap.c	/^static void sendbracketright(const Arg *arg)$/;"	f	file:
 sendevent	dwm.c	/^sendevent(Client *c, Atom proto) {$/;"	f
+sendkey	ctrlmap.c	/^static void sendkey(const Arg *arg)$/;"	f	file:
 sendmon	dwm.c	/^sendmon(Client *c, Monitor *m) {$/;"	f
 set	dwm.c	/^		XFontSet set;$/;"	m	struct:__anon8::__anon9	file:
 setclientstate	dwm.c	/^setclientstate(Client *c, long state) {$/;"	f
@@ -368,6 +369,7 @@ updatewindowtype	dwm.c	/^updatewindowtype(Client *c) {$/;"	f
 updatewmhints	dwm.c	/^updatewmhints(Client *c) {$/;"	f
 v	dwm.c	/^	const void *v;$/;"	m	union:__anon6	file:
 view	dwm.c	/^view(const Arg *arg) {$/;"	f
+viewscroll	tinou.c	/^viewscroll(const Arg *arg) {$/;"	f	file:
 w	dwm.c	/^	int x, y, w, h;$/;"	m	struct:Client	file:
 w	dwm.c	/^	int x, y, w, h;$/;"	m	struct:__anon8	file:
 wh	dwm.c	/^	int wx, wy, ww, wh;   \/* window area  *\/$/;"	m	struct:Monitor	file:

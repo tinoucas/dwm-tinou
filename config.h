@@ -33,7 +33,7 @@ static const Rule rules[] = {
 	{	"URxvt",			NULL,			NULL,			0,			False,		TRANS,	False,  True,-1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False,  True,-1 },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		True,		OPAQU,	False,  False, 0 },
+	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  False, 0 },
 	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"Download",		NULL,			1 << 7,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
@@ -74,10 +74,12 @@ static const Rule rules[] = {
 	{	"Sublime_text",		NULL,			NULL,			1 << 3,		False,		TRANS,	False,  True,-1 },
 	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		OPAQU,	False,  True, 1 },
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		OPAQU,	False,  True, 1 },
-	{"OpenOffice.org 3.2",	NULL,			NULL,			1 << 4,		False,		TRANS,	False,  True, 1 },
+	{"OpenOfficeorg 3.2",	NULL,			NULL,			1 << 4,		False,		TRANS,	False,  True, 1 },
 	{	"Evince",			NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  True, 1 },
 	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		TRANS,	False,  True, 1 },
 	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,   True, 1 },
+	{   "Display",			NULL,			NULL,			0,			True,		OPAQU,	False,	True, 1 },
+	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	True, -1},
 };
 
 static const int layoutaxis[] = {
@@ -93,14 +95,15 @@ static const float mfact      = 0.55; /* factor of master area size [0.05..0.95]
 #include "push.c"
 #include "ctrlmap.c"
 #include "fibonacci.c"
+#include <X11/XF86keysym.h>
 
 static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      tile },
 	{ "><>",      NULL },    /* no layout function means floating behavior */
 	{ "[M]",      monocle },
- 	{ "[]@",      spiral },
- 	{ "[]G",      dwindle },
+	{ "[]@",      spiral },
+	{ "[]G",      dwindle },
 };
 
 enum layout {
@@ -202,6 +205,9 @@ static Key keys[] = {
 	{ MODKEY|ControlMask,           XK_Return, mirrorlayout,     {0} },
 	{ MODKEY|ControlMask,           XK_l,      shiftmastersplit, {.i = -1} },   /* reduce the number of tiled clients in the master area */
 	{ MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
+	{ 0,                            XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+	{ 0,                            XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+	{ 0,                            XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
 };
 
 #define Button6 (Button1 + 5)
@@ -215,6 +221,8 @@ static Button buttons[] = {
 	/* click                event mask      button          function        argument */
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
+	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
+	{ ClkLtSymbol,          0,              Button5,        viewscroll,     {.f = +0.05 } },
 	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
 	{ ClkWinTitle,          0,              Button3,        zoom,           {0} },
 	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
@@ -231,12 +239,18 @@ static Button buttons[] = {
 	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
 	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
 	{ ClkStatusText,        0,              Button2,        spawn,           SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+	{ ClkStatusText,        0,              Button8,        togglefloating, {0} },
+	{ ClkStatusText,        0,              Button9,        togglefloating, {0} },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
 	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
 	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
 	{ ClkTagBar,            0,              Button1,        view,           {0} },
 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
+	{ ClkTagBar,            0,              Button8,        tag,            {0} },
+	{ ClkTagBar,            0,              Button9,        toggletag,      {0} },
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
+	{ ClkClientWin,         0,              Button9,        sendkey,        {.ui = XK_k } },
+	{ ClkClientWin,         0,              Button8,        sendkey,        {.ui = XK_j } },
 };
 

@@ -325,6 +325,7 @@ applyrules(Client *c) {
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
+	c->rh = True;
 	if(XGetClassHint(dpy, c->win, &ch)) {
 		class = ch.res_class ? ch.res_class : broken;
 		instance = ch.res_name ? ch.res_name : broken;
@@ -348,6 +349,11 @@ applyrules(Client *c) {
 			XFree(ch.res_class);
 		if(ch.res_name)
 			XFree(ch.res_name);
+	}
+	else
+	{
+		c->tags = 1 << 7;
+		c->opacity = 0.75;
 	}
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
 	if (c->mon && !startup)
@@ -2008,10 +2014,10 @@ void
 toggleview(const Arg *arg) {
 	unsigned int newtagset = selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK);
 
-	if(newtagset) {
+	/*if(newtagset) {*/
 		selmon->tagset[selmon->seltags] = newtagset;
 		arrange(selmon);
-	}
+	/*}*/
 }
 
 void

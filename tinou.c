@@ -56,9 +56,12 @@ togglemonocle(const Arg *arg) {
 
 static void
 ttbarclick(const Arg *arg) {
-	if (selmon->lt[selmon->sellt]->arrange == &monocle && arg)
 		focusstack(arg);
-	else
+}
+
+static void
+viewscroll(const Arg *arg) {
+	if (selmon->lt[selmon->sellt]->arrange != &monocle)
 		setmfact(arg);
 }
 
