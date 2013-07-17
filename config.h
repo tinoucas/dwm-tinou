@@ -43,6 +43,7 @@ static const Rule rules[] = {
 	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		0.95,	False,  True, 0 },
 	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"sonata",		NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
+	{	NULL,				"ario",			NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
 	{	"Gmpc",				NULL,			NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
 	{	"Shredder",			NULL,			NULL,			1 << 1,		False,		TRANS,	False,  True, 0 },
 	{	NULL,				"screen",		NULL,			1,			False,		TRANS,	False,  True,-1 },
@@ -80,6 +81,8 @@ static const Rule rules[] = {
 	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,   True, 1 },
 	{   "Display",			NULL,			NULL,			0,			True,		OPAQU,	False,	True, 1 },
 	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	True, -1},
+	{"jetbrains-android-studio", NULL,		NULL,			1 << 4,		False,		TRANS,	False,	False, -1},
+	{"emulator64-arm",		NULL,			NULL,			1 << 6,		True,		OPAQU,	False,	True,-1 },
 };
 
 static const int layoutaxis[] = {

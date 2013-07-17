@@ -7,10 +7,10 @@
 Arg	dwm.c	/^} Arg;$/;"	t	typeref:union:__anon6	file:
 BUTTONMASK	dwm.c	45;"	d	file:
 Button	dwm.c	/^} Button;$/;"	t	typeref:struct:__anon7	file:
-Button6	config.h	213;"	d
-Button7	config.h	214;"	d
-Button8	config.h	215;"	d
-Button9	config.h	216;"	d
+Button6	config.h	216;"	d
+Button7	config.h	217;"	d
+Button8	config.h	218;"	d
+Button9	config.h	219;"	d
 CC	config.mk	/^CC = cc$/;"	m
 CFLAGS	config.mk	/^CFLAGS = -g -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}$/;"	m
 CLEANMASK	dwm.c	46;"	d	file:
@@ -48,7 +48,7 @@ MANPREFIX	config.mk	/^MANPREFIX = ${PREFIX}\/share\/man$/;"	m
 MAX	dwm.c	51;"	d	file:
 MIN	dwm.c	52;"	d	file:
 MODKEY	config.def.h	44;"	d
-MODKEY	config.h	123;"	d
+MODKEY	config.h	126;"	d
 MONOCLE	config.h	/^	MONOCLE,$/;"	e	enum:layout
 MOUSEMASK	dwm.c	53;"	d	file:
 Monitor	dwm.c	/^struct Monitor {$/;"	s	file:
@@ -69,10 +69,10 @@ OPAQUE	dwm.c	944;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	52;"	d
-SHCMD	config.h	131;"	d
+SHCMD	config.h	134;"	d
 SPIRAL	config.h	/^	SPIRAL,$/;"	e	enum:layout
 TAGKEYS	config.def.h	45;"	d
-TAGKEYS	config.h	124;"	d
+TAGKEYS	config.h	127;"	d
 TAGMASK	dwm.c	56;"	d	file:
 TEXTW	dwm.c	57;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
@@ -84,7 +84,7 @@ WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \
 WMProtocols	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMState	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMTakeFocus	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
-WORKSPACE	config.h	133;"	d
+WORKSPACE	config.h	136;"	d
 X11INC	config.mk	/^X11INC = \/usr\/X11R6\/include$/;"	m
 X11LIB	config.mk	/^X11LIB = \/usr\/X11R6\/lib$/;"	m
 XINERAMAFLAGS	config.mk	/^XINERAMAFLAGS = -DXINERAMA$/;"	m
