@@ -602,8 +602,11 @@ cleartags(Monitor *m){
 	for(c = m->clients; c; c = c->next)
 		if (ISVISIBLE(c) && !c->nofocus)
 			newtags |= c->tags;
-	if (newtags)
+	if (newtags && newtags != m->tagset[m->seltags])
+	{
 		m->tagset[m->seltags] = newtags;
+		viewstackadd(m->tagset[m->seltags]);
+	}
 }
 
 void
@@ -738,6 +741,7 @@ createmon(void) {
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
 	m->tagset[0] = m->tagset[1] = 1;
+	viewstackadd(1);
 	m->mfact = mfact;
 	m->showbar = showbar;
 	m->topbar = topbar;
@@ -1310,7 +1314,7 @@ manage(Window w, XWindowAttributes *wa) {
 	setclientstate(c, NormalState);
 	cleartags(c->mon);
 	arrange(c->mon);
-	if (c->opacity != 1. && !c->isfloating)
+	if (c->opacity != 1. && (!c->isfloating || c->nofocus))
 		client_opacity_set(c, c->opacity);
 }
 
@@ -2015,8 +2019,12 @@ toggleview(const Arg *arg) {
 	unsigned int newtagset = selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK);
 
 	/*if(newtagset) {*/
+	if (selmon->tagset[selmon->seltags] != newtagset)
+	{
 		selmon->tagset[selmon->seltags] = newtagset;
 		arrange(selmon);
+		viewstackadd(selmon->tagset[selmon->seltags]);
+	}
 	/*}*/
 }
 
@@ -2319,6 +2327,7 @@ view(const Arg *arg) {
 		selmon->curtag^= selmon->prevtag;
 		selmon->prevtag= selmon->curtag ^ selmon->prevtag;
 	}
+	viewstackadd(selmon->tagset[selmon->seltags]);
 	selmon->lt[selmon->sellt]= selmon->lts[selmon->curtag];
 	selmon->mfact = selmon->mfacts[selmon->curtag];
 	if(selmon->showbar != selmon->showbars[selmon->curtag])

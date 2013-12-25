@@ -1,3 +1,67 @@
+typedef struct ViewStack_s {
+	struct ViewStack_s* next;
+	struct ViewStack_s* previous;
+	int view;
+} ViewStack;
+
+static ViewStack* viewstack = 0;
+static ViewStack* viewstackbase = 0;
+static int viewstackcount = 0;
+static int viewstacksize = 1024;
+
+static void
+viewstackadd (int i) {
+	ViewStack* newtip;
+	ViewStack* oldbase = viewstackbase;
+
+	/* Avoid consecutive duplicates */
+	if (viewstack && (viewstack->next && viewstack->next->view == i
+				|| viewstack->view == i))
+		return;
+	newtip = (ViewStack*)malloc(sizeof(ViewStack));
+	newtip->view = i;
+	newtip->next = viewstack ? viewstack->next : 0;
+	newtip->previous = viewstack;
+
+	if (viewstack) {
+		if (viewstack->next)
+			viewstack->next->previous = newtip;
+		viewstack->next = newtip;
+	}
+	viewstack = newtip;
+	if (!viewstackbase)
+		viewstackbase = viewstack;
+	if (viewstackcount < viewstacksize)
+		++viewstackcount;
+	else {
+		if (oldbase) {
+			if (oldbase == viewstack->previous)
+				viewstack->previous = 0;
+			viewstackbase = viewstackbase->next;
+			viewstackbase->previous = 0;
+			free(oldbase);
+		}
+	}
+}
+
+static void
+jumpviewstackin (const Arg *arg) {
+	if (viewstack && viewstack->next) {
+		viewstack = viewstack->next;
+		selmon->tagset[selmon->seltags] = viewstack->view;
+		arrange(selmon);
+	}
+}
+
+static void
+jumpviewstackout (const Arg *arg) {
+	if (viewstack && viewstack->previous) {
+		viewstack = viewstack->previous;
+		selmon->tagset[selmon->seltags] = viewstack->view;
+		arrange(selmon);
+	}
+}
+
 static void
 rotateclients (const Arg *arg) {
 	Client *base = selmon->clients;
@@ -36,6 +100,7 @@ rotateclients (const Arg *arg) {
 	arrange(selmon);
 }
 
+#if 0
 static void
 togglemonocle(const Arg *arg) {
 	/*static void (*arrange)(Monitor *) = NULL;*/
@@ -53,6 +118,7 @@ togglemonocle(const Arg *arg) {
 		setlayout(&layoutarg);
 	}
 }
+#endif
 
 static void
 ttbarclick(const Arg *arg) {

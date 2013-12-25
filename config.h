@@ -40,7 +40,7 @@ static const Rule rules[] = {
 	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True,-1 },
 	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
-	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		0.95,	False,  True, 0 },
+	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"sonata",		NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"ario",			NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
@@ -67,7 +67,7 @@ static const Rule rules[] = {
 	{	"Gcalctool",		NULL,			NULL,			0,			True,		OPAQU,	False,  True,-1 },
 	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		OPAQU,	False,  True,-1 },
 	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		OPAQU,	False,  True,-1 },
-	{	NULL,				"oclock",		NULL,			~0,			True,		OPAQU,	True,   True,-1 },
+	{	NULL,				"oclock",		NULL,			~0,			True,		0.33,	True,   True,-1 },
 	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		OPAQU,	False,  True,-1 },
 	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		OPAQU,	False,  True,-1 },
 	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False,  True,-1 },
@@ -79,10 +79,10 @@ static const Rule rules[] = {
 	{	"Evince",			NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  True, 1 },
 	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		TRANS,	False,  True, 1 },
 	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,   True, 1 },
-	{   "Display",			NULL,			NULL,			0,			True,		OPAQU,	False,	True, 1 },
+	{   "Display",			NULL,			NULL,			1 << 0,		True,		OPAQU,	True,	True, 1 },
 	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	True, -1},
-	{"jetbrains-android-studio", NULL,		NULL,			1 << 4,		False,		TRANS,	False,	False, -1},
-	{"emulator64-arm",		NULL,			NULL,			1 << 6,		True,		OPAQU,	False,	True,-1 },
+	{"jetbrains-android-studio", NULL,		NULL,			1 << 7,		False,		TRANS,	False,	False, -1},
+	{"emulator64-arm",		NULL,			NULL,			1 << 5,		True,		OPAQU,	False,	True,-1 },
 };
 
 static const int layoutaxis[] = {
@@ -148,7 +148,8 @@ static Key keys[] = {
 	{ ControlMask,                  XK_dollar,   sendbracketright,{0} },
 	{ ControlMask,                  XK_asterisk, sendbackslash,   {0} },
 	{ ControlMask,           XK_dead_circumflex, sendbracketleft, {0} },
-	{ MODKEY,                       XK_o,      togglemonocle,  {0} },
+	{ MODKEY,                       XK_o,      jumpviewstackout,  {0} },
+	{ MODKEY,                       XK_i,      jumpviewstackin,   {0} },
 	{ MODKEY,                       XK_Menu,   focuslast,      {0} },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
@@ -199,7 +200,6 @@ static Key keys[] = {
 	TAGKEYS(                        XK_underscore,             7)
 	TAGKEYS(                        XK_ccedilla,               8)
 	WORKSPACE(                      XK_a,                      1 << 1 | 1 << 5)
-	WORKSPACE(                      XK_i,                      1 << 1 | 1 << 8)
 	WORKSPACE(                      XK_w,                      1 << 0 | 1 << 3)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 	{ MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
@@ -222,6 +222,8 @@ static Key keys[] = {
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
+	{ ClkTagBar,            0,              Button4,        jumpviewstackin,{0} },
+	{ ClkTagBar,            0,              Button5,        jumpviewstackout,{0} },
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },

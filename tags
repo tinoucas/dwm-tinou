@@ -63,9 +63,9 @@ NetWMState	dwm.c	/^enum { NetSupported, NetWMName, NetWMState,$/;"	e	enum:__anon
 NetWMWindowType	dwm.c	/^       NetWMFullscreen, NetActiveWindow, NetWMWindowType,$/;"	e	enum:__anon3	file:
 NetWMWindowTypeDialog	dwm.c	/^       NetWMWindowTypeDialog, NetClientList, NetLast };     \/* EWMH atoms *\/$/;"	e	enum:__anon3	file:
 NumTags	dwm.c	/^struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };$/;"	s	file:
-OPACITY	dwm.c	945;"	d	file:
+OPACITY	dwm.c	949;"	d	file:
 OPAQU	config.h	24;"	d
-OPAQUE	dwm.c	944;"	d	file:
+OPAQUE	dwm.c	948;"	d	file:
 PREFIX	config.mk	/^PREFIX = \/usr$/;"	m
 Rule	dwm.c	/^} Rule;$/;"	t	typeref:struct:__anon12	file:
 SHCMD	config.def.h	52;"	d
@@ -78,6 +78,8 @@ TEXTW	dwm.c	57;"	d	file:
 TILE	config.h	/^	TILE = 0,$/;"	e	enum:layout
 TRANS	config.h	23;"	d
 VERSION	config.mk	/^VERSION = 6.0$/;"	m
+ViewStack	tinou.c	/^} ViewStack;$/;"	t	typeref:struct:ViewStack_s	file:
+ViewStack_s	tinou.c	/^typedef struct ViewStack_s {$/;"	s	file:
 WIDTH	dwm.c	54;"	d	file:
 WMDelete	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
 WMLast	dwm.c	/^enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 \/* default atoms *\/$/;"	e	enum:__anon4	file:
@@ -190,6 +192,8 @@ isfullscreen	dwm.c	/^	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, 
 istransparent	dwm.c	/^	double istransparent;$/;"	m	struct:__anon12	file:
 isuniquegeom	dwm.c	/^isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {$/;"	f	file:
 isurgent	dwm.c	/^	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, nofocus, isfullscreen;$/;"	m	struct:Client	file:
+jumpviewstackin	tinou.c	/^jumpviewstackin (const Arg *arg) {$/;"	f	file:
+jumpviewstackout	tinou.c	/^jumpviewstackout (const Arg *arg) {$/;"	f	file:
 keypress	dwm.c	/^keypress(XEvent *e) {$/;"	f
 keys	config.def.h	/^static Key keys[] = {$/;"	v
 keys	config.h	/^static Key keys[] = {$/;"	v
@@ -241,6 +245,7 @@ netatom	dwm.c	/^static Atom wmatom[WMLast], netatom[NetLast];$/;"	v	file:
 neverfocus	dwm.c	/^	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, nofocus, isfullscreen;$/;"	m	struct:Client	file:
 next	dwm.c	/^	Client *next;$/;"	m	struct:Client	file:
 next	dwm.c	/^	Monitor *next;$/;"	m	struct:Monitor	file:
+next	tinou.c	/^	struct ViewStack_s* next;$/;"	m	struct:ViewStack_s	typeref:struct:ViewStack_s::ViewStack_s	file:
 nexttiled	dwm.c	/^nexttiled(Client *c) {$/;"	f
 nofocus	dwm.c	/^	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, nofocus, isfullscreen;$/;"	m	struct:Client	file:
 nofocus	dwm.c	/^	Bool nofocus;$/;"	m	struct:__anon12	file:
@@ -262,6 +267,7 @@ oldy	dwm.c	/^	int oldx, oldy, oldw, oldh;$/;"	m	struct:Client	file:
 opacity	dwm.c	/^	double opacity;$/;"	m	struct:Client	file:
 opacitychange	tinou.c	/^opacitychange(const Arg *arg) {$/;"	f	file:
 pop	dwm.c	/^pop(Client *c) {$/;"	f
+previous	tinou.c	/^	struct ViewStack_s* previous;$/;"	m	struct:ViewStack_s	typeref:struct:ViewStack_s::ViewStack_s	file:
 prevtag	dwm.c	/^	int prevtag;$/;"	m	struct:Monitor	file:
 prevtiled	push.c	/^prevtiled(Client *c) {$/;"	f	file:
 propertynotify	dwm.c	/^propertynotify(XEvent *e) {$/;"	f
@@ -345,7 +351,6 @@ tile	flextile.h	/^tile(Monitor *m) {$/;"	f
 title	dwm.c	/^	const char *title;$/;"	m	struct:__anon12	file:
 togglebar	dwm.c	/^togglebar(const Arg *arg) {$/;"	f
 togglefloating	dwm.c	/^togglefloating(const Arg *arg) {$/;"	f
-togglemonocle	tinou.c	/^togglemonocle(const Arg *arg) {$/;"	f	file:
 toggletag	dwm.c	/^toggletag(const Arg *arg) {$/;"	f
 toggleview	dwm.c	/^toggleview(const Arg *arg) {$/;"	f
 toggleviews	tinou.c	/^toggleviews(const Arg *arg) {$/;"	f	file:
@@ -369,7 +374,13 @@ updatewindowtype	dwm.c	/^updatewindowtype(Client *c) {$/;"	f
 updatewmhints	dwm.c	/^updatewmhints(Client *c) {$/;"	f
 v	dwm.c	/^	const void *v;$/;"	m	union:__anon6	file:
 view	dwm.c	/^view(const Arg *arg) {$/;"	f
+view	tinou.c	/^	int view;$/;"	m	struct:ViewStack_s	file:
 viewscroll	tinou.c	/^viewscroll(const Arg *arg) {$/;"	f	file:
+viewstack	tinou.c	/^static ViewStack* viewstack = 0;$/;"	v	file:
+viewstackadd	tinou.c	/^viewstackadd (int i) {$/;"	f	file:
+viewstackbase	tinou.c	/^static ViewStack* viewstackbase = 0;$/;"	v	file:
+viewstackcount	tinou.c	/^static int viewstackcount = 0;$/;"	v	file:
+viewstacksize	tinou.c	/^static int viewstacksize = 1024;$/;"	v	file:
 w	dwm.c	/^	int x, y, w, h;$/;"	m	struct:Client	file:
 w	dwm.c	/^	int x, y, w, h;$/;"	m	struct:__anon8	file:
 wh	dwm.c	/^	int wx, wy, ww, wh;   \/* window area  *\/$/;"	m	struct:Monitor	file:
