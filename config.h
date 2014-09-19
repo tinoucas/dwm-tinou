@@ -14,6 +14,10 @@ static const char selbgcolor[]      = "#005577";
 static const char selfgcolor[]      = "#eeeeee";
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
+static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
+static const unsigned int systrayspacing = 2;   /* systray spacing */
+static const Bool systraypinningfailfirst = True;   /* True: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
+static const Bool showsystray       = True;     /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;    /* False means bottom bar */
 
@@ -40,6 +44,7 @@ static const Rule rules[] = {
 	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True,-1 },
 	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
+	{	"Google-chrome-stable",	"Google-chrome-stable",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"chrome_app_list",NULL,			0,			True,		OPAQU,	False,  True,-1 },
 	{	"Chromium",			"crx_nckgahadagoaajjgafhacjanaoiihapd",NULL,1 << 1,False,TRANS,	False,  True,-1 },
 	{	"Chromium",			"Chromium",		NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
