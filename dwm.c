@@ -322,6 +322,7 @@ applyrules(Client *c) {
 	const Rule *r;
 	Monitor *m;
 	XClassHint ch = { 0 };
+	Bool found = False;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
@@ -352,8 +353,25 @@ applyrules(Client *c) {
 	}
 	else
 	{
-		c->tags = 1 << 7;
-		c->opacity = 0.75;
+		for(i = 0; i < LENGTH(rules); i++) {
+			r = &rules[i];
+			if(r->title && strstr(c->name, r->title))
+			{
+				c->isfloating = r->isfloating;
+				c->nofocus = r->nofocus;
+				c->tags |= r->tags;
+				c->opacity = r->istransparent;
+				c->rh = r->rh;
+				for(m = mons; m && m->num != r->monitor; m = m->next);
+				if(m)
+					c->mon = m;
+				found = True;
+			}
+		}
+		if(!found) {
+			c->tags = 1 << 7;
+			c->opacity = 0.75;
+		}
 	}
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
 	if (c->mon && !startup)

@@ -33,14 +33,17 @@ static const Rule rules[] = {
 	{	"URxvt",			NULL,			NULL,			0,			False,		TRANS,	False,  True,-1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False,  True,-1 },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  False, 0 },
+	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		OPAQU,	False,  False,0 },
 	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"Download",		NULL,			1 << 7,		False,		OPAQU,	False,  True, 0 },
 	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True,-1 },
 	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
-	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
+	{	NULL,				"chrome_app_list",NULL,			0,			True,		OPAQU,	False,  True,-1 },
+	{	"Chromium",			"crx_nckgahadagoaajjgafhacjanaoiihapd",NULL,1 << 1,False,TRANS,	False,  True,-1 },
+	{	"Chromium",			"Chromium",		NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
+	{	NULL,				NULL,			"aura_root_0",	1 << 7,		False,		OPAQU,	False,	False, 0 }, /* chromiumos-ui */
 	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"sonata",		NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"ario",			NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
@@ -51,6 +54,7 @@ static const Rule rules[] = {
 	{	NULL,				"savebox",		NULL,			0,			True,		TRANS,	False,  True,-1 },
 	{	"Xfe",				NULL,			NULL,			1 << 2,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"ROX-Filer",	NULL,			1 << 2,		False,		TRANS,	False,  True,-1 },
+	{	NULL,				"thunar",		NULL,			1 << 2,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				NULL,			"Rename",		0,			True,		TRANS,	False,  True,-1 },
 	{	NULL,				NULL,			"Delete",		0,			True,		TRANS,	False,  True,-1 },
 	{	NULL,				NULL,			"Copy",			0,			True,		TRANS,	False,  True,-1 },
@@ -63,6 +67,7 @@ static const Rule rules[] = {
 	{	NULL,				NULL,			"Monter",		0,			True,		TRANS,	False,  True,-1 },
 	{	"Audacious",		NULL,			NULL,			1 << 5,		False,		TRANS,	False,  True,-1 },
 	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		OPAQU,	False,  True,-1 },
+	{	"mpv",				NULL,			NULL,			1 << 6,		True,		OPAQU,	False,  True,-1 },
 	{	"Vlc",				NULL,			NULL,			0,			False,		OPAQU,	False,  True,-1 },
 	{	"Gcalctool",		NULL,			NULL,			0,			True,		OPAQU,	False,  True,-1 },
 	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		OPAQU,	False,  True,-1 },
@@ -80,8 +85,8 @@ static const Rule rules[] = {
 	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		TRANS,	False,  True, 1 },
 	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,   True, 1 },
 	{   "Display",			NULL,			NULL,			1 << 0,		True,		OPAQU,	True,	True, 1 },
-	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	True, -1},
-	{"jetbrains-android-studio", NULL,		NULL,			1 << 7,		False,		TRANS,	False,	False, -1},
+	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	True,-1 },
+	{"jetbrains-android-studio", NULL,		NULL,			1 << 7,		False,		TRANS,	False,	False,-1},
 	{"emulator64-arm",		NULL,			NULL,			1 << 5,		True,		OPAQU,	False,	True,-1 },
 };
 
@@ -152,7 +157,7 @@ static Key keys[] = {
 	{ MODKEY,                       XK_i,      jumpviewstackin,   {0} },
 	{ MODKEY,                       XK_Menu,   focuslast,      {0} },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
-	{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },
+	/*{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },*/
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
@@ -217,11 +222,17 @@ static Key keys[] = {
 #define Button7 (Button1 + 6)
 #define Button8 (Button1 + 7)
 #define Button9 (Button1 + 8)
+#define Button10 (Button1 + 9)
+#define Button11 (Button1 + 10)
 
 /* button definitions */
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
+	//{ ClkClientWin,         0,              Button10,       jumpviewstackin,{0} },
+	//{ ClkClientWin,         0,              Button11,       jumpviewstackout,{0} },
+	{ ClkWinTitle,          0,              Button10,       jumpviewstackin,{0} },
+	{ ClkWinTitle,          0,              Button11,       jumpviewstackout,{0} },
 	{ ClkTagBar,            0,              Button4,        jumpviewstackin,{0} },
 	{ ClkTagBar,            0,              Button5,        jumpviewstackout,{0} },
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
@@ -241,6 +252,7 @@ static Button buttons[] = {
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },
 	{ ClkStatusText,        0,              Button3,        spawn,          SHCMD("/home/tinou/bin/toggle /var/lock/tinou/isnet && pkill dwm_sleep") },
 	{ ClkStatusText,        0,              Button1,        toggleviews,    {.ui = (1 << 5 | 1 << 6)} },
+	//{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("google-chrome-unstable --show-app-list") },
 	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
 	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
 	{ ClkStatusText,        0,              Button2,        spawn,           SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
@@ -257,5 +269,7 @@ static Button buttons[] = {
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 	{ ClkClientWin,         0,              Button9,        sendkey,        {.ui = XK_k } },
 	{ ClkClientWin,         0,              Button8,        sendkey,        {.ui = XK_j } },
+	{ ClkClientWin,         0,              Button10,       sendkey,        {.ui = XK_w } },
+	{ ClkClientWin,         0,              Button11,       sendkey,        {.ui = XK_e } },
 };
 

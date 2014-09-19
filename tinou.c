@@ -15,7 +15,7 @@ viewstackadd (int i) {
 	ViewStack* oldbase = viewstackbase;
 
 	/* Avoid consecutive duplicates */
-	if (viewstack && (viewstack->next && viewstack->next->view == i
+	if (viewstack && ((viewstack->next && viewstack->next->view) == i
 				|| viewstack->view == i))
 		return;
 	newtip = (ViewStack*)malloc(sizeof(ViewStack));
@@ -34,13 +34,11 @@ viewstackadd (int i) {
 	if (viewstackcount < viewstacksize)
 		++viewstackcount;
 	else {
-		if (oldbase) {
-			if (oldbase == viewstack->previous)
-				viewstack->previous = 0;
-			viewstackbase = viewstackbase->next;
-			viewstackbase->previous = 0;
-			free(oldbase);
-		}
+		if (oldbase == viewstack->previous)
+			viewstack->previous = 0;
+		viewstackbase = viewstackbase->next;
+		viewstackbase->previous = 0;
+		free(oldbase);
 	}
 }
 
