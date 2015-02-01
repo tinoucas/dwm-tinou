@@ -34,6 +34,7 @@ static const Rule rules[] = {
 	 */
 	/* class				instance		title			tags mask	isfloating	transp	nofocus rh	monitor */
 	{	NULL,				NULL,			NULL,			0,			False,		OPAQU,	False,  True,-1 },
+	{	"veromix",			NULL,			NULL,			0,			True,		TRANS,	False,	True,-1 },
 	{	"URxvt",			NULL,			NULL,			0,			False,		TRANS,	False,  True,-1 },
 	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False,  True,-1 },
 	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False,  True,-1 },
@@ -45,6 +46,7 @@ static const Rule rules[] = {
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,  True,-1 },
 	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
 	{	"Google-chrome-stable",	"Google-chrome-stable",NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
+	{   "Google-chrome-stable", "crx_knipolnnllmklapflnccelgolnpehhpl", NULL, 1 << 8, True, OPAQU, False, True, -1},
 	{	NULL,				"chrome_app_list",NULL,			0,			True,		OPAQU,	False,  True,-1 },
 	{	"Chromium",			"crx_nckgahadagoaajjgafhacjanaoiihapd",NULL,1 << 1,False,TRANS,	False,  True,-1 },
 	{	"Chromium",			"Chromium",		NULL,			1 << 8,		False,		OPAQU,	False,  True, 0 },
