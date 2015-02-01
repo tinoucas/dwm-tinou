@@ -738,7 +738,9 @@ clientmessage(XEvent *e) {
 			c->mon->seltags ^= 1;
 			c->mon->tagset[c->mon->seltags] = c->tags;
 		}
+#if 0
 		pop(c);
+#endif
 	}
 }
 
@@ -1562,10 +1564,10 @@ movemouse(const Arg *arg) {
 					else if(abs((selmon->wy + selmon->wh) - (ny + c->h + 2 * c->bw)) < snap)
 						ny = selmon->wy + selmon->wh;
 				}
-				resize(c, nx, ny, c->w, c->h, False);
+				resizefast(c, nx, ny, c->w, c->h);
 			}
 			if(!selmon->lt[selmon->sellt]->arrange || c->isfloating)
-				resize(c, nx, ny, c->w, c->h, True);
+				resizefast(c, nx, ny, c->w, c->h);
 			break;
 		}
 	} while(ev.type != ButtonRelease);
