@@ -44,7 +44,9 @@ static void sendbracketleft(const Arg *arg)
 	sendKey(XKeysymToKeycode(dpy, XK_bracketleft), ControlMask|Mod5Mask);
 }
 
+#if 0
 static void sendkey(const Arg *arg)
 {
 	sendKey(XKeysymToKeycode(dpy, arg->ui), 0);
 }
+#endif

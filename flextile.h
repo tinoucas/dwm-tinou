@@ -81,6 +81,7 @@ tile(Monitor *m) {
 	int x2 = m->wx, y2 = m->wy, h2 = m->wh, w2 = m->ww, X2 = x2 + w2, Y2 = y2 + h2;
 	unsigned int i, n, n1, n2;
 	Client *c;
+	int h, w;
 
 	for(n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), n++);
 	if(m->msplit > n)
@@ -149,9 +150,9 @@ tile(Monitor *m) {
 		n1 = (m->ltaxis[2] != 1 || w2 / (n - m->msplit) < bh) ? 1 : n - m->msplit;
 		n2 = (m->ltaxis[2] != 2 || h2 / (n - m->msplit) < bh) ? 1 : n - m->msplit;
 		for(i = 0; c; c = nexttiled(c->next), i++) {
-			resize(c, x2, y2, 
-				(m->ltaxis[2] == 1 && i + 1 == n - m->msplit) ? X2 - x2 - 2 * c->bw : w2 / n1 - 2 * c->bw, 
-				(m->ltaxis[2] == 2 && i + 1 == n - m->msplit) ? Y2 - y2 - 2 * c->bw : h2 / n2 - 2 * c->bw, False);
+			w = (m->ltaxis[2] == 1 && i + 1 == n - m->msplit) ? X2 - x2 - 2 * c->bw : w2 / n1 - 2 * c->bw;
+			h = (m->ltaxis[2] == 2 && i + 1 == n - m->msplit) ? Y2 - y2 - 2 * c->bw : h2 / n2 - 2 * c->bw;
+			resize(c, x2, y2, w, h, False);
 			if(n1 > 1)
 				x2 = c->x + WIDTH(c);
 			if(n2 > 1)

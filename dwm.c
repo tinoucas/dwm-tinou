@@ -100,6 +100,12 @@ typedef struct {
 	const Arg arg;
 } Button;
 
+typedef struct {
+	unsigned int button;
+	KeySym keysym;
+	int modifier;
+} MouseMap;
+
 typedef struct Monitor Monitor;
 typedef struct Client Client;
 struct Client {
@@ -111,12 +117,13 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, nofocus, isfullscreen;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isfullscreen;
 	Client *snext;
 	Monitor *mon;
 	Window win;
 	double opacity;
 	Bool rh;
+	const MouseMap* custommouse;
 };
 
 typedef struct {
@@ -183,8 +190,10 @@ typedef struct {
 	Bool isfloating;
 	double istransparent;
 	Bool nofocus;
+	Bool noborder;
 	Bool rh;
 	int monitor;
+	const MouseMap* custommouse;
 } Rule;
 
 typedef struct Systray   Systray;
@@ -375,9 +384,11 @@ applyrules(Client *c) {
 			{
 				c->isfloating = r->isfloating;
 				c->nofocus = r->nofocus;
+				c->noborder = r->noborder;
 				c->tags |= r->tags;
 				c->opacity = r->istransparent;
 				c->rh = r->rh;
+				c->custommouse = r->custommouse;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -396,9 +407,11 @@ applyrules(Client *c) {
 			{
 				c->isfloating = r->isfloating;
 				c->nofocus = r->nofocus;
+				c->noborder = r->noborder;
 				c->tags |= r->tags;
 				c->opacity = r->istransparent;
 				c->rh = r->rh;
+				c->custommouse = r->custommouse;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -441,6 +454,8 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 	Monitor *m = c->mon;
 	int worig = *w;
 	int horig = *h;
+	int n, nc;
+	Client* c1;
 
 	/* set minimum possible */
 	*w = MAX(1, *w);
@@ -501,8 +516,17 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 			*h = MIN(*h, c->maxh);
 		if (!c->isfloating && m->lt[m->sellt]->arrange)
 		{
-			*x += (worig - *w) / 2;
-			*y += (horig - *h) / 2;
+			n = 0;
+			nc = 0;
+			if(m->lt[m->sellt]->arrange == &tile)
+				for(c1 = nexttiled(m->clients); c1; c1 = nexttiled(c1->next), n++) {
+					if(c1 == c)
+						nc = n;
+				}
+			if(n == m->msplit + 1 || nc < m->msplit || m->ltaxis[2] == 2)
+				*x += (worig - *w) / 2;
+			if(n == m->msplit + 1 || nc < m->msplit || m->ltaxis[2] == 1)
+				*y += (horig - *h) / 2;
 		}
 	}
 	return *x != c->x || *y != c->y || *w != c->w || *h != c->h;
@@ -594,6 +618,13 @@ buttonpress(XEvent *e) {
 		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+	if (!selmon || !selmon->sel || !selmon->sel->win)
+		return ;
+	c = selmon->sel;
+	if (c->custommouse != NULL)
+		for(i = 0; c->custommouse[i].button; i++)
+			if(click == ClkClientWin && c->custommouse[i].button == ev->button)
+				sendKey(XKeysymToKeycode(dpy, c->custommouse[i].keysym), c->custommouse[i].modifier);
 }
 
 void
@@ -662,10 +693,9 @@ cleartags(Monitor *m){
 	for(c = m->clients; c; c = c->next)
 		if (ISVISIBLE(c) && !c->nofocus)
 			newtags |= c->tags;
-	if (newtags && newtags != m->tagset[m->seltags])
-	{
-		m->tagset[m->seltags] = newtags;
-		viewstackadd(m->tagset[m->seltags]);
+	if(newtags && newtags != m->tagset[m->seltags]) {
+		const Arg arg = {.ui = newtags};
+		view(&arg);
 	}
 }
 
@@ -713,7 +743,9 @@ clientmessage(XEvent *e) {
 			XReparentWindow(dpy, c->win, systray->win, 0, 0);
 			/* use parents background color */
 			swa.background_pixel  = dc.norm[ColBG];
-			XChangeWindowAttributes(dpy, c->win, CWBackPixel, &swa);
+			swa.border_pixel  = dc.norm[ColBG];
+			swa.background_pixmap = ParentRelative;
+			XChangeWindowAttributes(dpy, c->win, CWBackPixel|CWBorderPixel|CWBackPixmap, &swa);
 			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_EMBEDDED_NOTIFY, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
 			/* FIXME not sure if I have to send these events, too */
 			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_FOCUS_IN, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
@@ -740,6 +772,9 @@ clientmessage(XEvent *e) {
 		}
 #if 0
 		pop(c);
+#else
+		focus(c);
+		arrange(c->mon);
 #endif
 	}
 }
@@ -764,6 +799,7 @@ configure(Client *c) {
 
 void
 configurenotify(XEvent *e) {
+	Client *c;
 	Monitor *m;
 	XConfigureEvent *ev = &e->xconfigure;
 
@@ -774,8 +810,12 @@ configurenotify(XEvent *e) {
 			XFreePixmap(dpy, dc.drawable);
 		dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
 		updatebars();
-		for(m = mons; m; m = m->next)
+		for(m = mons; m; m = m->next) {
+			for(c = m->clients; c; c = c->next)
+				if(c->isfullscreen)
+					resizeclient(c, m->mx, m->my, m->mw, m->mh);
 			resizebarwin(m);
+		}
 		focus(NULL);
 		arrange(NULL);
 	}
@@ -1291,6 +1331,13 @@ grabbuttons(Client *c, Bool focused) {
 									buttons[i].mask | modifiers[j],
 									c->win, False, BUTTONMASK,
 									GrabModeAsync, GrabModeSync, None, None);
+			if (c->custommouse)
+				for(i = 0; c->custommouse[i].button; i++)
+					for(j = 0; j < LENGTH(modifiers); j++)
+						XGrabButton(dpy, c->custommouse[i].button,
+								modifiers[j],
+								c->win, False, BUTTONMASK,
+								GrabModeAsync, GrabModeSync, None, None);
 		}
 		else
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
@@ -1424,7 +1471,7 @@ manage(Window w, XWindowAttributes *wa) {
 	/* only fix client y-offset, if the client center might cover the bar */
 	c->y = MAX(c->y, ((c->mon->by == c->mon->my) && (c->x + (c->w / 2) >= c->mon->wx)
 				&& (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bh : c->mon->my);
-	c->bw = borderpx;
+	c->bw = c->noborder ? 0 : borderpx;
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(dpy, w, dc.norm[ColBorder]);
@@ -1451,6 +1498,8 @@ manage(Window w, XWindowAttributes *wa) {
 	arrange(c->mon);
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus))
 		client_opacity_set(c, c->opacity);
+	if (c->nofocus)
+		unmanage(c, False);
 }
 
 void
@@ -2320,6 +2369,7 @@ updatebars(void) {
 	XSetWindowAttributes wa = {
 		.override_redirect = True,
 		.background_pixmap = ParentRelative,
+		.background_pixel = dc.norm[ColBG],
 		.event_mask = ButtonPressMask|ExposureMask
 	};
 
@@ -2331,7 +2381,7 @@ updatebars(void) {
 			w -= getsystraywidth();
 		m->barwin = XCreateWindow(dpy, root, m->wx, m->by, w, bh, 0, DefaultDepth(dpy, screen),
 								  CopyFromParent, DefaultVisual(dpy, screen),
-								  CWOverrideRedirect|CWBackPixmap|CWEventMask, &wa);
+								  CWOverrideRedirect|CWBackPixmap|CWBackPixel|CWEventMask, &wa);
 		XDefineCursor(dpy, m->barwin, cursor[CurNormal]);
 		if(showsystray && m == systraytomon(m))
 			XMapRaised(dpy, systray->win);
@@ -2585,10 +2635,11 @@ updatesystray(void) {
 		wa.event_mask        = ButtonPressMask | ExposureMask;
 		wa.override_redirect = True;
 		wa.background_pixel  = dc.norm[ColBG];
+		wa.border_pixel  = dc.norm[ColBG];
 		XSelectInput(dpy, systray->win, SubstructureNotifyMask);
 		XChangeProperty(dpy, systray->win, netatom[NetSystemTrayOrientation], XA_CARDINAL, 32,
 				PropModeReplace, (unsigned char *)&systrayorientation, 1);
-		XChangeWindowAttributes(dpy, systray->win, CWEventMask|CWOverrideRedirect|CWBackPixel, &wa);
+		XChangeWindowAttributes(dpy, systray->win, CWEventMask|CWOverrideRedirect|CWBackPixel|CWBorderPixel, &wa);
 		XMapRaised(dpy, systray->win);
 		window_opacity_set(systray->win, barOpacity);
 		XSetSelectionOwner(dpy, netatom[NetSystemTray], systray->win, CurrentTime);
@@ -2606,7 +2657,9 @@ updatesystray(void) {
 	for(w = 0, i = systray->icons; i; i = i->next) {
 		/* make sure the background color stays the same */
 		wa.background_pixel  = dc.norm[ColBG];
-		XChangeWindowAttributes(dpy, i->win, CWBackPixel, &wa);
+		wa.border_pixel  = dc.norm[ColBG];
+		wa.background_pixmap = ParentRelative;
+		XChangeWindowAttributes(dpy, i->win, CWBackPixel|CWBorderPixel|CWBackPixmap, &wa);
 		XMapRaised(dpy, i->win);
 		w += systrayspacing;
 		i->x = w;
