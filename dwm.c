@@ -151,6 +151,7 @@ typedef struct {
 typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
+	int borderpx;
 } Layout;
 
 struct Monitor {
@@ -263,7 +264,6 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
-static void resize_nogap(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizefast(Client *c, int x, int y, int w, int h);
@@ -296,6 +296,7 @@ static void toggleview(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
+static Bool updateborderwidth(Monitor *m, int* nc);
 static void updategeom(void);
 static void updatebarpos(Monitor *m);
 static void updatebars(void);
@@ -1463,6 +1464,8 @@ manage(Window w, XWindowAttributes *wa) {
 	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
+	int nc = 0;
+	int bpx = 0;
 
 	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
@@ -1490,7 +1493,12 @@ manage(Window w, XWindowAttributes *wa) {
 	/* only fix client y-offset, if the client center might cover the bar */
 	c->y = MAX(c->y, ((c->mon->by == c->mon->my) && (c->x + (c->w / 2) >= c->mon->wx)
 				&& (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bh : c->mon->my);
-	c->bw = c->noborder ? 0 : borderpx;
+	for(Client* cother = c->mon->clients; cother; cother = cother->next)
+		if (ISVISIBLE(cother) && !cother->nofocus)
+			++nc;
+	if (nc > 0)
+		bpx = c->mon->lt[c->mon->sellt]->borderpx;
+	c->bw = c->noborder ? 0 : bpx;
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(dpy, w, dc.norm[ColBorder]);
@@ -1560,7 +1568,7 @@ monocle(Monitor *m) {
 	if(n > 0) /* override layout symbol */
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n - 1);
 	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		resize_nogap(c, m->wx - borderpx, m->wy - borderpx, m->ww, m->wh, False);
+		resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, False);
 }
 
 void
@@ -1742,43 +1750,11 @@ removesystrayicon(Client *i) {
 	free(i);
 }
 
-
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	int halfgap = windowgap / 2;
-
-	int nc = 0;
-	Client* cother;
-	Client* first = NULL;
-	Bool changed = False;
-	for(cother = c->mon->clients; cother; cother = cother->next)
-		if (ISVISIBLE(cother) && !cother->nofocus)
-		{
-			if (first == NULL)
-			{
-				first = cother;
-				if (first->bw != 0)
-				{
-					changed = True;
-					first->bw = 0;
-				}
-			}
-			else
-			{
-				if (!first->noborder)
-				{
-					if (changed)
-						changed = False;
-					first->bw = borderpx;
-				}
-				if (!cother->noborder && cother->bw != borderpx)
-				{
-					cother->bw = borderpx;
-					changed = True;
-				}
-			}
-			++nc;
-		}
+	int nc;
+	Bool changed = updateborderwidth(c->mon, &nc);
 	if(nc > 1)
 	{
 		x += halfgap;
@@ -1789,13 +1765,8 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	if (changed)
 		arrange(c->mon);
 	else
-		resize_nogap(c, x, y, w, h, interact);
-}
-
-void
-resize_nogap(Client *c, int x, int y, int w, int h, Bool interact) {
-	if(applysizehints(c, &x, &y, &w, &h, interact))
-		resizeclient(c, x, y, w, h);
+		if(applysizehints(c, &x, &y, &w, &h, interact))
+			resizeclient(c, x, y, w, h);
 }
 
 void
@@ -2427,6 +2398,43 @@ unmapnotify(XEvent *e) {
 		resizebarwin(selmon);
 		updatesystray();
 	}
+}
+
+Bool
+updateborderwidth(Monitor* m, int* nc) {
+	Client* c;
+	Client* first = NULL;
+	Bool changed = False;
+	for(c = m->clients; c; c = c->next)
+		if (ISVISIBLE(c) && !c->nofocus)
+		{
+			if (first == NULL)
+			{
+				first = c;
+				if (first->bw != 0)
+				{
+					changed = True;
+					first->bw = 0;
+				}
+			}
+			else
+			{
+				if (!first->noborder)
+				{
+					if (changed)
+						changed = False;
+					first->bw = m->lt[m->sellt]->borderpx;
+				}
+				if (!c->noborder && c->bw != m->lt[m->sellt]->borderpx)
+				{
+					c->bw = m->lt[m->sellt]->borderpx;
+					changed = True;
+				}
+			}
+			++(*nc);
+			configure(c);
+		}
+	return changed;
 }
 
 void
