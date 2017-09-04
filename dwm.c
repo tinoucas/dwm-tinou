@@ -194,6 +194,7 @@ typedef struct {
 	Bool rh;
 	int monitor;
 	const MouseMap* custommouse;
+	const Layout* preflayout;
 } Rule;
 
 typedef struct Systray   Systray;
@@ -262,6 +263,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
+static void resize_nogap(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizefast(Client *c, int x, int y, int w, int h);
@@ -366,6 +368,7 @@ applyrules(Client *c) {
 	const char *class, *instance;
 	unsigned int i;
 	const Rule *r;
+	const Rule *lastr = NULL;
 	Monitor *m;
 	XClassHint ch = { 0 };
 	Bool found = False;
@@ -392,6 +395,7 @@ applyrules(Client *c) {
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
+				lastr = r;
 			}
 		}
 		if(ch.res_class)
@@ -416,6 +420,7 @@ applyrules(Client *c) {
 				if(m)
 					c->mon = m;
 				found = True;
+				lastr = r;
 			}
 		}
 		if(!found) {
@@ -428,6 +433,7 @@ applyrules(Client *c) {
 	{
 		Bool alone = True;
 		Client *cother;
+		unsigned int nc;
 
 		for(cother = c->mon->clients; alone && cother; cother = cother->next) {
 			if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
@@ -439,6 +445,14 @@ applyrules(Client *c) {
 		{
 			c->mon->tagset[c->mon->seltags] = c->mon->tagset[c->mon->seltags] | (c->tags);
 			arrange(c->mon);
+
+		}
+		if(lastr != NULL && lastr->preflayout != NULL && (c->tags & c->mon->tagset[c->mon->seltags])) {
+			for(nc = 0, cother = c->mon->clients; cother; cother = cother->next)
+				if (ISVISIBLE(cother) && !cother->nofocus)
+					++nc;
+			if(nc == 0)
+				selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = lastr->preflayout;
 		}
 		else if (!c->nofocus)
 		{
@@ -689,14 +703,19 @@ void
 cleartags(Monitor *m){
 	Client *c;
 	unsigned int newtags = 0;
+	unsigned int nc = 0;
 
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c) && !c->nofocus)
+		if(ISVISIBLE(c) && !c->nofocus) {
 			newtags |= c->tags;
+			++nc;
+		}
 	if(newtags && newtags != m->tagset[m->seltags]) {
 		const Arg arg = {.ui = newtags};
 		view(&arg);
 	}
+	if (nc == 0)
+		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = &layouts[initlayout];
 }
 
 void
@@ -1539,9 +1558,9 @@ monocle(Monitor *m) {
 		if(ISVISIBLE(c) && !c->nofocus)
 			n++;
 	if(n > 0) /* override layout symbol */
-		snprintf(m->ltsymbol, sizeof m->ltsymbol, ">%d<", n);
+		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n - 1);
 	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		resize(c, m->wx - 1, m->wy - 1, m->ww, m->wh, False);
+		resize_nogap(c, m->wx - borderpx, m->wy - borderpx, m->ww, m->wh, False);
 }
 
 void
@@ -1726,6 +1745,55 @@ removesystrayicon(Client *i) {
 
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
+	int halfgap = windowgap / 2;
+
+	int nc = 0;
+	Client* cother;
+	Client* first = NULL;
+	Bool changed = False;
+	for(cother = c->mon->clients; cother; cother = cother->next)
+		if (ISVISIBLE(cother) && !cother->nofocus)
+		{
+			if (first == NULL)
+			{
+				first = cother;
+				if (first->bw != 0)
+				{
+					changed = True;
+					first->bw = 0;
+				}
+			}
+			else
+			{
+				if (!first->noborder)
+				{
+					if (changed)
+						changed = False;
+					first->bw = borderpx;
+				}
+				if (!cother->noborder && cother->bw != borderpx)
+				{
+					cother->bw = borderpx;
+					changed = True;
+				}
+			}
+			++nc;
+		}
+	if(nc > 1)
+	{
+		x += halfgap;
+		y += halfgap;
+		w -= windowgap;
+		h -= windowgap;
+	}
+	if (changed)
+		arrange(c->mon);
+	else
+		resize_nogap(c, x, y, w, h, interact);
+}
+
+void
+resize_nogap(Client *c, int x, int y, int w, int h, Bool interact) {
 	if(applysizehints(c, &x, &y, &w, &h, interact))
 		resizeclient(c, x, y, w, h);
 }
