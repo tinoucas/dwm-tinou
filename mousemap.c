@@ -1,11 +1,17 @@
 static const MouseMap mpv[] = {
 	/*{ Button1,  XK_space, 0 },*/
-	/*{ Button2,  XK_q,     0 },*/
+	{ Button2,  XK_q,     0 },
 	/*{ Button3,  XK_f,     0 },*/
 	{ Button11,  XK_e,     0 },
 	{ Button10,  XK_w,     0 },
 	{ Button9, XK_A,     ShiftMask },
 	{ 0 }
+};
+
+static const MouseMap sView[] = {
+	{ Button2,  XK_Escape, 0 },
+	{ Button4,  XK_Left,   0 },
+	{ Button5,  XK_Right,  0 },
 };
 
 static const MouseMap chrome[] = {

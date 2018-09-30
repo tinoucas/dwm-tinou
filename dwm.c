@@ -21,6 +21,7 @@
  * To understand everything else, start reading main().
  */
 #include <errno.h>
+#include <fcntl.h>
 #include <locale.h>
 #include <stdarg.h>
 #include <signal.h>
@@ -33,10 +34,14 @@
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
+#include <X11/XKBlib.h>
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
-#include <X11/XKBlib.h>
+#include <X11/Xft/Xft.h>
+#include <pango/pango.h>
+#include <pango/pangoxft.h>
+#include <pango/pango-font.h>
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif /* XINERAMA */
@@ -48,8 +53,12 @@
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
 #define ISVISIBLE(C)			((C->tags & C->mon->tagset[C->mon->seltags]))
 #define LENGTH(X)				(sizeof X / sizeof X[0])
+#ifndef MAX
 #define MAX(A, B)				((A) > (B) ? (A) : (B))
+#endif
+#ifndef MIN
 #define MIN(A, B)				((A) < (B) ? (A) : (B))
+#endif
 #define MOUSEMASK				(BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)				((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)				((X)->h + 2 * (X)->bw)
@@ -132,12 +141,19 @@ typedef struct {
 	unsigned long sel[ColLast];
 	Drawable drawable;
 	GC gc;
+
+	XftColor  xftnorm[ColLast];
+	XftColor  xftsel[ColLast];
+	XftDraw  *xftdrawable;
+
+	PangoContext *pgc;
+	PangoLayout  *plo;
+	PangoFontDescription *pfd;
+
 	struct {
 		int ascent;
 		int descent;
 		int height;
-		XFontSet set;
-		XFontStruct *xfont;
 	} font;
 } DC; /* draw context */
 
@@ -181,6 +197,7 @@ struct Monitor {
 	unsigned int msplits[10];
 	int ltaxis[3];
 	int ltaxes[10][3];
+	Bool hasclock;
 };
 
 typedef struct {
@@ -196,7 +213,21 @@ typedef struct {
 	int monitor;
 	const MouseMap* custommouse;
 	const Layout* preflayout;
+	Bool child;
 } Rule;
+
+typedef struct {
+	const char* process_name;
+	unsigned int tags;
+	Bool isfloating;
+	double istransparent;
+	Bool nofocus;
+	Bool noborder;
+	Bool rh;
+	int monitor;
+	const MouseMap* custommouse;
+	const Layout* preflayout;
+} TransientRule;
 
 typedef struct Systray   Systray;
 struct Systray {
@@ -213,6 +244,7 @@ static void attach(Client *c);
 static void attachabove(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
+static void buttonrelease(XEvent *e);
 static void checkotherwm(void);
 static void cleanup(void);
 static void cleanupmon(Monitor *mon);
@@ -240,7 +272,7 @@ static void focusin(XEvent *e);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
-static unsigned long getcolor(const char *colstr);
+static unsigned long getcolor(const char *colstr, XftColor *color);
 static Client *getclientunderpt(int x, int y);
 static Bool getrootptr(int *x, int *y);
 static long getstate(Window w);
@@ -283,6 +315,7 @@ static void setup(void);
 static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
+static void spawnimpl(const Arg *arg, Bool waitdeath);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
 static void tag(const Arg *arg);
@@ -297,6 +330,7 @@ static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
 static Bool updateborderwidth(Monitor *m, int* nc);
+static void updatecolors(const Arg *arg);
 static void updategeom(void);
 static void updatebarpos(Monitor *m);
 static void updatebars(void);
@@ -332,6 +366,7 @@ static int (*xerrorxlib)(Display *, XErrorEvent *);
 static unsigned int numlockmask = 0;
 static void (*handler[LASTEvent]) (XEvent *) = {
 	[ButtonPress] = buttonpress,
+	[ButtonRelease] = buttonrelease,
 	[ClientMessage] = clientmessage,
 	[ConfigureRequest] = configurerequest,
 	[ConfigureNotify] = configurenotify,
@@ -360,12 +395,52 @@ static Bool startup = True;
 /* configuration, allows nested code to access above variables */
 #include "config.h"
 
+static char ooftraysbl[OOFTRAYLEN];
+
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
+Window getWindowParent (Window winId) {
+	Window wroot, parent, *children = NULL;
+	unsigned int num_children;
+
+	if(XQueryTree(dpy, winId, &wroot, &parent, &children, &num_children)) {
+		if (children)
+			XFree((char *)children);
+	}
+	else {
+		parent = None;
+	}
+
+	return parent;
+}
+
+Bool
+clientmatchesrule (Client *c, const char* class, const char* instance, const Rule *r) {
+	return (!r->title || strstr(c->name, r->title))
+		&& (!r->class || strstr(class, r->class))
+		&& (!r->instance || strstr(instance, r->instance));
+}
+
+void
+applyclientrule (Client *c, const Rule *r) {
+	Monitor *m;
+
+	c->isfloating = r->isfloating;
+	c->nofocus = r->nofocus;
+	c->noborder = r->noborder;
+	c->tags |= r->tags;
+	c->opacity = r->istransparent;
+	c->rh = r->rh;
+	c->custommouse = r->custommouse;
+	for(m = mons; m && m->num != r->monitor; m = m->next);
+	if(m)
+		c->mon = m;
+}
+
 /* function implementations */
 void
-applyrules(Client *c) {
+applyrulesto(Client *refc, Client *c) {
 	const char *class, *instance;
 	unsigned int i;
 	const Rule *r;
@@ -377,28 +452,31 @@ applyrules(Client *c) {
 	/* rule matching */
 	c->isfloating = c->tags = 0;
 	c->rh = True;
-	if(XGetClassHint(dpy, c->win, &ch)) {
+	if(XGetClassHint(dpy, refc->win, &ch)) {
 		class = ch.res_class ? ch.res_class : broken;
 		instance = ch.res_name ? ch.res_name : broken;
 		for(i = 0; i < LENGTH(rules); i++) {
 			r = &rules[i];
-			if((!r->title || strstr(c->name, r->title))
-			&& (!r->class || strstr(class, r->class))
-			&& (!r->instance || strstr(instance, r->instance)))
+			if (clientmatchesrule(refc, class, instance, r) && (!r->child || c != refc))
 			{
-				c->isfloating = r->isfloating;
-				c->nofocus = r->nofocus;
-				c->noborder = r->noborder;
-				c->tags |= r->tags;
-				c->opacity = r->istransparent;
-				c->rh = r->rh;
-				c->custommouse = r->custommouse;
-				for(m = mons; m && m->num != r->monitor; m = m->next);
-				if(m)
-					c->mon = m;
+				applyclientrule(c, r);
 				lastr = r;
+				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s'\n",
+						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
+				found = True;
 			}
 		}
+		if (clientmatchesrule(c, class, instance, &clockrule)) {
+			applyclientrule(c, &clockrule);
+			for(m = mons; m && m->hasclock; m = m->next);
+			if (m) {
+				m->hasclock = True;
+				c->mon = m;
+			}
+		}
+		if (!found)
+			fprintf(stderr, "No rule applied for: name == '%s', class == '%s', instance == '%s'\n",
+					c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
 		if(ch.res_class)
 			XFree(ch.res_class);
 		if(ch.res_name)
@@ -408,7 +486,7 @@ applyrules(Client *c) {
 	{
 		for(i = 0; i < LENGTH(rules); i++) {
 			r = &rules[i];
-			if(r->title && strstr(c->name, r->title))
+			if(r->title && strstr(refc->name, r->title))
 			{
 				c->isfloating = r->isfloating;
 				c->nofocus = r->nofocus;
@@ -422,11 +500,31 @@ applyrules(Client *c) {
 					c->mon = m;
 				found = True;
 				lastr = r;
+				fprintf(stderr, "Applying rule %d ('%s'): name == '%s'\n",
+						i, r->title ? r->title : "NULL", c->name ? c->name : "NULL");
 			}
 		}
 		if(!found) {
-			c->tags = 1 << 7;
-			c->opacity = 0.75;
+			fprintf(stderr, "No rule applied for: name == '%s'\n", c->name ? c->name : "NULL");
+			r = &defaultrule;
+			c->isfloating = r->isfloating;
+			c->nofocus = r->nofocus;
+			c->noborder = r->noborder;
+			c->tags |= r->tags;
+			c->opacity = r->istransparent;
+			c->rh = r->rh;
+			c->custommouse = r->custommouse;
+			for(m = mons; m && m->num != r->monitor; m = m->next);
+			if(m)
+				c->mon = m;
+			if (c == refc) {
+				Window pw = getWindowParent(c->win);
+				Client* pc = wintoclient(pw);
+
+				if (pc && pc->win == pw && pc != refc) {
+					applyrulesto(pc, c);
+				}
+			}
 		}
 	}
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
@@ -442,7 +540,7 @@ applyrules(Client *c) {
 				alone = False;
 			}
 		}
-		if (alone && !c->nofocus)
+		if (alone && !c->nofocus && c->tags != ~0)
 		{
 			c->mon->tagset[c->mon->seltags] = c->mon->tagset[c->mon->seltags] | (c->tags);
 			arrange(c->mon);
@@ -461,6 +559,11 @@ applyrules(Client *c) {
 			drawbar(c->mon);
 		}
 	}
+}
+
+void
+applyrules(Client *c) {
+	applyrulesto(c, c);
 }
 
 Bool
@@ -633,13 +736,23 @@ buttonpress(XEvent *e) {
 		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
-	if (!selmon || !selmon->sel || !selmon->sel->win)
-		return ;
-	c = selmon->sel;
-	if (c->custommouse != NULL)
+}
+
+void
+buttonrelease(XEvent *e) {
+	unsigned int i, click;
+	Client* c;
+	XButtonReleasedEvent *ev = &e->xbutton;
+
+	click = ClkRootWin;
+	if((c = wintoclient(ev->window))) {
+		click = ClkClientWin;
+	}
+	if (selmon && (c = selmon->sel) && c->win && c->custommouse) {
 		for(i = 0; c->custommouse[i].button; i++)
 			if(click == ClkClientWin && c->custommouse[i].button == ev->button)
 				sendKey(XKeysymToKeycode(dpy, c->custommouse[i].keysym), c->custommouse[i].modifier);
+	}
 }
 
 void
@@ -664,10 +777,6 @@ cleanup(void) {
 	for(m = mons; m; m = m->next)
 		while(m->stack)
 			unmanage(m->stack, False);
-	if(dc.font.set)
-		XFreeFontSet(dpy, dc.font.set);
-	else
-		XFreeFont(dpy, dc.font.xfont);
 	XUngrabKey(dpy, AnyKey, AnyModifier, root);
 	XFreePixmap(dpy, dc.drawable);
 	XFreeGC(dpy, dc.gc);
@@ -708,12 +817,13 @@ cleartags(Monitor *m){
 
 	for(c = m->clients; c; c = c->next)
 		if(ISVISIBLE(c) && !c->nofocus) {
-			newtags |= c->tags;
+			if (c->tags != ~0)
+				newtags |= (c->tags & m->tagset[m->seltags]);
 			++nc;
 		}
 	if(newtags && newtags != m->tagset[m->seltags]) {
-		const Arg arg = {.ui = newtags};
-		view(&arg);
+		m->tagset[m->seltags] = newtags;
+		arrange(m);
 	}
 	if (nc == 0)
 		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = &layouts[initlayout];
@@ -740,6 +850,8 @@ clientmessage(XEvent *e) {
 
 	if(showsystray && cme->window == systray->win && cme->message_type == netatom[NetSystemTrayOP]) {
 		/* add systray icons */
+		fprintf(stderr, "Creating systray icon client.\n");
+
 		if(cme->data.l[1] == SYSTEM_TRAY_REQUEST_DOCK) {
 			if(!(c = (Client *)calloc(1, sizeof(Client))))
 				die("fatal: could not malloc() %u bytes\n", sizeof(Client));
@@ -751,13 +863,14 @@ clientmessage(XEvent *e) {
 			c->x = c->oldx = c->y = c->oldy = 0;
 			c->w = c->oldw = wa.width;
 			c->h = c->oldh = wa.height;
+			fprintf(stderr, "new systray icon, size: %dx%d\n", c->w, c->h);
 			c->oldbw = wa.border_width;
 			c->bw = 0;
 			c->isfloating = True;
 			/* reuse tags field as mapped status */
 			c->tags = 1;
 			updatesizehints(c);
-			updatesystrayicongeom(c, wa.width, wa.height);
+			updatesystrayicongeom(c, c->w, c->h);
 			XAddToSaveSet(dpy, c->win);
 			XSelectInput(dpy, c->win, StructureNotifyMask | PropertyChangeMask | ResizeRedirectMask);
 			XReparentWindow(dpy, c->win, systray->win, 0, 0);
@@ -788,7 +901,8 @@ clientmessage(XEvent *e) {
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
 			c->mon->seltags ^= 1;
-			c->mon->tagset[c->mon->seltags] = c->tags;
+			if (c->tags != ~0)
+				c->mon->tagset[c->mon->seltags] = c->tags;
 		}
 #if 0
 		pop(c);
@@ -914,6 +1028,7 @@ createmon(void) {
 	m->ltaxis[1] = layoutaxis[1];
 	m->ltaxis[2] = layoutaxis[2];
 	m->msplit = 1;
+
 	return m;
 }
 
@@ -1007,9 +1122,15 @@ drawbar(Monitor *m) {
 	drawtext(m->ltsymbol, dc.norm, False);
 	dc.x += dc.w;
 	x = dc.x;
-	if(m == selmon) { /* status is only drawn on selected monitor */
+	if(m == selmon || statusallmonitor) { /* status is only drawn on selected monitor */
+		if (m != selmon)
+		{
+			dc.x = m->ww - (int)getsystraywidth();
+			dc.w = (int)getsystraywidth();
+			drawtext(ooftraysbl, dc.norm, False);
+		}
 		dc.w = TEXTW(stext);
-		dc.x = m->ww - dc.w;
+		dc.x = m->ww - dc.w - (m == selmon ? 0 : getsystraywidth());
 		if(dc.x < x) {
 			dc.x = x;
 			dc.w = m->ww - x;
@@ -1078,7 +1199,7 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 		return;
 	olen = strlen(text);
 	h = dc.font.ascent + dc.font.descent;
-	y = dc.y + (dc.h / 2) - (h / 2) + dc.font.ascent;
+	y = dc.y + (dc.h / 2) - (h / 2);
 	x = dc.x + (h / 2);
 	/* shorten text if necessary */
 	for(len = MIN(olen, sizeof buf); len && textnw(text, len) > dc.w - h; len--);
@@ -1087,11 +1208,8 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	memcpy(buf, text, len);
 	if(len < olen)
 		for(i = len; i && i > len - 3; buf[--i] = '.');
-	XSetForeground(dpy, dc.gc, col[invert ? ColBG : ColFG]);
-	if(dc.font.set)
-		XmbDrawString(dpy, dc.drawable, dc.font.set, dc.gc, x, y, buf, len);
-	else
-		XDrawString(dpy, dc.drawable, dc.gc, x, y, buf, len);
+	pango_layout_set_text(dc.plo, text, len);
+	pango_xft_render_layout(dc.xftdrawable, (col==dc.norm?dc.xftnorm:dc.xftsel)+(invert?ColBG:ColFG), dc.plo, x * PANGO_SCALE, y * PANGO_SCALE);
 }
 
 void
@@ -1192,6 +1310,10 @@ focusmon(const Arg *arg) {
 	unfocus(selmon->sel, False);
 	selmon = m;
 	focus(NULL);
+	if (selmon->sel)
+		centerMouseInWindow(selmon->sel);
+	else
+		centerMouseInMonitor(selmon);
 }
 
 void
@@ -1267,13 +1389,13 @@ getatomprop(Client *c, Atom prop) {
 }
 
 unsigned long
-getcolor(const char *colstr) {
+getcolor(const char *colstr, XftColor *color) {
 	Colormap cmap = DefaultColormap(dpy, screen);
-	XColor color;
+	Visual *vis = DefaultVisual(dpy, screen);
 
-	if(!XAllocNamedColor(dpy, cmap, colstr, &color, &color))
+	if(!XftColorAllocName(dpy,vis,cmap,colstr, color))
 		die("error, cannot allocate color '%s'\n", colstr);
-	return color.pixel;
+	return color->pixel;
 }
 
 Bool
@@ -1308,6 +1430,7 @@ getsystraywidth() {
 	Client *i;
 	if(showsystray)
 		for(i = systray->icons; i; w += i->w + systrayspacing, i = i->next) ;
+
 	return w ? w + systrayspacing : 1;
 }
 
@@ -1356,8 +1479,8 @@ grabbuttons(Client *c, Bool focused) {
 					for(j = 0; j < LENGTH(modifiers); j++)
 						XGrabButton(dpy, c->custommouse[i].button,
 								modifiers[j],
-								c->win, False, BUTTONMASK,
-								GrabModeAsync, GrabModeSync, None, None);
+								c->win, True, BUTTONMASK,
+								GrabModeAsync, GrabModeSync, None, CurrentTime);
 		}
 		else
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
@@ -1384,36 +1507,20 @@ grabkeys(void) {
 
 void
 initfont(const char *fontstr) {
-	char *def, **missing;
-	int n;
+	PangoFontMetrics *metrics;
 
-	missing = NULL;
-	dc.font.set = XCreateFontSet(dpy, fontstr, &missing, &n, &def);
-	if(missing) {
-		while(n--)
-			fprintf(stderr, "dwm: missing fontset: %s\n", missing[n]);
-		XFreeStringList(missing);
-	}
-	if(dc.font.set) {
-		XFontStruct **xfonts;
-		char **font_names;
+	dc.pgc = pango_xft_get_context(dpy, screen);
+	dc.pfd = pango_font_description_from_string(fontstr);
 
-		dc.font.ascent = dc.font.descent = 0;
-		XExtentsOfFontSet(dc.font.set);
-		n = XFontsOfFontSet(dc.font.set, &xfonts, &font_names);
-		while (n--) {
-			dc.font.ascent = MAX(dc.font.ascent, (*xfonts)->ascent);
-			dc.font.descent = MAX(dc.font.descent,(*xfonts)->descent);
-			xfonts++;
-		}
-	}
-	else {
-		if(!(dc.font.xfont = XLoadQueryFont(dpy, fontstr))
-		&& !(dc.font.xfont = XLoadQueryFont(dpy, "fixed")))
-			die("error, cannot load font: '%s'\n", fontstr);
-		dc.font.ascent = dc.font.xfont->ascent;
-		dc.font.descent = dc.font.xfont->descent;
-	}
+	metrics = pango_context_get_metrics(dc.pgc, dc.pfd, pango_language_from_string(setlocale(LC_CTYPE, "")));
+	dc.font.ascent = pango_font_metrics_get_ascent(metrics) / PANGO_SCALE;
+	dc.font.descent = pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
+
+	pango_font_metrics_unref(metrics);
+
+	dc.plo = pango_layout_new(dc.pgc);
+	pango_layout_set_font_description(dc.plo, dc.pfd);
+
 	dc.font.height = dc.font.ascent + dc.font.descent;
 }
 
@@ -1467,6 +1574,7 @@ manage(Window w, XWindowAttributes *wa) {
 	int nc = 0;
 	int bpx = 0;
 
+	fprintf(stderr, "Creating client\n");
 	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->win = w;
@@ -1474,6 +1582,7 @@ manage(Window w, XWindowAttributes *wa) {
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
 		c->mon = t->mon;
 		c->tags = t->tags;
+		applyrules(c);
 	}
 	else {
 		c->mon = selmon;
@@ -1755,7 +1864,7 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	int halfgap = windowgap / 2;
 	int nc;
 	Bool changed = updateborderwidth(c->mon, &nc);
-	if(nc > 1)
+	if(nc > 1 && c->mon->lt[c->mon->sellt]->arrange && c->mon->lt[c->mon->sellt]->arrange != &monocle)
 	{
 		x += halfgap;
 		y += halfgap;
@@ -2079,6 +2188,59 @@ setmfact(const Arg *arg) {
 }
 
 void
+readcolors() {
+	const char* homedir = getenv("HOME");
+	const char* relconfig = ".config/dwm/colors";
+	char* colorFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
+	int nummatch = 0;
+
+	strcpy(colorFile, homedir);
+	strcat(colorFile, "/");
+	strcat(colorFile, relconfig);
+
+	FILE* fd = fopen(colorFile, "r");
+
+	if(fd != NULL) {
+		fprintf(stderr, "Getting main colors from %s\n", colorFile);
+		nummatch = fscanf(fd, "normbg \"%7s\", normfg \"%7s\", selbg \"%7s\", selfg \"%7s\"", normbgcolor, normfgcolor, selbgcolor, selfgcolor);
+		fclose(fd);
+	}
+	else {
+		fprintf(stderr, "Color file not found: %s\n", colorFile);
+	}
+	if (nummatch != 4) {
+		fprintf(stderr, "Using default colors\n");
+		strcpy(normbgcolor, defnormbgcolor);
+		strcpy(normfgcolor, defnormfgcolor);
+		strcpy(selbgcolor, defselbgcolor);
+		strcpy(selfgcolor, defselfgcolor);
+	}
+	fprintf(stderr, "Colors set to:\n"
+			"normal background: %s\n"
+			"normal foreground: %s\n"
+			"select background: %s\n"
+			"select foreground: %s\n",
+			normbgcolor, normfgcolor, selbgcolor, selfgcolor);
+}
+
+void
+updatecolors(const Arg *arg) {
+	Monitor *m;
+
+	spawnimpl(arg, True);
+	readcolors();
+
+	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
+	dc.norm[ColFG] = getcolor(normfgcolor, dc.xftnorm+ColFG);
+	dc.sel[ColBG] = getcolor(selbgcolor, dc.xftsel+ColBG);
+	dc.sel[ColFG] = getcolor(selfgcolor, dc.xftsel+ColFG);
+
+	for(m = mons; m; m = m->next)
+		drawbar(m);
+	updatesystray();
+}
+
+void
 setup(void) {
 	XSetWindowAttributes wa;
 	Monitor *m;
@@ -2086,6 +2248,15 @@ setup(void) {
 
 	/* clean up any zombies immediately */
 	sigchld(0);
+
+	/* read colors */
+	readcolors();
+
+	*ooftraysbl = 0;
+	if (outoffocustraysymbol)
+	{
+		snprintf(ooftraysbl, 10, "%s", outoffocustraysymbol);
+	}
 
 	/* init screen */
 	screen = DefaultScreen(dpy);
@@ -2120,17 +2291,19 @@ setup(void) {
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
 	cursor[CurMove] = XCreateFontCursor(dpy, XC_fleur);
 	/* init appearance */
-	dc.norm[ColBorder] = getcolor(normbordercolor);
-	dc.norm[ColBG] = getcolor(normbgcolor);
-	dc.norm[ColFG] = getcolor(normfgcolor);
-	dc.sel[ColBorder] = getcolor(selbordercolor);
-	dc.sel[ColBG] = getcolor(selbgcolor);
-	dc.sel[ColFG] = getcolor(selfgcolor);
+	dc.norm[ColBorder] = getcolor(normbordercolor, dc.xftnorm+ColBorder);
+	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
+	dc.norm[ColFG] = getcolor(normfgcolor, dc.xftnorm+ColFG);
+	dc.sel[ColBorder] = getcolor(selbordercolor, dc.xftsel+ColBorder);
+	dc.sel[ColBG] = getcolor(selbgcolor, dc.xftsel+ColBG);
+	dc.sel[ColFG] = getcolor(selfgcolor, dc.xftsel+ColFG);
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, NULL);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
-	if(!dc.font.set)
-		XSetFont(dpy, dc.gc, dc.font.xfont->fid);
+	dc.xftdrawable = XftDrawCreate(dpy, dc.drawable, DefaultVisual(dpy,screen), DefaultColormap(dpy,screen));
+	if(!dc.xftdrawable)
+		printf("error, cannot create drawable\n");
+
 	/* init tags */
 	for(m = mons; m; m = m->next)
 		m->curtag = m->prevtag = 1;
@@ -2169,7 +2342,7 @@ setup(void) {
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select for events */
 	wa.cursor = cursor[CurNormal];
-	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|ButtonPressMask|PointerMotionMask
+	wa.event_mask = SubstructureRedirectMask|SubstructureNotifyMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask
 					|EnterWindowMask|LeaveWindowMask|StructureNotifyMask|PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask|CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
@@ -2200,8 +2373,9 @@ sigchld(int unused) {
 }
 
 void
-spawn(const Arg *arg) {
-	if(fork() == 0) {
+spawnimpl(const Arg *arg, Bool waitdeath) {
+	int childpid = fork();
+	if(childpid == 0) {
 		if(dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
@@ -2210,6 +2384,14 @@ spawn(const Arg *arg) {
 		perror(" failed");
 		exit(EXIT_SUCCESS);
 	}
+	if (waitdeath) {
+		waitpid(childpid, NULL, 0);
+	}
+}
+
+void
+spawn(const Arg *arg) {
+	spawnimpl(arg, False);
 }
 
 Monitor *
@@ -2259,13 +2441,10 @@ tagmon(const Arg *arg) {
 
 int
 textnw(const char *text, unsigned int len) {
-	XRectangle r;
-
-	if(dc.font.set) {
-		XmbTextExtents(dc.font.set, text, len, NULL, &r);
-		return r.width;
-	}
-	return XTextWidth(dc.font.xfont, text, len);
+	PangoRectangle r;
+	pango_layout_set_text(dc.plo, text, len);
+	pango_layout_get_extents(dc.plo, 0, &r);
+	return r.width / PANGO_SCALE;
 }
 
 void
@@ -2394,6 +2573,7 @@ unmapnotify(XEvent *e) {
 	if((c = wintoclient(ev->window)))
 		unmanage(c, False);
 	else if((c = wintosystrayicon(ev->window))) {
+		fprintf(stderr, "unmapped icon\n");
 		removesystrayicon(c);
 		resizebarwin(selmon);
 		updatesystray();
@@ -2405,16 +2585,21 @@ updateborderwidth(Monitor* m, int* nc) {
 	Client* c;
 	Client* first = NULL;
 	Bool changed = False;
-	for(c = m->clients; c; c = c->next)
+
+	*nc = 0;
+	for(c = m->clients; m->lt[m->sellt] && c; c = c->next)
 		if (ISVISIBLE(c) && !c->nofocus)
 		{
 			if (first == NULL)
 			{
-				first = c;
-				if (first->bw != 0)
+				if (!c->isfloating)
 				{
-					changed = True;
-					first->bw = 0;
+					first = c;
+					if (first->bw != 0)
+					{
+						changed = True;
+						first->bw = 0;
+					}
 				}
 			}
 			else
@@ -2431,7 +2616,8 @@ updateborderwidth(Monitor* m, int* nc) {
 					changed = True;
 				}
 			}
-			++(*nc);
+			if (!c->isfloating)
+				++(*nc);
 			configure(c);
 		}
 	return changed;
@@ -2492,6 +2678,22 @@ updateclientlist() {
 			                (unsigned char *) &(c->win), 1);
 }
 
+void
+killclocks(void) {
+	const Arg arg = {.v = killclockscmd };
+	spawnimpl(&arg, True);
+}
+
+void
+createclocks(void) {
+	Monitor* m;
+
+	killclocks();
+	for(m = mons; m; m = m->next) {
+		const Arg arg = {.v = clockcmd };
+		spawn(&arg);
+	}
+}
 
 void
 updategeom(void) {
@@ -2560,7 +2762,9 @@ updategeom(void) {
 		}
 	}
 	selmon = mons;
+	centerMouseInMonitorIndex(focusmonstart);
 	selmon = wintomon(root);
+	createclocks();
 }
 
 void
@@ -2636,11 +2840,64 @@ updatetitle(Client *c) {
 		strcpy(c->name, broken);
 }
 
+long
+getmodtimefor (const char* filepath)
+{
+	struct stat buf;
+	int fd = open(filepath, O_RDONLY);
+	int status;
+
+	if (fd != -1)
+	{
+		status = fstat(fd, &buf);
+		close(fd);
+	
+		if (status == 0)
+			return buf.st_mtime;
+	}
+	return 0;
+}
+
+void
+checkconfigtimes() {
+	const char* homedir = getenv("HOME");
+	const char* relconfig = ".config/dwm/colors";
+	char* colorFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
+
+	strcpy(colorFile, homedir);
+	strcat(colorFile, "/");
+	strcat(colorFile, relconfig);
+
+	const char* relbg = ".fehbg";
+	char* bgFile = calloc(strlen(homedir) + strlen(relbg) + 2, sizeof(char));
+
+	strcpy(bgFile, homedir);
+	strcat(bgFile, "/");
+	strcat(bgFile, relbg);
+
+	long configmodtime = getmodtimefor(colorFile);
+	long bgmodtime = getmodtimefor(bgFile);
+
+	if (configmodtime != 0 && bgmodtime != 0 && bgmodtime > configmodtime)
+	{
+		const Arg arg = SHCMD("exec ~/hacks/scripts/updateDwmColor.sh");
+
+		updatecolors(&arg);
+	}
+}
+
 void
 updatestatus(void) {
+	Monitor* m;
 	if(!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
 		strcpy(stext, "dwm-"VERSION);
-	drawbar(selmon);
+	if (statusallmonitor) {
+		for(m = mons; m; m = m->next)
+			drawbar(m);
+	}
+	else
+		drawbar(selmon);
+	checkconfigtimes();
 }
 
 void
@@ -2653,7 +2910,8 @@ updatesystrayicongeom(Client *i, int w, int h) {
 			i->w = w;
 		else
 			i->w = (int) ((float)bh * ((float)w / (float)h));
-		applysizehints(i, &(i->x), &(i->y), &(i->w), &(i->h), False);
+		if (applysizehints(i, &(i->x), &(i->y), &(i->w), &(i->h), False))
+			fprintf(stderr, "Size hint change to: %d %d %d %d\n", i->x, i->y, i->w, i->h);
 		/* force icons into the systray dimenons if they don't want to */
 		if(i->h > bh) {
 			if(i->w == i->h)
@@ -2877,6 +3135,15 @@ xerror(Display *dpy, XErrorEvent *ee) {
 		return 0;
 	fprintf(stderr, "dwm: fatal error: request code=%d, error code=%d\n",
 			ee->request_code, ee->error_code);
+
+	const int textlen = 2048;
+	char text[textlen];
+
+	XGetErrorText(dpy, ee->error_code, text, textlen);
+
+	fprintf(stderr, "%s\n", text);
+	if (ee->request_code == X_ChangeWindowAttributes && ee->error_code == BadMatch)
+		return 0;
 	return xerrorxlib(dpy, ee); /* may call exit */
 }
 
