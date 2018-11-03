@@ -37,7 +37,8 @@ static const Bool statusallmonitor  = True;
 static const char* outoffocustraysymbol = "X";
 
 /* tagging */
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+//static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
+static const unsigned int vtag = 1 << 9;
 
 #define Button6 (Button1 + 5)
 #define Button7 (Button1 + 6)
@@ -137,11 +138,11 @@ static const Rule rules[] = {
 	{	NULL,				NULL,			"Déplacer",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	NULL,				NULL,			"Monter",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	"Audacious",		NULL,			NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"MPlayer",			NULL,			NULL,			1 << 6,		True,		OPAQU,	False,	False, True,-1 , mpv, NULL, False, NULL },
-	{	"sView",			"sView",		NULL,			1 << 6,		True,		OPAQU,	False,	False, True,-1 , sView, NULL, False, NULL },
-	{	"mpv",				NULL,			NULL,			1 << 6,		True,		OPAQU,	False,	False, True,-1 , mpv, NULL, False, NULL },
-	{	"mpv",				NULL,			"mon0",			1 << 6,		True,		OPAQU,	False,	False, True, 0 , mpv, NULL, False, NULL },
-	{	"mpv",				NULL,			"mon1",			1 << 6,		True,		OPAQU,	False,	False, True, 1 , mpv, NULL, False, NULL },
+	{	"MPlayer",			NULL,			NULL,			vtag,		True,		OPAQU,	False,	False, True,-1 , mpv, &layouts[MONOCLE], False, NULL },
+	{	"sView",			"sView",		NULL,			vtag,		False,		OPAQU,	False,	False, True,-1 , sView, &layouts[MONOCLE], False, NULL },
+	{	"mpv",				NULL,			NULL,			vtag,		True,		OPAQU,	False,	False, True,-1 , mpv, &layouts[MONOCLE], False, NULL },
+	{	"mpv",				NULL,			"mon0",			vtag,		True,		OPAQU,	False,	False, True, 0 , mpv, &layouts[MONOCLE], False, NULL },
+	{	"mpv",				NULL,			"mon1",			vtag,		True,		OPAQU,	False,	False, True, 1 , mpv, &layouts[MONOCLE], False, NULL },
 	{	"Vlc",				NULL,			NULL,			0,			False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	"Gcalctool",		NULL,			NULL,			0,			True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },

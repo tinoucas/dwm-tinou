@@ -159,6 +159,7 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	Client* c;
 	ClientListItem* movingclients = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 	ClientListItem* item = movingclients;
+	int i, j;
 
 	for(c = msrc->stack; c; c = c->snext)
 		if (c->tags & views) {
@@ -180,6 +181,19 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	else
 		monview(mdst, msrc->tagset[msrc->seltags]);
 	monsetlayout(mdst, msrc->lt[msrc->sellt]);
+
+	mdst->showbar = msrc->showbar;
+	mdst->topbar = msrc->topbar;
+	mdst->mfact = msrc->mfact;
+	mdst->msplit = msrc->msplit;
+	for(i = 0; i < LENGTH(tags) + 1; ++i) {
+		mdst->msplits[i] = msrc->msplits[i];
+		for (j = 0; j < 3; ++j)
+			mdst->ltaxes[i][j] = msrc->ltaxes[i][j];
+	}
+	for (j = 0; j < 3; ++j)
+		mdst->ltaxis[j] = msrc->ltaxis[j];
+	mdst->hasclock = msrc->hasclock;
 }
 
 void
@@ -187,27 +201,6 @@ swapmonitors(unsigned int views, Monitor *mon1, Monitor *mon2, Monitor *sparem) 
 	movetomon(views, mon1, sparem);
 	movetomon(views, mon2, mon1);
 	movetomon(views, sparem, mon2);
-}
-
-void
-rotatemonitor(const Arg* arg) {
-	Monitor* sparem = createmon();
-	Monitor* m;
-	Monitor* nextm;
-	Bool allviews = (arg->i != 0);
-	unsigned int views = allviews ? ~0 : selmon->tagset[selmon->seltags];
-
-	for(m = mons, nextm = mons->next; nextm; m = m->next, nextm = nextm->next) {
-		if (!nextm)
-			nextm = mons;
-		swapmonitors(views, m, nextm, sparem);
-	}
-	free(sparem);
-	for (m = mons; m; m = m->next) {
-		if(m->showbar != m->showbars[m->curtag])
-			montogglebar(m);
-		arrange(m);
-	}
 }
 
 Bool
@@ -220,6 +213,33 @@ hasclientson(Monitor *m, unsigned int tagset) {
 			++nc;
 	return nc > 0;
 
+}
+
+void
+rotatemonitor(const Arg* arg) {
+	Monitor* sparem = createmon();
+	Monitor* m;
+	Monitor* nextm;
+	Bool allviews = (arg->i != 0);
+	unsigned int views = allviews ? ~0 : selmon->tagset[selmon->seltags];
+	int i;
+
+	rotatingMons = True;
+	for(m = mons, nextm = mons->next; nextm; m = m->next, nextm = nextm->next) {
+		if (!nextm)
+			nextm = mons;
+		swapmonitors(views, m, nextm, sparem);
+	}
+	free(sparem);
+	for (i = 0, m = mons; m; m = m->next) {
+		m->num = i;
+		if(m->showbar != m->showbars[m->curtag])
+			montogglebar(m);
+		if(m->tagset[m->seltags] == vtag && !hasclientson(m, vtag))
+			monview(m, 0);
+		arrange(m);
+	}
+	rotatingMons = False;
 }
 
 void
@@ -265,4 +285,9 @@ findsparetagset (Monitor *m) {
 	if (sparetags != 0)
 		return sparetags;
 	return m->tagset[m->seltags];
+}
+
+Bool
+hasvclients (Monitor *m) {
+	return hasclientson(m, vtag);
 }

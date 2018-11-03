@@ -94,6 +94,8 @@ enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
 	   ClkClientWin, ClkRootWin, ClkLast };				/* clicks */
 
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
+
 typedef union {
 	int i;
 	unsigned int ui;
@@ -193,13 +195,13 @@ struct Monitor {
 	const Layout *lt[2];
 	int curtag;
 	int prevtag;
-	const Layout *lts[10];
-	double mfacts[10];
-	Bool showbars[10];
+	const Layout *lts[LENGTH(tags) + 1];
+	double mfacts[LENGTH(tags) + 1];
+	Bool showbars[LENGTH(tags) + 1];
 	unsigned int msplit;
-	unsigned int msplits[10];
+	unsigned int msplits[LENGTH(tags) + 1];
 	int ltaxis[3];
-	int ltaxes[10][3];
+	int ltaxes[LENGTH(tags) + 1][3];
 	Bool hasclock;
 };
 
@@ -402,6 +404,7 @@ static Monitor *mons = NULL, *selmon = NULL;
 static Window root;
 static Client* lastclient = NULL;
 static Bool startup = True;
+static Bool rotatingMons = False;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -612,9 +615,13 @@ applyrules(Client *c) {
 		}
 		if (alone && !c->nofocus && c->tags != ~0)
 		{
-			c->mon->tagset[c->mon->seltags] = c->mon->tagset[c->mon->seltags] | (c->tags);
+			if (c->tags == vtag) {
+				c->mon->seltags ^= 1;
+				setseltags(c->mon, vtag, True);
+			}
+			else
+				setseltags(c->mon, c->mon->tagset[c->mon->seltags] | (c->tags), False);
 			arrange(c->mon);
-
 		}
 		if(lastr != NULL && lastr->preflayout != NULL && (c->tags & c->mon->tagset[c->mon->seltags])) {
 			if (lastr->preflayout != &layouts[MONOCLE])
@@ -898,6 +905,8 @@ cleartags(Monitor *m){
 	if (nc == 0) {
 		const Arg arg = { .v = &layouts[initlayout] };
 		setlayout(&arg);
+		if (m->tagset[m->seltags] == vtag)
+			monview(m, 0);
 	}
 }
 
@@ -2246,7 +2255,12 @@ setfocus(Client *c) {
 
 void
 setfullscreen(Client *c, Bool fullscreen) {
+	Client *cother;
+
 	if(fullscreen) {
+		for(cother = c->mon->clients; cother; cother = cother->next)
+			if (cother != c && cother->isfullscreen)
+				return ;
 		window_opacity_set(c->win, 1.);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
@@ -2481,7 +2495,7 @@ showhide(Client *c) {
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
 		XMoveWindow(dpy, c->win, c->x, c->y);
-		if((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && !c->isfullscreen)
+		if((!c->mon->lt[c->mon->sellt]->arrange || c->isfloating) && (!c->isfullscreen || rotatingMons))
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
@@ -3201,7 +3215,9 @@ monview(Monitor* m, unsigned int ui) {
 			m->curtag = i + 1;
 		}
 	} else {
-		if (!hasclientson(m, m->tagset[m->seltags]))
+		if (hasvclients(m) && (m->tagset[m->seltags^1] & vtag) == 0)
+			setseltags(m, vtag, True);
+		else if (!hasclientson(m, m->tagset[m->seltags]))
 			setseltags(m, findsparetagset(m), True);
 		m->prevtag= m->curtag ^ m->prevtag;
 		m->curtag^= m->prevtag;
