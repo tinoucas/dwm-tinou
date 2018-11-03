@@ -911,8 +911,7 @@ cleartags(Monitor *m){
 		arrange(m);
 	}
 	if (nc == 0) {
-		const Arg arg = { .v = &layouts[initlayout] };
-		setlayout(&arg);
+		monsetlayout(m, &layouts[initlayout]);
 		if (m->tagset == vtag)
 			monview(m, 0);
 	}
