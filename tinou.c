@@ -227,10 +227,11 @@ hasclientson(unsigned int tagset) {
 void
 setseltags(unsigned int newtagset, Bool newset) {
 	int i;
+	Bool subset = (!newset || (selmon->tagset[selmon->seltags^1] & newtagset));
 
 	selmon->tagset[selmon->seltags] = newtagset;
 	if (hasclientson(newtagset)) {
-		if (!newset)
+		if (subset)
 			selmon->sparetagset[selmon->selsparetags^1] = newtagset;
 		else {
 			for(i = 0; i < 2; ++i)
