@@ -1,5 +1,9 @@
 /* See LICENSE file for copyright and license details. */
 
+#ifdef CONFIG_HEAD
+static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
+#else
+
 /* appearance */
 //static const char font[]            = "-*-helvetica-bold-r-*-*-12-*-*-*-*-*-*-1";
 //static const char font[]            = "-*-freemono-medium-r-normal-*-*-*-*-*-*-*-*-1";
@@ -320,3 +324,4 @@ static Button buttons[] = {
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
 };
 
+#endif

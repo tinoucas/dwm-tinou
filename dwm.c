@@ -94,7 +94,9 @@ enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
 	   ClkClientWin, ClkRootWin, ClkLast };				/* clicks */
 
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
+#define CONFIG_HEAD
+#include "config.h"
+#undef CONFIG_HEAD
 
 typedef union {
 	int i;
