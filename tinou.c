@@ -177,7 +177,8 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	for (j = 0; j < 3; ++j)
 		mdst->ltaxis[j] = msrc->ltaxis[j];
 	mdst->hasclock = msrc->hasclock;
-	mdst->viewstack = msrc->viewstack;
+	if (views == ~0)
+		mdst->viewstack = msrc->viewstack;
 }
 
 void
