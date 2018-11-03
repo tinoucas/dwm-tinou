@@ -180,6 +180,8 @@ struct Monitor {
 	unsigned int seltags;
 	unsigned int sellt;
 	unsigned int tagset[2];
+	unsigned int sparetagset[2];
+	unsigned int selsparetags;
 	Bool showbar;
 	Bool topbar;
 	Client *clients;
@@ -961,9 +963,8 @@ clientmessage(XEvent *e) {
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
-			c->mon->seltags ^= 1;
-			if (c->tags != ~0)
-				c->mon->tagset[c->mon->seltags] = c->tags;
+			c->isurgent = True;
+			drawbars();
 		}
 #if 0
 		pop(c);
@@ -1077,10 +1078,13 @@ configurerequest(XEvent *e) {
 Monitor *
 createmon(void) {
 	Monitor *m;
+	int i;
 
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
-	m->tagset[0] = m->tagset[1] = 1;
+	for(i = 0; i < 2; ++i)
+		m->tagset[i] = m->sparetagset[i] = 1;
+
 	viewstackadd(1);
 	m->mfact = mfact;
 	m->showbar = showbar;
@@ -2598,7 +2602,7 @@ toggleview(const Arg *arg) {
 	/*if(newtagset) {*/
 	if (selmon->tagset[selmon->seltags] != newtagset)
 	{
-		selmon->tagset[selmon->seltags] = newtagset;
+		setseltags(newtagset, False);
 		arrange(selmon);
 		viewstackadd(selmon->tagset[selmon->seltags]);
 	}
@@ -3141,7 +3145,7 @@ view(const Arg *arg) {
 		return;
 	selmon->seltags ^= 1; /* toggle sel tagset */
 	if(arg->ui & TAGMASK) {
-		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+		setseltags(arg->ui & TAGMASK, True);
 		selmon->prevtag = selmon->curtag;
 		if(arg->ui == ~0)
 			selmon->curtag = 0;
@@ -3150,6 +3154,8 @@ view(const Arg *arg) {
 			selmon->curtag = i + 1;
 		}
 	} else {
+		if (!hasclientson(selmon->tagset[selmon->seltags]))
+			setseltags(findsparetagset(), True);
 		selmon->prevtag= selmon->curtag ^ selmon->prevtag;
 		selmon->curtag^= selmon->prevtag;
 		selmon->prevtag= selmon->curtag ^ selmon->prevtag;

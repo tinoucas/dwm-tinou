@@ -212,3 +212,50 @@ rotatemonitor(const Arg* arg) {
 	arrange(NULL);
 }
 
+Bool
+hasclientson(unsigned int tagset) {
+	Client *c;
+	unsigned int nc;
+
+	for(c = selmon->clients, nc = 0; c; c = c->next)
+		if(!c->nofocus && (c->tags & tagset))
+			++nc;
+	return nc > 0;
+
+}
+
+void
+setseltags(unsigned int newtagset, Bool newset) {
+	int i;
+
+	selmon->tagset[selmon->seltags] = newtagset;
+	if (hasclientson(newtagset)) {
+		if (!newset)
+			selmon->sparetagset[selmon->selsparetags^1] = newtagset;
+		else {
+			for(i = 0; i < 2; ++i)
+				if (selmon->sparetagset[selmon->selsparetags^(i^1)] != newtagset) {
+					selmon->sparetagset[selmon->selsparetags^i] = newtagset;
+					break;
+				}
+			if (i < 2)
+				selmon->selsparetags = (selmon->selsparetags^(i^1));
+		}
+
+	}
+}
+
+unsigned int
+findsparetagset () {
+	int i;
+	unsigned int sparetags = 0;
+
+	selmon->selsparetags ^= 1;
+	for (i = 0; i < 2 && sparetags == 0; ++i) {
+		if (hasclientson(selmon->sparetagset[selmon->selsparetags^i]) && selmon->sparetagset[selmon->selsparetags^i] != selmon->tagset[selmon->seltags^1])
+			sparetags = selmon->sparetagset[selmon->selsparetags^i];
+	}
+	if (sparetags != 0)
+		return sparetags;
+	return selmon->tagset[selmon->seltags];
+}
