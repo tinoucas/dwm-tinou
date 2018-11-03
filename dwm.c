@@ -2237,7 +2237,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 
 void
 setlayout(const Arg *arg) {
-	if(!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
+	if(!arg || !arg->v || arg->v != selmon->lts[selmon->curtag])
 	{
 		selmon->sellt ^= 1;
 		selmon->lts[selmon->curtag] = selmon->lt[selmon->sellt];
