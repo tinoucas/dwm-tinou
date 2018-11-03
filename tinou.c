@@ -1,15 +1,6 @@
-struct ViewStack;
-typedef struct ViewStack ViewStack;
-struct ViewStack {
-	struct ViewStack* next;
-	unsigned int view;
-};
-
-static ViewStack* viewstack = NULL;
-
 void
-removefromstack(unsigned int ui) {
-	ViewStack *v = viewstack;
+removefromstack(Monitor *m, unsigned int ui) {
+	ViewStack *v = m->viewstack;
 	ViewStack *vdup, *vprev = NULL;
 
 	while (v) {
@@ -18,7 +9,7 @@ removefromstack(unsigned int ui) {
 			if (vprev)
 				vprev->next = v->next;
 			else
-				viewstack = v->next;
+				m->viewstack = v->next;
 			v = v->next;
 			free(vdup);
 		}
@@ -30,24 +21,26 @@ removefromstack(unsigned int ui) {
 }
 
 void
-viewstackadd (unsigned int ui) {
-	ViewStack* v = (ViewStack*)calloc(1, sizeof(ViewStack));
+viewstackadd (Monitor *m, unsigned int ui, Bool newview) {
+	if (newview || m->viewstack == NULL) {
+		ViewStack* v = (ViewStack*)calloc(1, sizeof(ViewStack));
 
-	removefromstack(ui);
-	v->view = ui;
-	v->next = viewstack;
-	viewstack = v;
+		removefromstack(m, ui);
+		v->next = m->viewstack;
+		m->viewstack = v;
+	}
+	m->viewstack->view = ui;
 }
 
 void
 rewindstack (const Arg *arg) {
 	ViewStack *v;
 
-	if (viewstack && viewstack->next) {
-		v = viewstack;
-		free(viewstack);
-		viewstack = v;
-		selmon->tagset[selmon->seltags] = viewstack->view;
+	if (selmon->viewstack && selmon->viewstack->next) {
+		v = selmon->viewstack;
+		free(selmon->viewstack);
+		selmon->viewstack = v;
+		selmon->tagset = selmon->viewstack->view;
 		arrange(selmon);
 	}
 }
@@ -169,7 +162,7 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	if (views != ~0)
 		monview(mdst, views);
 	else
-		monview(mdst, msrc->tagset[msrc->seltags]);
+		monview(mdst, msrc->tagset);
 	monsetlayout(mdst, msrc->lt[msrc->sellt]);
 
 	mdst->showbar = msrc->showbar;
@@ -184,6 +177,7 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	for (j = 0; j < 3; ++j)
 		mdst->ltaxis[j] = msrc->ltaxis[j];
 	mdst->hasclock = msrc->hasclock;
+	mdst->viewstack = msrc->viewstack;
 }
 
 void
@@ -211,7 +205,7 @@ rotatemonitor(const Arg* arg) {
 	Monitor* m;
 	Monitor* nextm;
 	Bool allviews = (arg->i != 0);
-	unsigned int views = allviews ? ~0 : selmon->tagset[selmon->seltags];
+	unsigned int views = allviews ? ~0 : selmon->tagset;
 	int i;
 
 	rotatingMons = True;
@@ -225,7 +219,7 @@ rotatemonitor(const Arg* arg) {
 		m->num = i;
 		if(m->showbar != m->showbars[m->curtag])
 			montogglebar(m);
-		if(m->tagset[m->seltags] == vtag && !hasclientson(m, vtag))
+		if(m->tagset == vtag && !hasclientson(m, vtag))
 			monview(m, 0);
 		arrange(m);
 	}
@@ -233,48 +227,29 @@ rotatemonitor(const Arg* arg) {
 }
 
 void
-setseltags(Monitor *m, unsigned int newtagset, Bool newset) {
-	int i;
-	Bool subset = (!newset || (m->tagset[m->seltags^1] & newtagset));
-
-	m->tagset[m->seltags] = newtagset;
-	if (hasclientson(m, newtagset)) {
-		if (subset)
-			m->sparetagset[m->selsparetags^1] = newtagset;
-		else {
-			for(i = 0; i < 2; ++i)
-				if (m->sparetagset[m->selsparetags^(i^1)] != newtagset) {
-					m->sparetagset[m->selsparetags^i] = newtagset;
-					break;
-				}
-			if (i < 2)
-				m->selsparetags = (m->selsparetags^(i^1));
-		}
-
-	}
+setseltags(Monitor *m, unsigned int newtagset, Bool newview) {
+	viewstackadd(m, m->tagset, newview);
+	m->tagset = newtagset;
 }
 
 unsigned int
 findsparetagset (Monitor *m) {
-	int i;
 	unsigned int sparetags = 0;
-	unsigned int curseltags = m->tagset[m->seltags^1];
-	ViewStack* v = viewstack;
+	unsigned int curseltags = m->tagset;
+	ViewStack* v = m->viewstack;
+	int i = 0;
 
-	m->selsparetags ^= 1;
-	for (i = 0; i < 2 && sparetags == 0; ++i) {
-		if (hasclientson(m, m->sparetagset[m->selsparetags^i]) && m->sparetagset[m->selsparetags^i] != curseltags)
-			sparetags = m->sparetagset[m->selsparetags^i];
-	}
 	while (sparetags == 0 && v)
 	{
 		if (v->view != curseltags && hasclientson(m, v->view))
 			sparetags = v->view;
 		v = v->next;
+		++i;
 	}
 	if (sparetags != 0)
 		return sparetags;
-	return m->tagset[m->seltags];
+	fprintf(stderr, "findsparetagset stuck, stack size is %d\n", i);
+	return m->tagset;
 }
 
 Bool
