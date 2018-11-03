@@ -252,6 +252,8 @@ static Key keys[] = {
 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[MONOCLE]} },
 	{ MODKEY,                       XK_s,      setlayout,      {.v = &layouts[SPIRAL]} },
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[DWINDLE]} },
+	{ MODKEY,                       XK_BackSpace, rotatemonitor, {.i = 0} },
+	{ MODKEY,                       XK_space,  rotatemonitor,  {.i = 1} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 	{ MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
 	//{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
