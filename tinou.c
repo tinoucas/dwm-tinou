@@ -215,7 +215,7 @@ rotatemonitor(const Arg* arg) {
 		swapmonitors(views, m, nextm, sparem);
 	}
 	free(sparem);
-	for (i = 0, m = mons; m; m = m->next) {
+	for (i = 0, m = mons; m; m = m->next, ++i) {
 		m->num = i;
 		if(m->showbar != m->showbars[m->curtag])
 			montogglebar(m);
