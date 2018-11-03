@@ -98,26 +98,6 @@ rotateclients (const Arg *arg) {
 	arrange(selmon);
 }
 
-#if 0
-static void
-togglemonocle(const Arg *arg) {
-	/*static void (*arrange)(Monitor *) = NULL;*/
-	static Layout* layout;
-	Arg layoutarg;
-
-	if (selmon->lt[selmon->sellt]->arrange != &monocle) {
-		/*arrange = selmon->lt[selmon->sellt]->arrange;*/
-		layout = (Layout*)selmon->lt[selmon->sellt];
-		layoutarg.v = &layouts[MONOCLE];
-		setlayout(&layoutarg);
-	}
-	else {
-		layoutarg.v = layout;
-		setlayout(&layoutarg);
-	}
-}
-#endif
-
 static void
 ttbarclick(const Arg *arg) {
 		focusstack(arg);
@@ -145,13 +125,6 @@ focuslast(const Arg *arg) {
 		focus(lastclient);
 }
 
-static void
-toggleviews(const Arg *arg) {
-	toggleview(arg);
-	cleartags(selmon);
-	drawbar(selmon);
-}
-
 void
 allnonfloat(const Arg *arg) {
 	Client* c;
@@ -160,3 +133,82 @@ allnonfloat(const Arg *arg) {
 		c->isfloating = False;
 	arrange(selmon);
 }
+
+void
+togglepreview(const Arg *arg) {
+	const int previewTags = (1 << 5 | 1 << 6);
+	unsigned int newtagset = selmon->tagset[selmon->seltags] ^ (previewTags & TAGMASK);
+	const Arg viewArg = { .ui = newtagset };
+
+	view(&viewArg);
+	cleartags(selmon);
+}
+
+void
+changemon(Client *c, Monitor *m) {
+	if(c->mon == m)
+		return;
+	detach(c);
+	detachstack(c);
+	c->mon = m;
+	attach(c);
+	attachstack(c);
+}
+
+struct ClientListItem;
+typedef struct ClientListItem ClientListItem;
+struct ClientListItem {
+	Client* c;
+	ClientListItem* next;
+};
+
+void
+movetomon (Bool allviews, Monitor *msrc, Monitor *mdst) {
+	Client* c;
+	ClientListItem* movingclients = (ClientListItem*)calloc(1, sizeof(ClientListItem));
+	ClientListItem* item = movingclients;
+	int i;
+
+	for(c = msrc->stack; c; c = c->snext)
+		if (allviews || (c->tags & c->mon->tagset[c->mon->seltags])) {
+			item->c = c;
+			item->next = (ClientListItem*)calloc(1, sizeof(ClientListItem));
+			item = item->next;
+		}
+	for(item = movingclients; item && item->c; item = item->next)
+		changemon(item->c, mdst);
+	item = movingclients;
+	while (item) {
+		movingclients = item->next;
+		free(item);
+		item = movingclients;
+	}
+	mdst->seltags = msrc->seltags;
+	mdst->sellt = msrc->sellt;
+	for(i = 0; i < 2; ++i)
+		mdst->tagset[i] = msrc->tagset[i];
+}
+
+void
+swapmonitors(Bool allviews, Monitor *mon1, Monitor *mon2, Monitor *sparem) {
+	movetomon(allviews, mon1, sparem);
+	movetomon(allviews, mon2, mon1);
+	movetomon(allviews, sparem, mon2);
+}
+
+void
+rotatemonitor(const Arg* arg) {
+	Monitor* sparem = createmon();
+	Monitor* m;
+	Monitor* nextm;
+	Bool allviews = True; // (arg->i != 0);
+
+	for(m = mons, nextm = mons->next; nextm; m = m->next, nextm = nextm->next) {
+		if (!nextm)
+			nextm = mons;
+		swapmonitors(allviews, m, nextm, sparem);
+	}
+	free(sparem);
+	arrange(NULL);
+}
+

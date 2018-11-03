@@ -310,7 +310,7 @@ static Button buttons[] = {
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },
 	{ ClkStatusText,        0,              Button1,        togglepreview,  {0} },
 	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
-	//{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
+	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
 	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
 	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
 	{ ClkStatusText,        0,              Button8,        togglefloating, {0} },
