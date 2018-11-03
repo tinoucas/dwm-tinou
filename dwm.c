@@ -87,7 +87,7 @@ enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation,
-	   NetWMName, NetWMState, NetWMFullscreen, NetActiveWindow, NetWMWindowType,
+	   NetWMName, NetWMState, NetWMFullscreen, NetWMPID, NetActiveWindow, NetWMWindowType,
 	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetClientList, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
@@ -213,7 +213,8 @@ typedef struct {
 	int monitor;
 	const MouseMap* custommouse;
 	const Layout* preflayout;
-	Bool child;
+	Bool istransient;
+	const char* procname;
 } Rule;
 
 typedef struct {
@@ -255,6 +256,9 @@ static void client_opacity_set(Client *c, double opacity);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
+static void createclocks(void);
+static void centerclient(Client *c);
+static Bool clientmatchesrule (Client *c, const char* class, const char* instance, Bool istransient, const char* wincmdline, const Rule *r);
 static Monitor *createmon(void);
 static void destroynotify(XEvent *e);
 static void detach(Client *c);
@@ -415,59 +419,122 @@ Window getWindowParent (Window winId) {
 	return parent;
 }
 
+void
+centerclient (Client *c)
+{
+	int x, y;
+	if (c && c->mon) {
+		x = c->mon->mx + c->mon->mw / 2 - c->w / 2 - c->bw;
+		y = c->mon->my + c->mon->mh / 2 - c->h / 2 - c->bw;
+		resize(c, x, y, c->w, c->h, False);
+	}
+}
+
 Bool
-clientmatchesrule (Client *c, const char* class, const char* instance, const Rule *r) {
+clientmatchesrule (Client *c, const char* class, const char* instance, Bool istransient, const char* wincmdline, const Rule *r) {
+	if (strstr(class, "broken") && r->procname)
+	{
+		fprintf(stderr, "cmdline:'%s', class:'%s', instance:'%s', trans:'%s'\n",
+				wincmdline ? wincmdline : "NULL",
+				class ? class : "NULL",
+				instance ? instance : "NULL",
+				istransient ? "True" : "False");
+	}
 	return (!r->title || strstr(c->name, r->title))
 		&& (!r->class || strstr(class, r->class))
-		&& (!r->instance || strstr(instance, r->instance));
+		&& (!r->instance || strstr(instance, r->instance))
+		&& (!r->procname || wincmdline && strstr(wincmdline, r->procname))
+		&& r->istransient == istransient;
 }
 
 void
-applyclientrule (Client *c, const Rule *r) {
+applyclientrule (Client *c, const Rule *r, Bool istransient) {
 	Monitor *m;
 
 	c->isfloating = r->isfloating;
+	if (c->isfloating)
+		centerclient(c);
 	c->nofocus = r->nofocus;
 	c->noborder = r->noborder;
 	c->tags |= r->tags;
 	c->opacity = r->istransparent;
 	c->rh = r->rh;
 	c->custommouse = r->custommouse;
+	if (istransient)
+		c->isfixed = True;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
 	if(m)
 		c->mon = m;
 }
 
+long getwinpid (Client* c) {
+	long pid = getatomprop(c, netatom[NetWMPID]);
+	return pid;
+}
+
+char* getwincmdline (Client* c) {
+	long pid = getwinpid(c);
+
+	char procfile[1024];
+	char* cmdline = calloc(1024, sizeof(char));
+	int nread = 0;
+
+	if (pid != 0) {
+		snprintf(procfile, 1023, "/proc/%ld/cmdline", pid);
+	
+		FILE* fd = fopen(procfile, "r");
+		if (fd != NULL) {
+			nread = fread(cmdline, sizeof(char), 1023, fd);
+			fclose(fd);
+		}
+		else
+		{
+			fprintf(stderr, "proc file not found: %s\n", procfile);
+		}
+		cmdline[nread] = 0;
+		fprintf(stderr, "pid: %ld, cmdline: %s\n", pid, cmdline);
+	}
+	return cmdline;
+}
+
 /* function implementations */
 void
-applyrulesto(Client *refc, Client *c) {
+applyrules(Client *c) {
 	const char *class, *instance;
+	char* wincmdline = NULL;
 	unsigned int i;
 	const Rule *r;
 	const Rule *lastr = NULL;
 	Monitor *m;
 	XClassHint ch = { 0 };
 	Bool found = False;
+	Bool istransient = False;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
 	c->rh = True;
-	if(XGetClassHint(dpy, refc->win, &ch)) {
+
+	Window trans = None;
+	if (XGetTransientForHint(dpy, c->win, &trans))
+		istransient = (trans != None);
+
+	wincmdline = getwincmdline(c);
+	if(XGetClassHint(dpy, c->win, &ch) || wincmdline) {
 		class = ch.res_class ? ch.res_class : broken;
 		instance = ch.res_name ? ch.res_name : broken;
 		for(i = 0; i < LENGTH(rules); i++) {
 			r = &rules[i];
-			if (clientmatchesrule(refc, class, instance, r) && (!r->child || c != refc))
+			if (clientmatchesrule(c, class, instance, istransient, wincmdline, r))
 			{
-				applyclientrule(c, r);
+				applyclientrule(c, r, istransient);
 				lastr = r;
 				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s'\n",
 						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
 				found = True;
 			}
 		}
-		if (clientmatchesrule(c, class, instance, &clockrule)) {
-			applyclientrule(c, &clockrule);
+		if (clientmatchesrule(c, class, instance, istransient, wincmdline, &clockrule)) {
+			applyclientrule(c, &clockrule, istransient);
 			for(m = mons; m && m->hasclock; m = m->next);
 			if (m) {
 				m->hasclock = True;
@@ -481,12 +548,14 @@ applyrulesto(Client *refc, Client *c) {
 			XFree(ch.res_class);
 		if(ch.res_name)
 			XFree(ch.res_name);
+		if (wincmdline)
+			free(wincmdline);
 	}
 	else
 	{
 		for(i = 0; i < LENGTH(rules); i++) {
 			r = &rules[i];
-			if(r->title && strstr(refc->name, r->title))
+			if(r->title && strstr(c->name, r->title))
 			{
 				c->isfloating = r->isfloating;
 				c->nofocus = r->nofocus;
@@ -517,22 +586,16 @@ applyrulesto(Client *refc, Client *c) {
 			for(m = mons; m && m->num != r->monitor; m = m->next);
 			if(m)
 				c->mon = m;
-			if (c == refc) {
-				Window pw = getWindowParent(c->win);
-				Client* pc = wintoclient(pw);
-
-				if (pc && pc->win == pw && pc != refc) {
-					applyrulesto(pc, c);
-				}
-			}
 		}
 	}
+	if (c->isfloating)
+		centerclient(c);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
 	if (c->mon && !startup)
 	{
 		Bool alone = True;
 		Client *cother;
-		unsigned int nc;
+		unsigned int nc = 0;
 
 		for(cother = c->mon->clients; alone && cother; cother = cother->next) {
 			if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
@@ -547,11 +610,14 @@ applyrulesto(Client *refc, Client *c) {
 
 		}
 		if(lastr != NULL && lastr->preflayout != NULL && (c->tags & c->mon->tagset[c->mon->seltags])) {
-			for(nc = 0, cother = c->mon->clients; cother; cother = cother->next)
-				if (ISVISIBLE(cother) && !cother->nofocus)
-					++nc;
-			if(nc == 0)
+			if (lastr->preflayout != &layouts[MONOCLE])
+				for(cother = c->mon->clients; cother; cother = cother->next)
+					if (ISVISIBLE(cother) && !cother->nofocus)
+						++nc;
+			if(nc == 0) {
 				selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = lastr->preflayout;
+				arrange(selmon);
+			}
 		}
 		else if (!c->nofocus)
 		{
@@ -559,11 +625,6 @@ applyrulesto(Client *refc, Client *c) {
 			drawbar(c->mon);
 		}
 	}
-}
-
-void
-applyrules(Client *c) {
-	applyrulesto(c, c);
 }
 
 Bool
@@ -1008,6 +1069,9 @@ configurerequest(XEvent *e) {
 		XConfigureWindow(dpy, ev->window, ev->value_mask, &wc);
 	}
 	XSync(dpy, False);
+
+	if (c && c->isfloating)
+		centerclient(c);
 }
 
 Monitor *
@@ -1141,13 +1205,13 @@ drawbar(Monitor *m) {
 		dc.x = m->ww;
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
+		col = m == selmon ? dc.sel : dc.norm;
 		if(m->sel) {
-			col = m == selmon ? dc.sel : dc.norm;
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
 		else {
-			drawtext(NULL, dc.norm, False);
+			drawtext(NULL, col, False);
 		}
 	}
 	if(showsystray && m == systraytomon(m)) {
@@ -1377,6 +1441,8 @@ getatomprop(Client *c, Atom prop) {
 	Atom req = XA_ATOM;
 	if(prop == xatom[XembedInfo])
 		req = xatom[XembedInfo];
+	else if (prop == netatom[NetWMPID])
+		req = XA_CARDINAL;
 
 	if(XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, req,
 						  &da, &di, &dl, &dl, &p) == Success && p) {
@@ -1617,8 +1683,11 @@ manage(Window w, XWindowAttributes *wa) {
 	updatewmhints(c);
 	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, False);
-	if(!c->isfloating)
+	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
+		if (c->isfloating)
+			centerclient(c);
+	}
 	if (c->nofocus)
 		XLowerWindow(dpy, c->win);
 	else if(c->isfloating)
@@ -1802,8 +1871,11 @@ propertynotify(XEvent *e) {
 		default: break;
 		case XA_WM_TRANSIENT_FOR:
 			if(!c->isfloating && (XGetTransientForHint(dpy, c->win, &trans)) &&
-			   (c->isfloating = (wintoclient(trans)) != NULL))
+			   (c->isfloating = (wintoclient(trans)) != NULL)) {
+				if (c->isfloating)
+					centerclient(c);
 				arrange(c->mon);
+			}
 			break;
 		case XA_WM_NORMAL_HINTS:
 			updatesizehints(c);
@@ -1863,13 +1935,17 @@ void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	int halfgap = windowgap / 2;
 	int nc;
-	Bool changed = updateborderwidth(c->mon, &nc);
-	if(nc > 1 && c->mon->lt[c->mon->sellt]->arrange && c->mon->lt[c->mon->sellt]->arrange != &monocle)
-	{
-		x += halfgap;
-		y += halfgap;
-		w -= windowgap;
-		h -= windowgap;
+	Bool changed = False;
+
+	if (!c->isfloating) {
+		changed = updateborderwidth(c->mon, &nc);
+		if(nc > 1 && c->mon->lt[c->mon->sellt]->arrange && c->mon->lt[c->mon->sellt]->arrange != &monocle)
+		{
+			x += halfgap;
+			y += halfgap;
+			w -= windowgap;
+			h -= windowgap;
+		}
 	}
 	if (changed)
 		arrange(c->mon);
@@ -2147,6 +2223,8 @@ setfullscreen(Client *c, Bool fullscreen) {
 						PropModeReplace, (unsigned char*)0, 0);
 		c->isfullscreen = False;
 		c->isfloating = c->oldstate;
+		if (c->isfloating)
+			centerclient(c);
 		c->bw = c->oldbw;
 		c->x = c->oldx;
 		c->y = c->oldy;
@@ -2238,6 +2316,7 @@ updatecolors(const Arg *arg) {
 	for(m = mons; m; m = m->next)
 		drawbar(m);
 	updatesystray();
+	createclocks();
 }
 
 void
@@ -2279,6 +2358,7 @@ setup(void) {
 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	netatom[NetWMPID] = XInternAtom(dpy, "_NET_WM_PID", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
@@ -2680,8 +2760,12 @@ updateclientlist() {
 
 void
 killclocks(void) {
+	Monitor *m;
 	const Arg arg = {.v = killclockscmd };
 	spawnimpl(&arg, True);
+
+	for(m = mons; m; m = m->next)
+		m->hasclock = False;
 }
 
 void
@@ -3024,8 +3108,10 @@ updatewindowtype(Client *c) {
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
 
-	if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar])
+	if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
 		c->isfloating = True;
+		centerclient(c);
+	}
 }
 
 void
