@@ -127,16 +127,6 @@ allnonfloat(const Arg *arg) {
 }
 
 void
-togglepreview(const Arg *arg) {
-	const int previewTags = (1 << 5 | 1 << 6);
-	unsigned int newtagset = selmon->tagset[selmon->seltags] ^ (previewTags & TAGMASK);
-	const Arg viewArg = { .ui = newtagset };
-
-	view(&viewArg);
-	cleartags(selmon);
-}
-
-void
 changemon(Client *c, Monitor *m) {
 	if(c->mon == m)
 		return;

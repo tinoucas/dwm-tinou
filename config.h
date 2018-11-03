@@ -1,7 +1,23 @@
 /* See LICENSE file for copyright and license details. */
 
 #ifdef CONFIG_HEAD
-static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
+/* tagging */
+static const char *tags[] = { "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" };
+
+static const unsigned int maintag = 1 << 0;
+static const unsigned int chattag = 1 << 1;
+static const unsigned int filestag = 1 << 2;
+static const unsigned int texttag = 1 << 3;
+static const unsigned int edittag = 1 << 4;
+static const unsigned int dltag = 1 << 5;
+static const unsigned int trrnttag = 1 << 6;
+static const unsigned int musictag = 1 << 7;
+static const unsigned int misctag = 1 << 8;
+static const unsigned int webtag = 1 << 9;
+static const unsigned int vtag = 1 << 10;
+
+static const unsigned int anytag = 0;
+static const unsigned int alltags = ~0;
 #else
 
 /* appearance */
@@ -40,10 +56,6 @@ static const Bool statusallmonitor  = True;
 #define OOFTRAYLEN 5
 static const char* outoffocustraysymbol = "X";
 
-/* tagging */
-//static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "v" };
-static const unsigned int vtag = 1 << 9;
-
 #define Button6 (Button1 + 5)
 #define Button7 (Button1 + 6)
 #define Button8 (Button1 + 7)
@@ -81,6 +93,8 @@ enum layout {
 	MONOCLE,
 };
 
+static const Layout *const monoclelayout = &layouts[MONOCLE];
+
 static const Rule defaultrule = 
 	/* class				instance		title			tags mask	isfloating	transp	nofocus noborder rh	monitor custommouse preflayout */
 	{	NULL,				NULL,			NULL,			0,			True,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL };
@@ -91,92 +105,87 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class				instance		title			tags mask	isfloating	transp	nofocus noborder rh	monitor remap preflayout istransient procname */
-	{	NULL,				NULL,			NULL,			0,			False,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"veromix",			NULL,			NULL,			0,			True,		TRANS,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"Alacritty",		"Alacritty",	NULL,			0,			False,		CLEAR,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"kitty",		    "kitty",		NULL,			0,			False,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"URxvt",			NULL,			NULL,			1 << 0,			False,		TRANS,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"URxvt",			"screen",		NULL,			1 << 0,		False,		TRANS,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	NULL,            	"ghost_terminal",	NULL,		0,			False,		OPAQU,	True,	False, True,-1, NULL, NULL, False, NULL },
-	{	NULL,				"xterm",		NULL,			0,			False,		TRANS,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"Gimp",				NULL,			NULL,			1 << 4,		False,		OPAQU,	False,	False, False,-1, NULL, NULL, False, NULL },
-	{	"Firefox",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, &layouts[MONOCLE], False, NULL },
-	{	"vivaldi-stable",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, NULL, False, NULL },
-	{	NULL,				"Download",		NULL,			1 << 7,		False,		OPAQU,	False,	False, True, -1, NULL, NULL, False, NULL },
-	{	NULL,				"Navigator",	NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, NULL, NULL, False, NULL },
-	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, NULL, NULL, False, NULL },
-	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL },
-	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, NULL, False, NULL },
-	{	"Yandex-browser",	"yandex-browser",NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, &layouts[MONOCLE], False, NULL },
-	{	"broken",			"broken",		NULL,			1 << 5,		False,		OPAQU,	False,	False, True, 1, chrome, &layouts[MONOCLE], False, "yandex_browser" },
-	{	"google-chrome",	"crx_knipolnnllmklapflnccelgolnpehhpl",	NULL,	1 << 1,	False,	OPAQU,	False, False,	True,	-1, chrome, NULL, False, NULL },
-	{	NULL,				"chrome_app_list",NULL,			0,			True,		OPAQU,	False,	False, True,-1 , chrome, NULL, False, NULL },
-	{	"Chromium",			"crx_nckgahadagoaajjgafhacjanaoiihapd",NULL,1 << 1,False,TRANS,	False,	False, True,-1 , chrome, NULL, False, NULL },
-	{	"Chromium",			"chromium",		NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1 , chrome, NULL, False, NULL },
-	{	NULL,				NULL,			"aura_root_0",	1 << 7,		False,		OPAQU,	False,	False, False, -1 , NULL, NULL, False, NULL },
-	{	NULL,				"Pidgin",		NULL,			1 << 1,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"sonata",		NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"ario",			NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Gmpc",				NULL,			NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Shredder",			NULL,			NULL,			1 << 1,		False,		TRANS,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{	NULL,				"screen",		NULL,			1,			False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"feh",				NULL,			NULL,			1 << 5, 	True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"feh",				NULL,			"mon0",			1 << 5,		True,		OPAQU,	False,	False, True, 0 , mpv, NULL, False, NULL },
-	{	"feh",				NULL,			"mon1",			1 << 5,		True,		OPAQU,	False,	False, True, 1 , mpv, NULL, False, NULL },
-	{	NULL,				"savebox",		NULL,			0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Xfe",				NULL,			NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"ROX-Filer",	NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"spacefm",		NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"thunar",		NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"dolphin",		NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Pantheon-files",	"pantheon-files", NULL,			1 << 2,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Rename",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Delete",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Copy",			0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Move",			0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Mount",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Renommer",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Supprimer",	0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Copier",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Déplacer",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				NULL,			"Monter",		0,			True,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Audacious",		NULL,			NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"MPlayer",			NULL,			NULL,			vtag,		True,		OPAQU,	False,	False, True,-1 , mpv, &layouts[MONOCLE], False, NULL },
-	{	"sView",			"sView",		NULL,			vtag,		False,		OPAQU,	False,	False, True,-1 , sView, &layouts[MONOCLE], False, NULL },
-	{	"mpv",				NULL,			NULL,			vtag,		True,		OPAQU,	False,	False, True,-1 , mpv, &layouts[MONOCLE], False, NULL },
-	{	"mpv",				NULL,			"mon0",			vtag,		True,		OPAQU,	False,	False, True, 0 , mpv, &layouts[MONOCLE], False, NULL },
-	{	"mpv",				NULL,			"mon1",			vtag,		True,		OPAQU,	False,	False, True, 1 , mpv, &layouts[MONOCLE], False, NULL },
-	{	"Vlc",				NULL,			NULL,			0,			False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Gcalctool",		NULL,			NULL,			0,			True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"gqmpeg",		NULL,			1 << 5,		True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"GQmpeg",			"playlist",		NULL,			1 << 1,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"TzClock",		NULL,			~0,			True,		TRANS,	True,	True, True,-1 , NULL, NULL, False, NULL },
-	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"vim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , NULL, NULL, False, NULL },
-	{	"Sublime_text",		NULL,			NULL,			1 << 3,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		OPAQU,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		OPAQU,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{"OpenOfficeorg 3.2",	NULL,			NULL,			1 << 4,		False,		TRANS,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{	"Evince",			NULL,			NULL,			1 << 4,		False,		OPAQU,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{	"FBReader",			NULL,			NULL,			1 << 4,		False,		TRANS,	False,	False, True, -1 , NULL, NULL, False, NULL },
-	{	NULL,				"stalonetray",	NULL,			~0,			True,		OPAQU,	True,	True, True, -1 , NULL, NULL, False, NULL },
-	{   "Display",			NULL,			NULL,			1 << 0,		True,		OPAQU,	True,	True, True, -1 , NULL, NULL, False, NULL },
-	{	"broken",			NULL,			"Renoise",		1 << 7,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{"jetbrains-android-studio", NULL,		NULL,			1 << 7,		False,		TRANS,	False,	False, False,-1, NULL, NULL, False, NULL },
-	{"emulator64-arm",		NULL,			NULL,			1 << 5,		True,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Deadbeef",			"deadbeef",		NULL,			1 << 5,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"TelegramDesktop",	"telegram-desktop",	NULL,		1 << 1,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"Steam",			"Steam",		NULL,			1 << 7,		False,		OPAQU,	False,	False, True,-1 , NULL, &layouts[MONOCLE], False, NULL },
-	{	"Steam.exe",		"Steam.exe",	NULL,			1 << 7,		False,		OPAQU,	False,	True, False,-1 , NULL, NULL, False, NULL },
-	{   NULL, "google play music desktop player", NULL,		1 << 7,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"VPN Unlimited",	"vpn-unlimited",NULL,			1 << 1,		True,		OPAQU,	False,	False, True, 1 , NULL, NULL, False, NULL },
-	{	"qBittorrent",		"qbittorrent",	NULL,			1 << 7,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	"JDownloader",		NULL,			NULL,			1 << 4,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	//{	"Torchlight2.bin.x86_64", NULL,		NULL,			0,			False,		OPAQU,	False,	False, True,-1, torchlight, NULL, False, NULL },
-};
+	/* class               , instance            , title       , tags mask , isfloating , transp , nofocus , noborder , rh    , monitor , remap  , preflayout    , istransient , procname */
+	{	NULL               , NULL                , NULL        , anytag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"veromix"          , NULL                , NULL        , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Alacritty"        , "Alacritty"         , NULL        , anytag    , False      , CLEAR  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"kitty"            , "kitty"             , NULL        , anytag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"URxvt"            , NULL                , NULL        , maintag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"URxvt"            , "screen"            , NULL        , maintag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "ghost_terminal"    , NULL        , anytag    , False      , OPAQU  , True    , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "xterm"             , NULL        , anytag    , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Gimp"             , NULL                , NULL        , edittag   , False      , OPAQU  , False   , False    , False , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Firefox"          , NULL                , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , monoclelayout , False       , NULL   } , 
+	{	"vivaldi-stable"   , NULL                , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL   } , 
+	{	NULL               , "Download"          , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "Navigator"         , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Gran Paradiso"    , NULL                , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Opera"            , NULL                , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Google-chrome"    , "google-chrome"     , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL   } , 
+	{	"Yandex-browser"   , "yandex-browser"    , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , monoclelayout , False       , NULL   } , 
+	{	NULL               , "chrome_app_list"   , NULL        , anytag    , True       , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL   } , 
+	{	"Chromium"         , "chromium"          , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL   } , 
+	{	NULL               , "Pidgin"            , NULL        , chattag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "sonata"            , NULL        , musictag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "ario"              , NULL        , musictag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Gmpc"             , NULL                , NULL        , musictag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Shredder"         , NULL                , NULL        , chattag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "screen"            , NULL        , maintag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"feh"              , NULL                , NULL        , anytag    , True       , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"feh"              , NULL                , "mon0"      , vtag      , True       , OPAQU  , False   , False    , True  , 0       , mpv    , NULL          , False       , NULL   } , 
+	{	"feh"              , NULL                , "mon1"      , vtag      , True       , OPAQU  , False   , False    , True  , 1       , mpv    , NULL          , False       , NULL   } , 
+	{	NULL               , "savebox"           , NULL        , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Xfe"              , NULL                , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "ROX-Filer"         , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "spacefm"           , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "thunar"            , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "dolphin"           , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Pantheon-files"   , "pantheon-files"    , NULL        , filestag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Rename"    , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Delete"    , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Copy"      , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Move"      , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Mount"     , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Renommer"  , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Supprimer" , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Copier"    , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Déplacer"  , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , NULL                , "Monter"    , anytag    , True       , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Audacious"        , NULL                , NULL        , musictag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"MPlayer"          , NULL                , NULL        , vtag      , True       , OPAQU  , False   , False    , True  , -1      , mpv    , monoclelayout , False       , NULL   } , 
+	{	"sView"            , "sView"             , NULL        , vtag      , False      , OPAQU  , False   , False    , True  , -1      , sView  , monoclelayout , False       , NULL   } , 
+	{	"qtwebflix"        , "qtwebflix"         , NULL        , vtag      , False      , OPAQU  , False   , False    , True  , -1      , mpv    , monoclelayout , False       , NULL   } , 
+	{	"mpv"              , NULL                , NULL        , vtag      , True       , OPAQU  , False   , False    , True  , -1      , mpv    , monoclelayout , False       , NULL   } , 
+	{	"mpv"              , NULL                , "mon0"      , vtag      , True       , OPAQU  , False   , False    , True  , 0       , mpv    , monoclelayout , False       , NULL   } , 
+	{	"mpv"              , NULL                , "mon1"      , vtag      , True       , OPAQU  , False   , False    , True  , 1       , mpv    , monoclelayout , False       , NULL   } , 
+	{	"Vlc"              , NULL                , NULL        , anytag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Gcalctool"        , NULL                , NULL        , anytag    , True       , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "gqmpeg"            , NULL        , musictag  , True       , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"GQmpeg"           , "playlist"          , NULL        , chattag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "TzClock"           , NULL        , alltags   , True       , TRANS  , True    , True     , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Guimup"           , "guimup"            , NULL        , musictag  , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "uzbl-core"         , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "gvim"              , NULL        , texttag   , False      , TRANS  , False   , False    , False , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "vim"               , NULL        , texttag   , False      , TRANS  , False   , False    , False , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Sublime_text"     , NULL                , NULL        , texttag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "MixVibes Cross"    , NULL        , misctag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "Cross Preferences" , NULL        , misctag   , True       , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{   "OpenOfficeorg 3.2", NULL                , NULL        , misctag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Evince"           , NULL                , NULL        , edittag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"FBReader"         , NULL                , NULL        , edittag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	NULL               , "stalonetray"       , NULL        , alltags   , True       , OPAQU  , True    , True     , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{   "Display"          , NULL                , NULL        , maintag   , True       , OPAQU  , True    , True     , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"broken"           , NULL                , "Renoise"   , edittag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{  "emulator64-arm"    , NULL                , NULL        , misctag   , True       , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Deadbeef"         , "deadbeef"          , NULL        , musictag  , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"TelegramDesktop"  , "telegram-desktop"  , NULL        , chattag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"Steam"            , "Steam"             , NULL        , misctag   , False      , OPAQU  , False   , False    , True  , -1      , NULL   , monoclelayout , False       , NULL   } , 
+	{	"Steam.exe"        , "Steam.exe"         , NULL        , misctag   , False      , OPAQU  , False   , True     , False , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"VPN Unlimited"    , "vpn-unlimited"     , NULL        , chattag   , True       , OPAQU  , False   , False    , True  , 1       , NULL   , NULL          , False       , NULL   } , 
+	{	"qBittorrent"      , "qbittorrent"       , NULL        , trrnttag  , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	{	"JDownloader"      , NULL                , NULL        , dltag     , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL   } , 
+	//{	"broken"         , "broken"            , NULL        , vtag      , False      , OPAQU  , False   , False    , True  , 1       , chrome , monoclelayout , False       , "yandex_browser" } , 
+	} ;
 
 static const int layoutaxis[] = {
 	1,    /* layout axis: 1 = x, 2 = y; negative values mirror the layout, setting the master area to the right / bottom instead of left / top */
@@ -214,7 +223,7 @@ static const char *termcmd[]  = { "kitty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
-static const Rule clockrule = { NULL, "oclock", NULL, ~0, True, 0.2, True, True, True,-1 , NULL, NULL, False };
+static const Rule clockrule = { NULL, "oclock", NULL, alltags, True, 0.2, True, True, True,-1 , NULL, NULL, False };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
@@ -240,7 +249,6 @@ static Key keys[] = {
 	{ MODKEY,                       XK_m,      setlayout,      {.v = &layouts[MONOCLE]} },
 	{ MODKEY,                       XK_s,      setlayout,      {.v = &layouts[SPIRAL]} },
 	{ MODKEY,                       XK_d,      setlayout,      {.v = &layouts[DWINDLE]} },
-	{ MODKEY,                       XK_space,  togglepreview,  {0} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 	{ MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
 	//{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
@@ -263,6 +271,7 @@ static Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
+	TAGKEYS(                        XK_0,                      9)
 	TAGKEYS(                        XK_ampersand,              0)
 	TAGKEYS(                        XK_eacute,                 1)
 	TAGKEYS(                        XK_quotedbl,               2)
@@ -272,8 +281,8 @@ static Key keys[] = {
 	TAGKEYS(                        XK_egrave,                 6)
 	TAGKEYS(                        XK_underscore,             7)
 	TAGKEYS(                        XK_ccedilla,               8)
-	WORKSPACE(                      XK_a,                      1 << 1 | 1 << 5)
-	WORKSPACE(                      XK_w,                      1 << 0 | 1 << 3)
+	WORKSPACE(                      XK_a,                      chattag | 1 << 5)
+	WORKSPACE(                      XK_w,                      maintag | texttag)
 	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
 	{ MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
 	{ MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
@@ -306,7 +315,6 @@ static Button buttons[] = {
 	{ ClkWinTitle,          MODKEY,         Button4,        opacitychange,  {.f = -0.05 } },
 	{ ClkWinTitle,          MODKEY,         Button5,        opacitychange,  {.f = +0.05 } },
 	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },
-	{ ClkStatusText,        0,              Button1,        togglepreview,  {0} },
 	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
 	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
