@@ -888,8 +888,10 @@ cleartags(Monitor *m){
 		m->tagset[m->seltags] = newtags;
 		arrange(m);
 	}
-	if (nc == 0)
-		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = &layouts[initlayout];
+	if (nc == 0) {
+		const Arg arg = { .v = &layouts[initlayout] };
+		setlayout(&arg);
+	}
 }
 
 void
@@ -1703,7 +1705,6 @@ manage(Window w, XWindowAttributes *wa) {
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	XMapWindow(dpy, c->win);
 	setclientstate(c, NormalState);
-	cleartags(c->mon);
 	arrange(c->mon);
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus))
 		client_opacity_set(c, c->opacity);
@@ -2511,7 +2512,6 @@ void
 tag(const Arg *arg) {
 	if(selmon->sel && arg->ui & TAGMASK) {
 		selmon->sel->tags = arg->ui & TAGMASK;
-		cleartags(selmon);
 		arrange(selmon);
 	}
 }
