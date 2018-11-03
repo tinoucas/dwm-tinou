@@ -1,66 +1,58 @@
-typedef struct ViewStack_s {
-	struct ViewStack_s* next;
-	struct ViewStack_s* previous;
-	int view;
-} ViewStack;
+struct ViewStack;
+typedef struct ViewStack ViewStack;
+struct ViewStack {
+	struct ViewStack* next;
+	unsigned int view;
+};
 
-static ViewStack* viewstack = 0;
-static ViewStack* viewstackbase = 0;
-static int viewstackcount = 0;
-static int viewstacksize = 1024;
+static ViewStack* viewstack = NULL;
 
-static void
-viewstackadd (int i) {
-	ViewStack* newtip;
-	ViewStack* oldbase = viewstackbase;
+void
+removefromstack(unsigned int ui) {
+	ViewStack *v = viewstack;
+	ViewStack *vdup, *vprev = NULL;
 
-	/* Avoid consecutive duplicates */
-	if (viewstack && ((viewstack->next && viewstack->next->view) == i
-				|| viewstack->view == i))
-		return;
-	newtip = (ViewStack*)malloc(sizeof(ViewStack));
-	newtip->view = i;
-	newtip->next = viewstack ? viewstack->next : 0;
-	newtip->previous = viewstack;
-
-	if (viewstack) {
-		if (viewstack->next)
-			viewstack->next->previous = newtip;
-		viewstack->next = newtip;
-	}
-	viewstack = newtip;
-	if (!viewstackbase)
-		viewstackbase = viewstack;
-	if (viewstackcount < viewstacksize)
-		++viewstackcount;
-	else {
-		if (oldbase == viewstack->previous)
-			viewstack->previous = 0;
-		viewstackbase = viewstackbase->next;
-		viewstackbase->previous = 0;
-		free(oldbase);
+	while (v) {
+		if (v->view == ui) {
+			vdup = v;
+			if (vprev)
+				vprev->next = v->next;
+			else
+				viewstack = v->next;
+			v = v->next;
+			free(vdup);
+		}
+		else {
+			vprev = v;
+			v = v->next;
+		}
 	}
 }
 
-static void
-jumpviewstackin (const Arg *arg) {
+void
+viewstackadd (unsigned int ui) {
+	ViewStack* v = (ViewStack*)calloc(1, sizeof(ViewStack));
+
+	removefromstack(ui);
+	v->view = ui;
+	v->next = viewstack;
+	viewstack = v;
+}
+
+void
+rewindstack (const Arg *arg) {
+	ViewStack *v;
+
 	if (viewstack && viewstack->next) {
-		viewstack = viewstack->next;
+		v = viewstack;
+		free(viewstack);
+		viewstack = v;
 		selmon->tagset[selmon->seltags] = viewstack->view;
 		arrange(selmon);
 	}
 }
 
-static void
-jumpviewstackout (const Arg *arg) {
-	if (viewstack && viewstack->previous) {
-		viewstack = viewstack->previous;
-		selmon->tagset[selmon->seltags] = viewstack->view;
-		arrange(selmon);
-	}
-}
-
-static void
+void
 rotateclients (const Arg *arg) {
 	Client *base = selmon->clients;
 	Client **pc;
@@ -256,11 +248,19 @@ unsigned int
 findsparetagset (Monitor *m) {
 	int i;
 	unsigned int sparetags = 0;
+	unsigned int curseltags = m->tagset[m->seltags^1];
+	ViewStack* v = viewstack;
 
 	m->selsparetags ^= 1;
 	for (i = 0; i < 2 && sparetags == 0; ++i) {
-		if (hasclientson(m, m->sparetagset[m->selsparetags^i]) && m->sparetagset[m->selsparetags^i] != m->tagset[m->seltags^1])
+		if (hasclientson(m, m->sparetagset[m->selsparetags^i]) && m->sparetagset[m->selsparetags^i] != curseltags)
 			sparetags = m->sparetagset[m->selsparetags^i];
+	}
+	while (sparetags == 0 && v)
+	{
+		if (v->view != curseltags && hasclientson(m, v->view))
+			sparetags = v->view;
+		v = v->next;
 	}
 	if (sparetags != 0)
 		return sparetags;

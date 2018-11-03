@@ -217,8 +217,6 @@ static Key keys[] = {
 	{ ControlMask,                  XK_asterisk, sendbackslash,   {0} },
 	{ ControlMask,           XK_dead_circumflex, sendbracketleft, {0} },
 	{ MODKEY|ShiftMask,             XK_l,      spawn,             SHCMD("$HOME/hacks/scripts/lockX.sh") },
-	{ MODKEY,                       XK_o,      jumpviewstackout,  {0} },
-	{ MODKEY,                       XK_i,      jumpviewstackin,   {0} },
 	{ MODKEY,                       XK_Menu,   focuslast,      {0} },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	/*{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },*/
@@ -288,12 +286,6 @@ static Key keys[] = {
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
-	//{ ClkClientWin,         0,              Button10,       jumpviewstackin,{0} },
-	//{ ClkClientWin,         0,              Button11,       jumpviewstackout,{0} },
-	{ ClkWinTitle,          MODKEY,         Button10,       jumpviewstackin,{0} },
-	{ ClkWinTitle,          MODKEY,         Button11,       jumpviewstackout,{0} },
-	{ ClkTagBar,            MODKEY,         Button4,        jumpviewstackin,{0} },
-	{ ClkTagBar,            MODKEY,         Button5,        jumpviewstackout,{0} },
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[MONOCLE]} },
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
