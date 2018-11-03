@@ -110,10 +110,11 @@ typedef struct {
 } Button;
 
 typedef struct {
-	unsigned int button;
-	KeySym keysym;
+	unsigned int mousebuttonfrom;
+	KeySym keysymfrom;
+	KeySym keysymto;
 	int modifier;
-} MouseMap;
+} Remap;
 
 typedef struct Monitor Monitor;
 typedef struct Client Client;
@@ -132,7 +133,7 @@ struct Client {
 	Window win;
 	double opacity;
 	Bool rh;
-	const MouseMap* custommouse;
+	const Remap* remap;
 };
 
 typedef struct {
@@ -213,7 +214,7 @@ typedef struct {
 	Bool noborder;
 	Bool rh;
 	int monitor;
-	const MouseMap* custommouse;
+	const Remap* remap;
 	const Layout* preflayout;
 	Bool istransient;
 	const char* procname;
@@ -228,7 +229,7 @@ typedef struct {
 	Bool noborder;
 	Bool rh;
 	int monitor;
-	const MouseMap* custommouse;
+	const Remap* remap;
 	const Layout* preflayout;
 } TransientRule;
 
@@ -286,6 +287,7 @@ static unsigned int getsystraywidth();
 static Bool gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, Bool focused);
 static void grabkeys(void);
+static void grabremap(Client *c, Bool focused);
 static void initfont(const char *fontstr);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
@@ -315,6 +317,7 @@ static void sendmon(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, Bool fullscreen);
+static void monsetlayout(Monitor *m, const void* v);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void setup(void);
@@ -351,6 +354,8 @@ static void updatewindowtype(Client *c);
 static void updatetitle(Client *c);
 static void updatewmhints(Client *c);
 static void view(const Arg *arg);
+static void monview(Monitor* m, unsigned int ui);
+static void montogglebar(Monitor* m);
 static void window_opacity_set(Window win, double opacity);
 static Client *wintoclient(Window w);
 static Monitor *wintomon(Window w);
@@ -461,7 +466,7 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 	c->tags |= r->tags;
 	c->opacity = r->istransparent;
 	c->rh = r->rh;
-	c->custommouse = r->custommouse;
+	c->remap = r->remap;
 	if (istransient)
 		c->isfixed = True;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
@@ -565,7 +570,7 @@ applyrules(Client *c) {
 				c->tags |= r->tags;
 				c->opacity = r->istransparent;
 				c->rh = r->rh;
-				c->custommouse = r->custommouse;
+				c->remap = r->remap;
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -584,7 +589,7 @@ applyrules(Client *c) {
 			c->tags |= r->tags;
 			c->opacity = r->istransparent;
 			c->rh = r->rh;
-			c->custommouse = r->custommouse;
+			c->remap = r->remap;
 			for(m = mons; m && m->num != r->monitor; m = m->next);
 			if(m)
 				c->mon = m;
@@ -811,10 +816,12 @@ buttonrelease(XEvent *e) {
 	if((c = wintoclient(ev->window))) {
 		click = ClkClientWin;
 	}
-	if (selmon && (c = selmon->sel) && c->win && c->custommouse) {
-		for(i = 0; c->custommouse[i].button; i++)
-			if(click == ClkClientWin && c->custommouse[i].button == ev->button)
-				sendKey(XKeysymToKeycode(dpy, c->custommouse[i].keysym), c->custommouse[i].modifier);
+	if (selmon && (c = selmon->sel) && c->win && c->remap) {
+		for(i = 0; c->remap[i].keysymto; i++)
+			if(click == ClkClientWin
+					&& c->remap[i].mousebuttonfrom
+					&& c->remap[i].mousebuttonfrom == ev->button)
+				sendKey(XKeysymToKeycode(dpy, c->remap[i].keysymto), c->remap[i].modifier);
 	}
 }
 
@@ -1532,6 +1539,28 @@ gettextprop(Window w, Atom atom, char *text, unsigned int size) {
 }
 
 void
+grabremap(Client *c, Bool manage) {
+	int i, j;
+	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+	KeyCode code;
+
+	if (c && c->remap && c->win) {
+		for(i = 0; c->remap[i].keysymto; ++i)
+			for(j = 0; j < LENGTH(modifiers); j++) {
+				if (c->remap[i].keysymfrom && (code = XKeysymToKeycode(dpy, c->remap[i].keysymfrom))) {
+					if (manage) {
+						XGrabKey(dpy, code, modifiers[j], c->win,
+								True, GrabModeSync, GrabModeAsync);
+					}
+					else {
+						XUngrabKey(dpy, code, modifiers[j], root);
+					}
+				}
+			}
+	}
+}
+
+void
 grabbuttons(Client *c, Bool focused) {
 	updatenumlockmask();
 	{
@@ -1546,13 +1575,14 @@ grabbuttons(Client *c, Bool focused) {
 									buttons[i].mask | modifiers[j],
 									c->win, False, BUTTONMASK,
 									GrabModeAsync, GrabModeSync, None, None);
-			if (c->custommouse)
-				for(i = 0; c->custommouse[i].button; i++)
+			if (c->remap)
+				for(i = 0; c->remap[i].keysymto; i++)
 					for(j = 0; j < LENGTH(modifiers); j++)
-						XGrabButton(dpy, c->custommouse[i].button,
-								modifiers[j],
-								c->win, True, BUTTONMASK,
-								GrabModeAsync, GrabModeSync, None, CurrentTime);
+						if (c->remap[i].mousebuttonfrom)
+							XGrabButton(dpy, c->remap[i].mousebuttonfrom,
+									modifiers[j],
+									c->win, True, BUTTONMASK,
+									GrabModeAsync, GrabModeSync, None, CurrentTime);
 		}
 		else
 			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
@@ -1620,6 +1650,11 @@ keypress(XEvent *e) {
 		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
 		&& keys[i].func)
 			keys[i].func(&(keys[i].arg));
+	if (selmon->sel && selmon->sel->remap) {
+		for(i = 0; selmon->sel->remap[i].keysymto; ++i)
+			if (selmon->sel->remap[i].keysymfrom && selmon->sel->remap[i].keysymfrom == keysym)
+				sendKey(XKeysymToKeycode(dpy, selmon->sel->remap[i].keysymto), selmon->sel->remap[i].modifier);
+	}
 }
 
 void
@@ -1706,6 +1741,7 @@ manage(Window w, XWindowAttributes *wa) {
 	XMapWindow(dpy, c->win);
 	setclientstate(c, NormalState);
 	arrange(c->mon);
+	grabremap(c, True);
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus))
 		client_opacity_set(c, c->opacity);
 	if (c->nofocus)
@@ -2241,15 +2277,20 @@ setfullscreen(Client *c, Bool fullscreen) {
 }
 
 void
-setlayout(const Arg *arg) {
-	if(!arg || !arg->v || arg->v != selmon->lts[selmon->curtag])
+monsetlayout(Monitor *m, const void* v) {
+	if(!v || v != m->lts[m->curtag])
 	{
-		selmon->sellt ^= 1;
-		selmon->lts[selmon->curtag] = selmon->lt[selmon->sellt];
+		m->sellt ^= 1;
+		m->lts[m->curtag] = m->lt[m->sellt];
 	}
-	if(arg && arg->v)
-		selmon->lt[selmon->sellt] = selmon->lts[selmon->curtag] = (Layout *)arg->v;
-	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
+	if(v)
+		m->lt[m->sellt] = m->lts[m->curtag] = (Layout *)v;
+	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, sizeof m->ltsymbol);
+}
+
+void
+setlayout(const Arg *arg) {
+	monsetlayout(selmon, arg ? arg->v : NULL);
 	if(selmon->sel)
 		arrange(selmon);
 	else
@@ -2532,22 +2573,27 @@ textnw(const char *text, unsigned int len) {
 }
 
 void
-togglebar(const Arg *arg) {
-	selmon->showbar = selmon->showbars[selmon->curtag] = !selmon->showbar;
-	updatebarpos(selmon);
-	resizebarwin(selmon);
+montogglebar(Monitor* m) {
+	m->showbar = m->showbars[m->curtag] = !m->showbar;
+	updatebarpos(m);
+	resizebarwin(m);
 	if(showsystray) {
 		XWindowChanges wc;
-		if(!selmon->showbar)
+		if(!m->showbar)
 			wc.y = -bh;
-		else if(selmon->showbar) {
+		else if(m->showbar) {
 			wc.y = 0;
-			if(!selmon->topbar)
-				wc.y = selmon->mh - bh;
+			if(!m->topbar)
+				wc.y = m->mh - bh;
 		}
 		XConfigureWindow(dpy, systray->win, CWY, &wc);
 	}
-	arrange(selmon);
+	arrange(m);
+}
+
+void
+togglebar(const Arg *arg) {
+	montogglebar(selmon);
 }
 
 void
@@ -2602,7 +2648,7 @@ toggleview(const Arg *arg) {
 	/*if(newtagset) {*/
 	if (selmon->tagset[selmon->seltags] != newtagset)
 	{
-		setseltags(newtagset, False);
+		setseltags(selmon, newtagset, False);
 		arrange(selmon);
 		viewstackadd(selmon->tagset[selmon->seltags]);
 	}
@@ -2627,6 +2673,7 @@ unmanage(Client *c, Bool destroyed) {
 	XWindowChanges wc;
 
 	/* The server grab construct avoids race conditions. */
+	grabremap(c, False);
 	detach(c);
 	detachstack(c);
 	if(!destroyed) {
@@ -3138,37 +3185,42 @@ updatewmhints(Client *c) {
 }
 
 void
-view(const Arg *arg) {
+monview(Monitor* m, unsigned int ui) {
 	unsigned int i;
 
-	if((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
+	if((ui & TAGMASK) == m->tagset[m->seltags])
 		return;
-	selmon->seltags ^= 1; /* toggle sel tagset */
-	if(arg->ui & TAGMASK) {
-		setseltags(arg->ui & TAGMASK, True);
-		selmon->prevtag = selmon->curtag;
-		if(arg->ui == ~0)
-			selmon->curtag = 0;
+	m->seltags ^= 1; /* toggle sel tagset */
+	if(ui & TAGMASK) {
+		setseltags(m, ui & TAGMASK, True);
+		m->prevtag = m->curtag;
+		if(ui == ~0)
+			m->curtag = 0;
 		else {
-			for (i=0; !(arg->ui & 1 << i); i++);
-			selmon->curtag = i + 1;
+			for (i=0; !(ui & 1 << i); i++);
+			m->curtag = i + 1;
 		}
 	} else {
-		if (!hasclientson(selmon->tagset[selmon->seltags]))
-			setseltags(findsparetagset(), True);
-		selmon->prevtag= selmon->curtag ^ selmon->prevtag;
-		selmon->curtag^= selmon->prevtag;
-		selmon->prevtag= selmon->curtag ^ selmon->prevtag;
+		if (!hasclientson(m, m->tagset[m->seltags]))
+			setseltags(m, findsparetagset(m), True);
+		m->prevtag= m->curtag ^ m->prevtag;
+		m->curtag^= m->prevtag;
+		m->prevtag= m->curtag ^ m->prevtag;
 	}
-	viewstackadd(selmon->tagset[selmon->seltags]);
-	selmon->lt[selmon->sellt]= selmon->lts[selmon->curtag];
-	selmon->mfact = selmon->mfacts[selmon->curtag];
+	viewstackadd(m->tagset[m->seltags]);
+	m->lt[m->sellt]= m->lts[m->curtag];
+	m->mfact = m->mfacts[m->curtag];
+	m->ltaxis[0] = m->ltaxes[m->curtag][0];
+	m->ltaxis[1] = m->ltaxes[m->curtag][1];
+	m->ltaxis[2] = m->ltaxes[m->curtag][2];
+	m->msplit = m->msplits[m->curtag];
+}
+
+void
+view(const Arg *arg) {
+	monview(selmon, arg->ui);
 	if(selmon->showbar != selmon->showbars[selmon->curtag])
 		togglebar(NULL);
-	selmon->ltaxis[0] = selmon->ltaxes[selmon->curtag][0];
-	selmon->ltaxis[1] = selmon->ltaxes[selmon->curtag][1];
-	selmon->ltaxis[2] = selmon->ltaxes[selmon->curtag][2];
-	selmon->msplit = selmon->msplits[selmon->curtag];
 	arrange(selmon);
 }
 

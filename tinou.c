@@ -163,14 +163,13 @@ struct ClientListItem {
 };
 
 void
-movetomon (Bool allviews, Monitor *msrc, Monitor *mdst) {
+movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	Client* c;
 	ClientListItem* movingclients = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 	ClientListItem* item = movingclients;
-	int i;
 
 	for(c = msrc->stack; c; c = c->snext)
-		if (allviews || (c->tags & c->mon->tagset[c->mon->seltags])) {
+		if (c->tags & views) {
 			item->c = c;
 			item->next = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 			item = item->next;
@@ -183,17 +182,19 @@ movetomon (Bool allviews, Monitor *msrc, Monitor *mdst) {
 		free(item);
 		item = movingclients;
 	}
-	mdst->seltags = msrc->seltags;
-	mdst->sellt = msrc->sellt;
-	for(i = 0; i < 2; ++i)
-		mdst->tagset[i] = msrc->tagset[i];
+
+	if (views != ~0)
+		monview(mdst, views);
+	else
+		monview(mdst, msrc->tagset[msrc->seltags]);
+	monsetlayout(mdst, msrc->lt[msrc->sellt]);
 }
 
 void
-swapmonitors(Bool allviews, Monitor *mon1, Monitor *mon2, Monitor *sparem) {
-	movetomon(allviews, mon1, sparem);
-	movetomon(allviews, mon2, mon1);
-	movetomon(allviews, sparem, mon2);
+swapmonitors(unsigned int views, Monitor *mon1, Monitor *mon2, Monitor *sparem) {
+	movetomon(views, mon1, sparem);
+	movetomon(views, mon2, mon1);
+	movetomon(views, sparem, mon2);
 }
 
 void
@@ -201,23 +202,28 @@ rotatemonitor(const Arg* arg) {
 	Monitor* sparem = createmon();
 	Monitor* m;
 	Monitor* nextm;
-	Bool allviews = True; // (arg->i != 0);
+	Bool allviews = (arg->i != 0);
+	unsigned int views = allviews ? ~0 : selmon->tagset[selmon->seltags];
 
 	for(m = mons, nextm = mons->next; nextm; m = m->next, nextm = nextm->next) {
 		if (!nextm)
 			nextm = mons;
-		swapmonitors(allviews, m, nextm, sparem);
+		swapmonitors(views, m, nextm, sparem);
 	}
 	free(sparem);
-	arrange(NULL);
+	for (m = mons; m; m = m->next) {
+		if(m->showbar != m->showbars[m->curtag])
+			montogglebar(m);
+		arrange(m);
+	}
 }
 
 Bool
-hasclientson(unsigned int tagset) {
+hasclientson(Monitor *m, unsigned int tagset) {
 	Client *c;
 	unsigned int nc;
 
-	for(c = selmon->clients, nc = 0; c; c = c->next)
+	for(c = m->clients, nc = 0; c; c = c->next)
 		if(!c->nofocus && (c->tags & tagset))
 			++nc;
 	return nc > 0;
@@ -225,38 +231,38 @@ hasclientson(unsigned int tagset) {
 }
 
 void
-setseltags(unsigned int newtagset, Bool newset) {
+setseltags(Monitor *m, unsigned int newtagset, Bool newset) {
 	int i;
-	Bool subset = (!newset || (selmon->tagset[selmon->seltags^1] & newtagset));
+	Bool subset = (!newset || (m->tagset[m->seltags^1] & newtagset));
 
-	selmon->tagset[selmon->seltags] = newtagset;
-	if (hasclientson(newtagset)) {
+	m->tagset[m->seltags] = newtagset;
+	if (hasclientson(m, newtagset)) {
 		if (subset)
-			selmon->sparetagset[selmon->selsparetags^1] = newtagset;
+			m->sparetagset[m->selsparetags^1] = newtagset;
 		else {
 			for(i = 0; i < 2; ++i)
-				if (selmon->sparetagset[selmon->selsparetags^(i^1)] != newtagset) {
-					selmon->sparetagset[selmon->selsparetags^i] = newtagset;
+				if (m->sparetagset[m->selsparetags^(i^1)] != newtagset) {
+					m->sparetagset[m->selsparetags^i] = newtagset;
 					break;
 				}
 			if (i < 2)
-				selmon->selsparetags = (selmon->selsparetags^(i^1));
+				m->selsparetags = (m->selsparetags^(i^1));
 		}
 
 	}
 }
 
 unsigned int
-findsparetagset () {
+findsparetagset (Monitor *m) {
 	int i;
 	unsigned int sparetags = 0;
 
-	selmon->selsparetags ^= 1;
+	m->selsparetags ^= 1;
 	for (i = 0; i < 2 && sparetags == 0; ++i) {
-		if (hasclientson(selmon->sparetagset[selmon->selsparetags^i]) && selmon->sparetagset[selmon->selsparetags^i] != selmon->tagset[selmon->seltags^1])
-			sparetags = selmon->sparetagset[selmon->selsparetags^i];
+		if (hasclientson(m, m->sparetagset[m->selsparetags^i]) && m->sparetagset[m->selsparetags^i] != m->tagset[m->seltags^1])
+			sparetags = m->sparetagset[m->selsparetags^i];
 	}
 	if (sparetags != 0)
 		return sparetags;
-	return selmon->tagset[selmon->seltags];
+	return m->tagset[m->seltags];
 }

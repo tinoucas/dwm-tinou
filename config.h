@@ -47,7 +47,7 @@ static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 #define Button11 (Button1 + 10)
 #define Button12 (Button1 + 11)
 
-#include "mousemap.c"
+#include "remap.c"
 
 #define CLEAR 0.618
 #define TRANS 0.75
@@ -86,7 +86,7 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class				instance		title			tags mask	isfloating	transp	nofocus noborder rh	monitor custommouse preflayout istransient procname */
+	/* class				instance		title			tags mask	isfloating	transp	nofocus noborder rh	monitor remap preflayout istransient procname */
 	{	NULL,				NULL,			NULL,			0,			False,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL },
 	{	"veromix",			NULL,			NULL,			0,			True,		TRANS,	False,	False, True,-1, NULL, NULL, False, NULL },
 	{	"Alacritty",		"Alacritty",	NULL,			0,			False,		CLEAR,	False,	False, True,-1, NULL, NULL, False, NULL },
@@ -103,7 +103,7 @@ static const Rule rules[] = {
 	{	"Gran Paradiso",	NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, NULL, NULL, False, NULL },
 	{	"Opera",			NULL,			NULL,			1 << 8,		False,		OPAQU,	False,	False, True,-1, NULL, NULL, False, NULL },
 	{	"Google-chrome",	"google-chrome",NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, NULL, False, NULL },
-	{	"Yandex-browser",	"yandex-browser",NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, NULL, False, NULL },
+	{	"Yandex-browser",	"yandex-browser",NULL,			1 << 8,		False,		OPAQU,	False,	False, True, -1, chrome, &layouts[MONOCLE], False, NULL },
 	{	"broken",			"broken",		NULL,			1 << 5,		False,		OPAQU,	False,	False, True, 1, chrome, &layouts[MONOCLE], False, "yandex_browser" },
 	{	"google-chrome",	"crx_knipolnnllmklapflnccelgolnpehhpl",	NULL,	1 << 1,	False,	OPAQU,	False, False,	True,	-1, chrome, NULL, False, NULL },
 	{	NULL,				"chrome_app_list",NULL,			0,			True,		OPAQU,	False,	False, True,-1 , chrome, NULL, False, NULL },
@@ -149,8 +149,8 @@ static const Rule rules[] = {
 	{	NULL,				"TzClock",		NULL,			~0,			True,		TRANS,	True,	True, True,-1 , NULL, NULL, False, NULL },
 	{	"Guimup",			"guimup",		NULL,			1 << 5,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	NULL,				"uzbl-core",	NULL,			1 << 8,		False,		OPAQU,	False,	False, True,-1 , NULL, NULL, False, NULL },
-	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , chrome, NULL, False, NULL },
-	{	NULL,				"vim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , chrome, NULL, False, NULL },
+	{	NULL,				"gvim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , NULL, NULL, False, NULL },
+	{	NULL,				"vim",			NULL,			1 << 3,		False,		TRANS,	False,	False, False,-1 , NULL, NULL, False, NULL },
 	{	"Sublime_text",		NULL,			NULL,			1 << 3,		False,		TRANS,	False,	False, True,-1 , NULL, NULL, False, NULL },
 	{	NULL,			"MixVibes Cross",	NULL,			1 << 4,		False,		OPAQU,	False,	False, True, -1 , NULL, NULL, False, NULL },
 	{	NULL,			"Cross Preferences",NULL,			1 << 4,		True,		OPAQU,	False,	False, True, -1 , NULL, NULL, False, NULL },
@@ -240,8 +240,8 @@ static Key keys[] = {
 	{ MODKEY,                       XK_space,  togglepreview,  {0} },
 	{ MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
 	{ MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
-	{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
-	{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
+	//{ MODKEY,                       XK_0,      view,           {.ui = ~0 } },
+	//{ MODKEY|ShiftMask,             XK_0,      tag,            {.ui = ~0 } },
 	{ MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
@@ -281,6 +281,7 @@ static Key keys[] = {
 	{ 0,                            XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
 	{ 0,                            XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
 	{ 0,                            XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+	{ MODKEY|ControlMask,			XK_Right,	rotatemonitor,  {.i = 0} },
 };
 
 /* button definitions */
