@@ -124,6 +124,7 @@ static const Rule rules[] = {
 	{	"Opera"            , NULL                , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL      } , 
 	{	"Google-chrome"    , "google-chrome"     , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL      } , 
 	{	"Yandex-browser"   , "yandex-browser"    , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , monoclelayout , False       , NULL      } , 
+	{	"Slimjet"          , "slimjet"           , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , monoclelayout , False       , NULL      } , 
 	{	NULL               , "chrome_app_list"   , NULL        , anytag    , True       , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL      } , 
 	{	"Chromium"         , "chromium"          , NULL        , webtag    , False      , OPAQU  , False   , False    , True  , -1      , chrome , NULL          , False       , NULL      } , 
 	{	NULL               , "Pidgin"            , NULL        , chattag   , False      , TRANS  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL      } , 
@@ -186,6 +187,7 @@ static const Rule rules[] = {
 	{	"qBittorrent"      , "qbittorrent"       , NULL        , trrnttag  , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL      } , 
 	{	"JDownloader"      , NULL                , NULL        , dltag     , False      , OPAQU  , False   , False    , True  , -1      , NULL   , NULL          , False       , NULL      } , 
 	{	NULL               , NULL                , NULL        , musictag  , False      , SUBTL  , False   , False    , True  , -1      , NULL   , NULL          , False       , "spotify" } , 
+    {	"broken"           , "broken"            , NULL        , vtag      , False      , OPAQU  , False   , False    , True  , 1       , NULL   , monoclelayout , False       , "yandex_browser" } , 
 };
 
 static const int layoutaxis[] = {
