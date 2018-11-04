@@ -199,9 +199,10 @@ static const int layoutaxis[] = {
 static const float mfact      = 0.55; /* factor of master area size [0.05..0.95] */
 // static const Bool resizehints = True; /* True means respect size hints in tiled resizals */
 
+static int initlayout = 0;
+
 #include "tinou.c"
 
-static int initlayout = 0;
 static double barOpacity = 0.65;
 
 /* key definitions */
@@ -306,7 +307,7 @@ static Key keys[] = {
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[MONOCLE]} },
+	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = monoclelayout} },
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
 	{ ClkLtSymbol,          0,              Button5,        viewscroll,     {.f = +0.05 } },
 	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },

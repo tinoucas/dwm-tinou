@@ -1,46 +1,112 @@
-void
-removefromstack(Monitor *m, unsigned int ui) {
-	ViewStack *v = m->viewstack;
-	ViewStack *vdup, *vprev = NULL;
+Bool
+movetostacktop(Monitor *m, unsigned int ui) {
+	ViewStack *v = m->vs;
+	ViewStack *vprev = NULL;
 
 	while (v) {
 		if (v->view == ui) {
-			vdup = v;
-			if (vprev)
-				vprev->next = v->next;
-			else
-				m->viewstack = v->next;
-			v = v->next;
-			free(vdup);
+			if (v != m->vs) {
+				if (vprev)
+					vprev->next = v->next;
+				v->next = m->vs;
+				m->vs = v;
+			}
+			return True;
 		}
 		else {
 			vprev = v;
 			v = v->next;
 		}
 	}
+	return False;
 }
 
 void
-viewstackadd (Monitor *m, unsigned int ui, Bool newview) {
-	if (newview || m->viewstack == NULL) {
-		ViewStack* v = (ViewStack*)calloc(1, sizeof(ViewStack));
+copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
+	vdst->view = vsrc->view;
+	vdst->curlt = vsrc->curlt;
+	vdst->lt[0] = vsrc->lt[0];
+	vdst->lt[1] = vsrc->lt[1];
+	vdst->showbar = vsrc->showbar;
+}
 
-		removefromstack(m, ui);
-		v->next = m->viewstack;
-		m->viewstack = v;
+ViewStack*
+createviewstack (Monitor *m, const ViewStack *vref) {
+	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
+
+	v->lt[0] = &layouts[initlayout];
+	v->lt[1] = &layouts[1 % LENGTH(layouts)];
+	if (vref != NULL)
+		copyviewstack(v, vref);
+	else {
+		v->showbar = showbar;
+		v->view = 1;
 	}
-	m->viewstack->view = ui;
+	return v;
+}
+
+void
+cleanupviewstack(ViewStack *v) {
+	ViewStack *vnext;
+
+	while(v) {
+		vnext = v->next;
+		free(v);
+		v = vnext;
+	}
+}
+
+void
+movetoptoend(Monitor *m) {
+	ViewStack** pv;
+
+	for(pv = &m->vs; *pv; pv = &(*pv)->next) ;
+	*pv = m->vs;
+	m->vs = m->vs->next;
+	(*pv)->next = NULL;
+}
+
+void
+viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
+	ViewStack* v;
+	ViewStack* vref = m->vs;
+
+	if (!newview) {
+		movetoptoend(m);
+	}
+	if (!movetostacktop(m, ui)) {
+		v = createviewstack(m, vref);
+		v->next = m->vs;
+		m->vs = v;
+		m->vs->view = ui;
+	}
+}
+
+void
+storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
+	ViewStack *v;
+	ViewStack **pv = &m->vs;
+
+	for(v = m->vs; v && v->view != ui; pv = &v->next, v = v->next) ;
+	if (!v) {
+		*pv = createviewstack(m, m->vs);
+		v = *pv;
+		v->view = ui;
+	}
+	if (v->lt[v->curlt] == lt)
+		v->curlt ^= 1;
+	v->lt[v->curlt] = lt;
 }
 
 void
 rewindstack (const Arg *arg) {
 	ViewStack *v;
 
-	if (selmon->viewstack && selmon->viewstack->next) {
-		v = selmon->viewstack;
-		free(selmon->viewstack);
-		selmon->viewstack = v;
-		selmon->tagset = selmon->viewstack->view;
+	if (selmon->vs && selmon->vs->next) {
+		v = selmon->vs;
+		free(selmon->vs);
+		selmon->vs = v;
+		selmon->tagset = selmon->vs->view;
 		arrange(selmon);
 	}
 }
@@ -55,7 +121,7 @@ rotateclients (const Arg *arg) {
 	do
 	{
 		if (base) {
-			if (selmon->lt[selmon->sellt]->arrange != &monocle) {
+			if (selmon->vs->lt[selmon->vs->curlt]->arrange != &monocle) {
 				if (arg->i > 0) {
 					selmon->clients = base->next;
 					pc = &selmon->clients;
@@ -90,7 +156,7 @@ ttbarclick(const Arg *arg) {
 
 static void
 viewscroll(const Arg *arg) {
-	if (selmon->lt[selmon->sellt]->arrange != &monocle)
+	if (selmon->vs->lt[selmon->vs->curlt]->arrange != &monocle)
 		setmfact(arg);
 }
 
@@ -130,6 +196,24 @@ changemon(Client *c, Monitor *m) {
 	attachstack(c);
 }
 
+void
+duplicateviewstack(Monitor *mdst, Monitor *msrc) {
+	ViewStack *vdst = createviewstack(mdst, msrc->vs), *vsrc;
+	ViewStack **pv = &mdst->vs;
+
+	vsrc = msrc->vs;
+	cleanupviewstack(mdst->vs);
+	while (vsrc) {
+		*pv = vdst;
+		vdst = *pv;
+		copyviewstack(vdst, vsrc);
+		vsrc = vsrc->next;
+		vdst->next = createviewstack(mdst, vsrc);
+		pv = &vsrc->next;
+	}
+	cleanupviewstack(vdst);
+}
+
 struct ClientListItem;
 typedef struct ClientListItem ClientListItem;
 struct ClientListItem {
@@ -163,9 +247,7 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 		monview(mdst, views);
 	else
 		monview(mdst, msrc->tagset);
-	monsetlayout(mdst, msrc->lt[msrc->sellt]);
 
-	mdst->showbar = msrc->showbar;
 	mdst->topbar = msrc->topbar;
 	mdst->mfact = msrc->mfact;
 	mdst->msplit = msrc->msplit;
@@ -177,8 +259,10 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	for (j = 0; j < 3; ++j)
 		mdst->ltaxis[j] = msrc->ltaxis[j];
 	mdst->hasclock = msrc->hasclock;
-	if (views == ~0)
-		mdst->viewstack = msrc->viewstack;
+	if (views == ~0) {
+		duplicateviewstack(mdst, msrc);
+	}
+	monsetlayout(mdst, msrc->vs->lt[msrc->vs->curlt]);
 }
 
 void
@@ -218,8 +302,7 @@ rotatemonitor(const Arg* arg) {
 	free(sparem);
 	for (i = 0, m = mons; m; m = m->next, ++i) {
 		m->num = i;
-		if(m->showbar != m->showbars[m->curtag])
-			montogglebar(m);
+		restorebar(m);
 		if(m->tagset == vtag && !hasclientson(m, vtag))
 			monview(m, 0);
 		arrange(m);
@@ -229,28 +312,40 @@ rotatemonitor(const Arg* arg) {
 
 void
 setseltags(Monitor *m, unsigned int newtagset, Bool newview) {
-	viewstackadd(m, m->tagset, newview);
+	viewstackadd(m, newtagset, newview);
 	m->tagset = newtagset;
 }
 
 unsigned int
-findsparetagset (Monitor *m) {
-	unsigned int sparetags = 0;
+findtoggletagset (Monitor *m) {
+	unsigned int toggletags = m->tagset;
 	unsigned int curseltags = m->tagset;
-	ViewStack* v = m->viewstack;
-	int i = 0;
+	unsigned int tag = 0;
+	ViewStack* v = m->vs;
 
-	while (sparetags == 0 && v)
-	{
-		if (v->view != curseltags && hasclientson(m, v->view))
-			sparetags = v->view;
+	while (toggletags == curseltags && v) {
+		if ((v->view & curseltags) == 0 && hasclientson(m, v->view))
+			toggletags = v->view;
 		v = v->next;
-		++i;
 	}
-	if (sparetags != 0)
-		return sparetags;
-	fprintf(stderr, "findsparetagset stuck, stack size is %d\n", i);
-	return m->tagset;
+	v = m->vs;
+	while (toggletags == curseltags && v) {
+		if (v->view != curseltags && hasclientson(m, v->view))
+			toggletags = v->view;
+		v = v->next;
+	}
+	v = m->vs;
+	while (toggletags == curseltags && v) {
+		if (v->view != curseltags)
+			toggletags = v->view;
+		v = v->next;
+	}
+	while (toggletags == curseltags && tag < LENGTH(tags)) {
+		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
+			toggletags = (1 << tag);
+		++tag;
+	}
+	return toggletags;
 }
 
 Bool

@@ -39,7 +39,7 @@ static void shiftmastersplit(const Arg *arg);
 
 void
 mirrorlayout(const Arg *arg) {
-	if(!selmon->lt[selmon->sellt]->arrange)
+	if(!selmon->vs->lt[selmon->vs->curlt]->arrange)
 		return;
 	selmon->ltaxis[0] *= -1;
 	selmon->ltaxes[selmon->curtag][0] = selmon->ltaxis[0];
@@ -48,7 +48,7 @@ mirrorlayout(const Arg *arg) {
 
 void
 rotatelayoutaxis(const Arg *arg) {
-	if(!selmon->lt[selmon->sellt]->arrange)
+	if(!selmon->vs->lt[selmon->vs->curlt]->arrange)
 		return;
 	if(arg->i == 0) {
 		if(selmon->ltaxis[0] > 0)
@@ -67,7 +67,7 @@ shiftmastersplit(const Arg *arg) {
 	Client *c;
 
 	for(n = 0, c = nexttiled(selmon->clients); c; c = nexttiled(c->next), n++);
-	if(!arg || !selmon->lt[selmon->sellt]->arrange || selmon->msplit + arg->i < 1 || selmon->msplit + arg->i > n)
+	if(!arg || !selmon->vs->lt[selmon->vs->curlt]->arrange || selmon->msplit + arg->i < 1 || selmon->msplit + arg->i > n)
 		return;
 	selmon->msplit += arg->i;
 	selmon->msplits[selmon->curtag] = selmon->msplit;
