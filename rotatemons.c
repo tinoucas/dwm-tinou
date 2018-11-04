@@ -75,9 +75,9 @@ rotatemonitor(const Arg* arg) {
 	free(sparem);
 	for (i = 0, m = mons; m; m = m->next, ++i) {
 		m->num = i;
-		restorebar(m);
-		if(m->vs->tagset == vtag && !hasclientson(m, vtag))
+		if(!allviews && !hasclientson(m, m->vs->tagset))
 			monview(m, 0);
+		restorebar(m);
 		arrange(m);
 	}
 	rotatingMons = False;
