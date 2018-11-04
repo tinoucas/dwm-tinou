@@ -98,7 +98,7 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 		movetoptoend(m);
 	}
 	if (!movetostacktop(m, ui)) {
-		v = createviewstack(m, vref);
+		v = createviewstack(m, newview ? NULL : vref);
 		v->next = m->vs;
 		m->vs = v;
 		m->vs->tagset = ui;
@@ -131,24 +131,6 @@ rewindstack (const Arg *arg) {
 		selmon->vs = v;
 		arrange(selmon);
 	}
-}
-
-void
-duplicateviewstack(Monitor *mdst, Monitor *msrc) {
-	ViewStack *vdst = createviewstack(mdst, msrc->vs), *vsrc;
-	ViewStack **pv = &mdst->vs;
-
-	vsrc = msrc->vs;
-	cleanupviewstack(mdst->vs);
-	while (vsrc) {
-		*pv = vdst;
-		vdst = *pv;
-		copyviewstack(vdst, vsrc);
-		vsrc = vsrc->next;
-		vdst->next = createviewstack(mdst, vsrc);
-		pv = &vsrc->next;
-	}
-	cleanupviewstack(vdst);
 }
 
 unsigned int
