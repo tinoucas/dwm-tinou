@@ -34,11 +34,11 @@ ViewStack*
 createviewstack (Monitor *m, const ViewStack *vref) {
 	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
 
-	v->lt[0] = &layouts[initlayout];
-	v->lt[1] = &layouts[1 % LENGTH(layouts)];
 	if (vref != NULL)
 		copyviewstack(v, vref);
 	else {
+		v->lt[0] = &layouts[initlayout];
+		v->lt[1] = &layouts[1 % LENGTH(layouts)];
 		v->showbar = showbar;
 		v->view = 1;
 	}
