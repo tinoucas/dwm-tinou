@@ -615,8 +615,7 @@ applyrules(Client *c) {
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->vs->tagset;
 	if (c->mon)
 	{
-		unsigned int nc = 0;
-		Client *cother;
+		unsigned int tagset;
 
 		if (!startup) {
 			unsigned int intertags = intersecttags(c, c->mon);
@@ -625,26 +624,19 @@ applyrules(Client *c) {
 			{
 				if (c->tags == vtag)
 					viewstackadd(c->mon, vtag, True);
-				else
-					viewstackadd(c->mon, intertags|c->mon->vs->tagset, False);
+				else {
+					tagset = (c->tags|c->mon->vs->tagset);
+					viewstackadd(c->mon, c->tags, True);
+					viewstackadd(c->mon, tagset, True);
+				}
 				if (c->tags & c->mon->vs->tagset)
 					arrange(c->mon);
 			}
 		}
 		if(lastr && lastr->preflayout) {
-			if (lastr->preflayout != monoclelt)
-				for(cother = c->mon->clients; cother; cother = cother->next)
-					if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
-						++nc;
-			if(nc == 0) {
-				if (c->tags & c->mon->vs->tagset) {
-					monsetlayout(c->mon, lastr->preflayout);
-					arrange(c->mon);
-				}
-				else {
-					storestackviewlayout(c->mon, c->tags, lastr->preflayout);
-				}
-			}
+			storestackviewlayout(c->mon, c->tags, lastr->preflayout);
+			if (c->tags == c->mon->vs->tagset)
+				arrange(c->mon);
 		}
 		else if (!startup && !c->nofocus )
 		{
