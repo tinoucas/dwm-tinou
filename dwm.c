@@ -90,7 +90,7 @@ enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation,
-	   NetWMName, NetWMState, NetWMFullscreen, NetWMPID, NetActiveWindow, NetWMWindowType,
+	   NetWMName, NetWMState, NetWMFullscreen, NetActiveWindow, NetWMWindowType,
 	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetClientList, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
@@ -500,20 +500,15 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->mon = m;
 }
 
-long getwinpid (Client* c) {
-	long pid = getatomprop(c, netatom[NetWMPID]);
-	return pid;
-}
-
 char* getwincmdline (Client* c) {
-	long pid = getwinpid(c);
+	pid_t pid = winpid(c->win);
 
 	char procfile[1024];
 	char* cmdline = calloc(1024, sizeof(char));
 	int nread = 0;
 
 	if (pid != 0) {
-		snprintf(procfile, 1023, "/proc/%ld/cmdline", pid);
+		snprintf(procfile, 1023, "/proc/%d/cmdline", pid);
 	
 		FILE* fd = fopen(procfile, "r");
 		if (fd != NULL) {
@@ -525,7 +520,6 @@ char* getwincmdline (Client* c) {
 			fprintf(stderr, "proc file not found: %s\n", procfile);
 		}
 		cmdline[nread] = 0;
-		fprintf(stderr, "pid: %ld, cmdline: %s\n", pid, cmdline);
 	}
 	return cmdline;
 }
@@ -1621,8 +1615,6 @@ getatomprop(Client *c, Atom prop) {
 	Atom req = XA_ATOM;
 	if(prop == xatom[XembedInfo])
 		req = xatom[XembedInfo];
-	else if (prop == netatom[NetWMPID])
-		req = XA_CARDINAL;
 
 	if(XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, req,
 						  &da, &di, &dl, &dl, &p) == Success && p) {
@@ -2594,7 +2586,6 @@ setup(void) {
 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
-	netatom[NetWMPID] = XInternAtom(dpy, "_NET_WM_PID", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
