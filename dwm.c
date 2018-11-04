@@ -288,7 +288,7 @@ static long getstate(Window w);
 static unsigned int getsystraywidth();
 static Bool gettextprop(Window w, Atom atom, char *text, unsigned int size);
 static void grabbuttons(Client *c, Bool focused);
-static void grabkeys(void);
+static void grabkeys(Window window);
 static void grabremap(Client *c, Bool focused);
 static void initfont(const char *fontstr);
 static void keypress(XEvent *e);
@@ -1559,6 +1559,7 @@ grabremap(Client *c, Bool manage) {
 	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 	KeyCode code;
 
+	grabkeys(c->win);
 	if (c && c->remap && c->win) {
 		for(i = 0; c->remap[i].keysymto; ++i)
 			for(j = 0; j < LENGTH(modifiers); j++) {
@@ -1568,7 +1569,7 @@ grabremap(Client *c, Bool manage) {
 								True, GrabModeSync, GrabModeAsync);
 					}
 					else {
-						XUngrabKey(dpy, code, modifiers[j], root);
+						XUngrabKey(dpy, code, modifiers[j], c->win);
 					}
 				}
 			}
@@ -1606,18 +1607,18 @@ grabbuttons(Client *c, Bool focused) {
 }
 
 void
-grabkeys(void) {
+grabkeys(Window window) {
 	updatenumlockmask();
 	{
 		unsigned int i, j;
 		unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 		KeyCode code;
 
-		XUngrabKey(dpy, AnyKey, AnyModifier, root);
+		XUngrabKey(dpy, AnyKey, AnyModifier, window);
 		for(i = 0; i < LENGTH(keys); i++)
 			if((code = XKeysymToKeycode(dpy, keys[i].keysym)))
 				for(j = 0; j < LENGTH(modifiers); j++)
-					XGrabKey(dpy, code, keys[i].mod | modifiers[j], root,
+					XGrabKey(dpy, code, keys[i].mod | modifiers[j], window,
 						 True, GrabModeAsync, GrabModeAsync);
 	}
 }
@@ -1769,7 +1770,7 @@ mappingnotify(XEvent *e) {
 
 	XRefreshKeyboardMapping(ev);
 	if(ev->request == MappingKeyboard)
-		grabkeys();
+		grabkeys(root);
 }
 
 void
@@ -2467,7 +2468,7 @@ setup(void) {
 					|EnterWindowMask|LeaveWindowMask|StructureNotifyMask|PropertyChangeMask;
 	XChangeWindowAttributes(dpy, root, CWEventMask|CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
-	grabkeys();
+	grabkeys(root);
 }
 
 void
