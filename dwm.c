@@ -785,7 +785,11 @@ swapclientscontent(Client *c1, Client *c2) {
 	Bool isfloating = c1->isfloating;
 	Monitor *m = c1->mon;
 	unsigned int tags = c1->tags;
-	Window w = c1->win;
+	Window win = c1->win;
+	int x = c1->x;
+	int y = c1->y;
+	int w = c1->w;
+	int h = c1->h;
 
 	c1->opacity = c2->opacity;
 	c2->opacity = opacity;
@@ -796,7 +800,15 @@ swapclientscontent(Client *c1, Client *c2) {
 	c1->tags = c2->tags;
 	c2->tags = tags;
 	c1->win = c2->win;
-	c2->win = w;
+	c2->win = win;
+	c1->x = c2->x;
+	c2->x = x;
+	c1->y = c2->y;
+	c2->y = y;
+	c1->w = c2->w;
+	c2->w = w;
+	c1->h = c2->h;
+	c2->h = h;
 }
 
 void
