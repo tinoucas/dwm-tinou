@@ -4,7 +4,7 @@ movetostacktop(Monitor *m, unsigned int ui) {
 	ViewStack *vprev = NULL;
 
 	while (v) {
-		if (v->view == ui) {
+		if (v->tagset == ui) {
 			if (v != m->vs) {
 				if (vprev)
 					vprev->next = v->next;
@@ -23,16 +23,23 @@ movetostacktop(Monitor *m, unsigned int ui) {
 
 void
 copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
-	vdst->view = vsrc->view;
+	int i;
+
+	vdst->tagset = vsrc->tagset;
 	vdst->curlt = vsrc->curlt;
 	vdst->lt[0] = vsrc->lt[0];
 	vdst->lt[1] = vsrc->lt[1];
+	vdst->mfact = vsrc->mfact;
+	vdst->msplit = vsrc->msplit;
+	for (i = 0; i < 3; ++i)
+		vdst->ltaxis[i] = vsrc->ltaxis[i];
 	vdst->showbar = vsrc->showbar;
 }
 
 ViewStack*
 createviewstack (Monitor *m, const ViewStack *vref) {
 	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
+	int i;
 
 	if (vref != NULL)
 		copyviewstack(v, vref);
@@ -40,7 +47,11 @@ createviewstack (Monitor *m, const ViewStack *vref) {
 		v->lt[0] = &layouts[initlayout];
 		v->lt[1] = &layouts[1 % LENGTH(layouts)];
 		v->showbar = showbar;
-		v->view = 1;
+		v->tagset = 1;
+		v->mfact = mfact;
+		v->msplit = 1;
+		for (i = 0; i < 3; ++i)
+			v->ltaxis[i] = layoutaxis[i];
 	}
 	return v;
 }
@@ -78,7 +89,7 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 		v = createviewstack(m, vref);
 		v->next = m->vs;
 		m->vs = v;
-		m->vs->view = ui;
+		m->vs->tagset = ui;
 	}
 }
 
@@ -87,11 +98,11 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 	ViewStack *v;
 	ViewStack **pv = &m->vs;
 
-	for(v = m->vs; v && v->view != ui; pv = &v->next, v = v->next) ;
+	for(v = m->vs; v && v->tagset != ui; pv = &v->next, v = v->next) ;
 	if (!v) {
 		*pv = createviewstack(m, m->vs);
 		v = *pv;
-		v->view = ui;
+		v->tagset = ui;
 	}
 	if (v->lt[v->curlt] == lt)
 		v->curlt ^= 1;
@@ -106,7 +117,6 @@ rewindstack (const Arg *arg) {
 		v = selmon->vs;
 		free(selmon->vs);
 		selmon->vs = v;
-		selmon->tagset = selmon->vs->view;
 		arrange(selmon);
 	}
 }
@@ -226,7 +236,6 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	Client* c;
 	ClientListItem* movingclients = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 	ClientListItem* item = movingclients;
-	int i, j;
 
 	for(c = msrc->stack; c; c = c->snext)
 		if (c->tags & views) {
@@ -246,18 +255,9 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	if (views != ~0)
 		monview(mdst, views);
 	else
-		monview(mdst, msrc->tagset);
+		monview(mdst, msrc->vs->tagset);
 
 	mdst->topbar = msrc->topbar;
-	mdst->mfact = msrc->mfact;
-	mdst->msplit = msrc->msplit;
-	for(i = 0; i < LENGTH(tags) + 1; ++i) {
-		mdst->msplits[i] = msrc->msplits[i];
-		for (j = 0; j < 3; ++j)
-			mdst->ltaxes[i][j] = msrc->ltaxes[i][j];
-	}
-	for (j = 0; j < 3; ++j)
-		mdst->ltaxis[j] = msrc->ltaxis[j];
 	mdst->hasclock = msrc->hasclock;
 	if (views == ~0) {
 		duplicateviewstack(mdst, msrc);
@@ -290,7 +290,7 @@ rotatemonitor(const Arg* arg) {
 	Monitor* m;
 	Monitor* nextm;
 	Bool allviews = (arg->i != 0);
-	unsigned int views = allviews ? ~0 : selmon->tagset;
+	unsigned int views = allviews ? ~0 : selmon->vs->tagset;
 	int i;
 
 	rotatingMons = True;
@@ -303,43 +303,48 @@ rotatemonitor(const Arg* arg) {
 	for (i = 0, m = mons; m; m = m->next, ++i) {
 		m->num = i;
 		restorebar(m);
-		if(m->tagset == vtag && !hasclientson(m, vtag))
+		if(m->vs->tagset == vtag && !hasclientson(m, vtag))
 			monview(m, 0);
 		arrange(m);
 	}
 	rotatingMons = False;
 }
 
-void
-setseltags(Monitor *m, unsigned int newtagset, Bool newview) {
-	viewstackadd(m, newtagset, newview);
-	m->tagset = newtagset;
-}
-
 unsigned int
 findtoggletagset (Monitor *m) {
-	unsigned int toggletags = m->tagset;
-	unsigned int curseltags = m->tagset;
+	unsigned int toggletags = m->vs->tagset;
+	unsigned int curseltags = m->vs->tagset;
 	unsigned int tag = 0;
 	ViewStack* v = m->vs;
 
+	/* rewing stack for non-empty tagset with no tags in common */
 	while (toggletags == curseltags && v) {
-		if ((v->view & curseltags) == 0 && hasclientson(m, v->view))
-			toggletags = v->view;
+		if ((v->tagset & curseltags) == 0 && hasclientson(m, v->tagset))
+			toggletags = v->tagset;
 		v = v->next;
 	}
+	/* rewind stack for different non-empty tagset that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
-		if (v->view != curseltags && hasclientson(m, v->view))
-			toggletags = v->view;
+		if (v->tagset != curseltags && hasclientson(m, v->tagset))
+			toggletags = v->tagset;
 		v = v->next;
 	}
+	/* rewind stack for tagset (empty) with no tags in common */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
-		if (v->view != curseltags)
-			toggletags = v->view;
+		if ((v->tagset & curseltags) == 0)
+			toggletags = v->tagset;
 		v = v->next;
 	}
+	/* rewind stack for different tagset (empty) that share some tags */
+	v = m->vs;
+	while (toggletags == curseltags && v) {
+		if (v->tagset != curseltags)
+			toggletags = v->tagset;
+		v = v->next;
+	}
+	/* try any tag different than current */
 	while (toggletags == curseltags && tag < LENGTH(tags)) {
 		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
 			toggletags = (1 << tag);

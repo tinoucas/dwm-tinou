@@ -44,7 +44,7 @@ fibonacci(Monitor *mon, int s) {
 			if(i == 0)
 			{
 				if(n != 1)
-					nw = mon->ww * mon->mfact;
+					nw = mon->ww * mon->vs->mfact;
 				ny = mon->wy;
 			}
 			else if(i == 1)

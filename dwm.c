@@ -52,7 +52,7 @@
 #define CLEANMASK(mask)			(mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
-#define ISVISIBLE(C)			((C->tags & C->mon->tagset))
+#define ISVISIBLE(C)			((C->tags & C->mon->vs->tagset))
 #define LENGTH(X)				(sizeof X / sizeof X[0])
 #ifndef MAX
 #define MAX(A, B)				((A) > (B) ? (A) : (B))
@@ -180,34 +180,27 @@ struct ViewStack;
 typedef struct ViewStack ViewStack;
 struct ViewStack {
 	struct ViewStack* next;
-	unsigned int view;
+	unsigned int tagset;
 	const Layout *lt[2];
 	Bool showbar;
 	int curlt;
+	float mfact;
+	unsigned int msplit;
+	int ltaxis[3];
 };
 
 struct Monitor {
 	char ltsymbol[16];
-	float mfact;
 	int num;
 	int by;				  /* bar geometry */
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
-	unsigned int tagset;
 	Bool topbar;
 	Client *clients;
 	Client *sel;
 	Client *stack;
 	Monitor *next;
 	Window barwin;
-	int curtag;
-	int prevtag;
-	const Layout *lts[LENGTH(tags) + 1];
-	double mfacts[LENGTH(tags) + 1];
-	unsigned int msplit;
-	unsigned int msplits[LENGTH(tags) + 1];
-	int ltaxis[3];
-	int ltaxes[LENGTH(tags) + 1][3];
 	Bool hasclock;
 	ViewStack* vs;
 };
@@ -609,7 +602,7 @@ applyrules(Client *c) {
 	}
 	if (c->isfloating)
 		centerclient(c);
-	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset;
+	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->vs->tagset;
 	if (c->mon)
 	{
 		unsigned int nc = 0;
@@ -626,12 +619,11 @@ applyrules(Client *c) {
 			}
 			if (alone && !c->nofocus && c->tags != ~0)
 			{
-				if (c->tags == vtag) {
-					setseltags(c->mon, vtag, True);
-				}
+				if (c->tags == vtag)
+					viewstackadd(c->mon, vtag, True);
 				else
-					setseltags(c->mon, c->mon->tagset | (c->tags), False);
-				if (c->tags & c->mon->tagset)
+					viewstackadd(c->mon, c->mon->vs->tagset | (c->tags), False);
+				if (c->tags & c->mon->vs->tagset)
 					arrange(c->mon);
 			}
 		}
@@ -641,7 +633,7 @@ applyrules(Client *c) {
 					if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
 						++nc;
 			if(nc == 0) {
-				if (c->tags & c->mon->tagset) {
+				if (c->tags & c->mon->vs->tagset) {
 					monsetlayout(c->mon, lastr->preflayout);
 					arrange(c->mon);
 				}
@@ -653,7 +645,7 @@ applyrules(Client *c) {
 		else if (!startup && !c->nofocus )
 		{
 			c->isurgent = True;
-			if ((c->tags & c->mon->tagset) == 0)
+			if ((c->tags & c->mon->vs->tagset) == 0)
 				drawbar(c->mon);
 		}
 	}
@@ -734,9 +726,9 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 					if(c1 == c)
 						nc = n;
 				}
-			if(n == m->msplit + 1 || nc < m->msplit || m->ltaxis[2] == 2)
+			if(n == m->vs->msplit + 1 || nc < m->vs->msplit || m->vs->ltaxis[2] == 2)
 				*x += (worig - *w) / 2;
-			if(n == m->msplit + 1 || nc < m->msplit || m->ltaxis[2] == 1)
+			if(n == m->vs->msplit + 1 || nc < m->vs->msplit || m->vs->ltaxis[2] == 1)
 				*y += (horig - *h) / 2;
 		}
 	}
@@ -914,16 +906,16 @@ cleartags(Monitor *m){
 	for(c = m->clients; c; c = c->next)
 		if(ISVISIBLE(c) && !c->nofocus) {
 			if (c->tags != ~0)
-				newtags |= (c->tags & m->tagset);
+				newtags |= (c->tags & m->vs->tagset);
 			++nc;
 		}
-	if(newtags && newtags != m->tagset) {
-		m->tagset = newtags;
+	if(newtags && newtags != m->vs->tagset) {
+		m->vs->tagset = newtags;
 		arrange(m);
 	}
 	if (nc == 0) {
 		monsetlayout(m, &layouts[initlayout]);
-		if (m->tagset == vtag)
+		if (m->vs->tagset == vtag)
 			monview(m, 0);
 	}
 }
@@ -1117,16 +1109,9 @@ createmon(void) {
 
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
-	m->tagset = 1;
-
-	m->mfact = mfact;
-	m->topbar = topbar;
 	m->vs = createviewstack(m, NULL);
+	m->topbar = topbar;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
-	m->ltaxis[0] = layoutaxis[0];
-	m->ltaxis[1] = layoutaxis[1];
-	m->ltaxis[2] = layoutaxis[2];
-	m->msplit = 1;
 
 	return m;
 }
@@ -1219,7 +1204,7 @@ drawbar(Monitor *m) {
 	dc.x = 0;
 	for(i = 0; i < LENGTH(tags); i++) {
 		dc.w = TEXTW(tags[i]);
-		col = m->tagset & 1 << i ? dc.sel : dc.norm;
+		col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
 		drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags & 1 << i || (1 << i) == vtag && hasfullscreenv,
 				   occ & 1 << i, urg & 1 << i, col);
@@ -2220,7 +2205,7 @@ sendmon(Client *c, Monitor *m) {
 	detach(c);
 	detachstack(c);
 	c->mon = m;
-	c->tags = m->tagset; /* assign tags of target monitor */
+	c->tags = m->vs->tagset; /* assign tags of target monitor */
 	attach(c);
 	attachstack(c);
 	focus(NULL);
@@ -2321,13 +2306,10 @@ setfullscreen(Client *c, Bool fullscreen) {
 
 void
 monsetlayout(Monitor *m, const void* v) {
-	if(!v || v != m->lts[m->curtag])
-	{
+	if(!v || v != m->vs->lt[m->vs->curlt])
 		m->vs->curlt ^= 1;
-		m->lts[m->curtag] = m->vs->lt[m->vs->curlt];
-	}
 	if(v)
-		m->vs->lt[m->vs->curlt] = m->lts[m->curtag] = (Layout *)v;
+		m->vs->lt[m->vs->curlt] = (Layout *)v;
 	strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 }
 
@@ -2347,10 +2329,10 @@ setmfact(const Arg *arg) {
 
 	if(!arg || !selmon->vs->lt[selmon->vs->curlt]->arrange)
 		return;
-	f = arg->f < 1.0 ? arg->f + selmon->mfact : arg->f - 1.0;
+	f = arg->f < 1.0 ? arg->f + selmon->vs->mfact : arg->f - 1.0;
 	if(f < 0.1 || f > 0.9)
 		return;
-	selmon->mfact = selmon->mfacts[selmon->curtag] = f;
+	selmon->vs->mfact = f;
 	arrange(selmon);
 }
 
@@ -2411,8 +2393,6 @@ updatecolors(const Arg *arg) {
 void
 setup(void) {
 	XSetWindowAttributes wa;
-	Monitor *m;
-	unsigned int i;
 
 	/* clean up any zombies immediately */
 	sigchld(0);
@@ -2473,33 +2453,6 @@ setup(void) {
 	if(!dc.xftdrawable)
 		printf("error, cannot create drawable\n");
 
-	/* init tags */
-	for(m = mons; m; m = m->next)
-		m->curtag = m->prevtag = 1;
-	/* init mfacts */
-	for(m = mons; m; m = m->next) {
-		for(i=0; i < LENGTH(tags) + 1 ; i++) {
-			m->mfacts[i] = m->mfact;
-		}
-	}
-	/* init layouts */
-	for(m = mons; m; m = m->next) {
-		for(i=0; i < LENGTH(tags) + 1; i++) {
-			m->lts[i] = &layouts[initlayout];
-		}
-	}
-	/* init bars */
-	for(m = mons; m; m = m->next) {
-		m->curtag = m->prevtag = 1;
-		for(i=0; i < LENGTH(tags) + 1; i++) {
-			m->lts[i] = &layouts[initlayout];
-			m->mfacts[i] = m->mfact;
-			m->ltaxes[i][0] = m->ltaxis[0];
-			m->ltaxes[i][1] = m->ltaxis[1];
-			m->ltaxes[i][2] = m->ltaxis[2];
-			m->msplits[i] = m->msplit;
-		}
-	}
 	/* init system tray */
 	updatesystray();
 	updatebars();
@@ -2617,7 +2570,7 @@ textnw(const char *text, unsigned int len) {
 void
 monshowbar(Monitor* m, Bool show) {
 	m->vs->showbar = show;
-	fprintf(stderr, "setting showbar @%d to %s\n", m->vs->view, m->vs->showbar ? "True" : "False");
+	fprintf(stderr, "setting showbar @%d to %s\n", m->vs->tagset, m->vs->showbar ? "True" : "False");
 	updatebarpos(m);
 	resizebarwin(m);
 	if(showsystray) {
@@ -2655,42 +2608,25 @@ togglefloating(const Arg *arg) {
 void
 toggletag(const Arg *arg) {
 	unsigned int newtags;
-	unsigned int i;
 
 	if(!selmon->sel)
 		return;
 	newtags = selmon->sel->tags ^ (arg->ui & TAGMASK);
 	if(newtags) {
 		selmon->sel->tags = newtags;
-		if(newtags == ~0) {
-			selmon->prevtag = selmon->curtag;
-			selmon->curtag = 0;
-		}
-		if(!(newtags & 1 << (selmon->curtag - 1))) {
-			selmon->prevtag = selmon->curtag;
-			for (i=0; !(newtags & 1 << i); i++);
-			selmon->curtag = i + 1;
-		}
-		selmon->sel->tags = newtags;
-		selmon->vs->lt[selmon->vs->curlt] = selmon->lts[selmon->curtag];
-		selmon->mfact = selmon->mfacts[selmon->curtag];
 		restorebar(selmon);
-		selmon->ltaxis[0] = selmon->ltaxes[selmon->curtag][0];
-		selmon->ltaxis[1] = selmon->ltaxes[selmon->curtag][1];
-		selmon->ltaxis[2] = selmon->ltaxes[selmon->curtag][2];
-		selmon->msplit = selmon->msplits[selmon->curtag];
 		arrange(selmon);
 	}
 }
 
 void
 toggleview(const Arg *arg) {
-	unsigned int newtagset = selmon->tagset ^ (arg->ui & TAGMASK);
+	unsigned int newtagset = selmon->vs->tagset ^ (arg->ui & TAGMASK);
 
 	/*if(newtagset) {*/
-	if (selmon->tagset != newtagset)
+	if (selmon->vs->tagset != newtagset)
 	{
-		setseltags(selmon, newtagset, False);
+		viewstackadd(selmon, newtagset, False);
 		arrange(selmon);
 	}
 	/*}*/
@@ -3225,33 +3161,17 @@ updatewmhints(Client *c) {
 
 void
 monview(Monitor* m, unsigned int ui) {
-	unsigned int i;
+	unsigned int newtagset;
 
-	if((ui & TAGMASK) == m->tagset)
+	if((ui & TAGMASK) == m->vs->tagset)
 		return;
-	if(ui & TAGMASK) {
-		setseltags(m, ui & TAGMASK, True);
-		m->prevtag = m->curtag;
-		if(ui == ~0)
-			m->curtag = 0;
-		else {
-			for (i=0; !(ui & 1 << i); i++);
-			m->curtag = i + 1;
-		}
-	} else {
-		if (hasvclients(m) && (m->tagset & vtag) == 0)
-			setseltags(m, vtag, True);
-		else
-			setseltags(m, findtoggletagset(m), True);
-		m->prevtag= m->curtag ^ m->prevtag;
-		m->curtag^= m->prevtag;
-		m->prevtag= m->curtag ^ m->prevtag;
-	}
-	m->mfact = m->mfacts[m->curtag];
-	m->ltaxis[0] = m->ltaxes[m->curtag][0];
-	m->ltaxis[1] = m->ltaxes[m->curtag][1];
-	m->ltaxis[2] = m->ltaxes[m->curtag][2];
-	m->msplit = m->msplits[m->curtag];
+	if(ui & TAGMASK)
+		newtagset = ui & TAGMASK;
+	else if (hasvclients(m) && (m->vs->tagset & vtag) == 0)
+		newtagset = vtag;
+	else
+		newtagset = findtoggletagset(m);
+	viewstackadd(m, newtagset, True);
 }
 
 void
