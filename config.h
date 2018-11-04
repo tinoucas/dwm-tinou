@@ -64,25 +64,33 @@ static const char* outoffocustraysymbol = "X";
 #define Button11 (Button1 + 10)
 #define Button12 (Button1 + 11)
 
-#include "remap.c"
-
 #define CLEAR 0.618
 #define TRANS 0.75
 #define SUBTL 0.92
 #define OPAQU 1.0
 
+static const int layoutaxis[] = {
+	1,    /* layout axis: 1 = x, 2 = y; negative values mirror the layout, setting the master area to the right / bottom instead of left / top */
+	2,    /* master axis: 1 = x (from left to right), 2 = y (from top to bottom), 3 = z (monocle) */
+	2,    /* stack axis:  1 = x (from left to right), 2 = y (from top to bottom), 3 = z (monocle) */
+};
+/* layout(s) */
+static const float mfact      = 0.55; /* factor of master area size [0.05..0.95] */
+// static const Bool resizehints = True; /* True means respect size hints in tiled resizals */
+
+static int initlayout = 0;
+
+static double barOpacity = 0.65;
+
 #include "flextile.h"
-#include "ctrlmap.c"
-#include "push.c"
 #include "fibonacci.c"
-#include <X11/XF86keysym.h>
 
 static const Layout layouts[] = {
-	/* symbol     arrange function */
+	/* symbol     arrange function   window border width */
 	{ "[]=",      tile,              DEFAULT_BORDER_PX },
 	{ "[]@",      spiral,            DEFAULT_BORDER_PX },
 	{ "[]G",      dwindle,           DEFAULT_BORDER_PX },
-	{ "><>",      NULL,              DEFAULT_BORDER_PX },    /* no layout function means floating behavior */
+	{ "><>",      NULL,              DEFAULT_BORDER_PX },
 	{ "[M]",      monocle,           0 },
 };
 
@@ -95,6 +103,14 @@ enum layout {
 };
 
 static const Layout *const monoclelayout = &layouts[MONOCLE];
+
+#include "viewstack.c"
+#include "push.c"
+#include "rotatemons.c"
+#include "remap.c"
+#include "misc.c"
+
+#include <X11/XF86keysym.h>
 
 static const Rule defaultrule = 
 	/* class				instance		title			tags mask	isfloating	transp	nofocus noborder rh	monitor custommouse preflayout */
@@ -190,23 +206,6 @@ static const Rule rules[] = {
     {	"broken"           , "broken"            , NULL        , vtag      , False      , OPAQU  , False   , False    , True  , 1       , NULL   , monoclelayout , False       , "yandex_browser" } , 
 };
 
-static const int layoutaxis[] = {
-	1,    /* layout axis: 1 = x, 2 = y; negative values mirror the layout, setting the master area to the right / bottom instead of left / top */
-	2,    /* master axis: 1 = x (from left to right), 2 = y (from top to bottom), 3 = z (monocle) */
-	2,    /* stack axis:  1 = x (from left to right), 2 = y (from top to bottom), 3 = z (monocle) */
-};
-/* layout(s) */
-static const float mfact      = 0.55; /* factor of master area size [0.05..0.95] */
-// static const Bool resizehints = True; /* True means respect size hints in tiled resizals */
-
-static int initlayout = 0;
-
-#include "viewstack.c"
-#include "rotatemons.c"
-#include "misc.c"
-
-static double barOpacity = 0.65;
-
 /* key definitions */
 #define MODKEY Mod4Mask
 #define TAGKEYS(KEY,TAG) \
@@ -233,9 +232,6 @@ static const Rule clockrule = { NULL, "oclock", NULL, alltags, True, 0.2, True, 
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ ControlMask,                  XK_dollar,   sendbracketright,{0} },
-	{ ControlMask,                  XK_asterisk, sendbackslash,   {0} },
-	{ ControlMask,           XK_dead_circumflex, sendbracketleft, {0} },
 	{ MODKEY|ShiftMask,             XK_l,      spawn,             SHCMD("$HOME/hacks/scripts/lockX.sh") },
 	{ MODKEY,                       XK_Menu,   focuslast,      {0} },
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },

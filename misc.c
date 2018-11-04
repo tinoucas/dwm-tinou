@@ -72,4 +72,39 @@ allnonfloat(const Arg *arg) {
 	arrange(selmon);
 }
 
+void
+sendMotion(int x, int y) {
+    XWarpPointer(dpy, None, root, 0, 0, 0, 0, x, y);
+    XFlush(dpy);
+}
+
+void
+centerMouseInWindow(Client* c) {
+	if (c) {
+		int x = c->w / 2 + c->x;
+		int y = c->h / 2 + c->y;
+
+		sendMotion(x, y);
+	}
+}
+
+void
+centerMouseInMonitor(Monitor* m) {
+    if (m) {
+        int x = m->mx + m->mw / 2;
+        int y = m->my + m->mh / 2;
+
+        sendMotion(x, y);
+    }
+}
+
+void
+centerMouseInMonitorIndex(int monitor) {
+    Monitor* m;
+
+    for(m = mons; m && m->num != monitor; m = m->next) ;
+
+    if (m)
+        centerMouseInMonitor(m);
+}
 
