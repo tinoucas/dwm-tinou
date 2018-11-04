@@ -19,34 +19,41 @@ changemon(Client *c, Monitor *m) {
 void
 movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	Client* c;
-	ClientListItem* movingclients = (ClientListItem*)calloc(1, sizeof(ClientListItem));
-	ClientListItem* item = movingclients;
+	ClientListItem* nextitem = NULL;
+	ClientListItem* baseitem = NULL;
+	ClientListItem* item;
+
 
 	for(c = msrc->stack; c; c = c->snext)
 		if (c->tags & views) {
+			fprintf(stderr, "add client '%s' to list\n", c->name);
+			item = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 			item->c = c;
-			item->next = (ClientListItem*)calloc(1, sizeof(ClientListItem));
-			item = item->next;
+			item->next = nextitem;
+			nextitem = item;
 		}
-	for(item = movingclients; item && item->c; item = item->next)
+	baseitem = item;
+	for(item = baseitem; item && item->c; item = item->next) {
+		fprintf(stderr, "changeing mon of client '%s'\n", item->c->name);
 		changemon(item->c, mdst);
-	item = movingclients;
-	while (item) {
-		movingclients = item->next;
-		free(item);
-		item = movingclients;
 	}
 
-	if (views != ~0)
-		monview(mdst, views);
-	else
-		monview(mdst, msrc->vs->tagset);
+	mdst->sel = msrc->sel;
+	
+	item = baseitem;
+	while (item) {
+		nextitem = item->next;
+		free(item);
+		item = nextitem;
+	}
 
 	mdst->topbar = msrc->topbar;
 	mdst->hasclock = msrc->hasclock;
-	if (views == ~0) {
-		duplicateviewstack(mdst, msrc);
-	}
+
+	if (views == ~0)
+		mdst->vs = msrc->vs;
+	else if (views == msrc->vs->tagset)
+		monview(mdst, msrc->vs->tagset);
 	monsetlayout(mdst, msrc->vs->lt[msrc->vs->curlt]);
 }
 
