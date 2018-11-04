@@ -488,14 +488,20 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 	c->isterminal = r->isterminal;
 	if (c->isfloating)
 		centerclient(c);
-	c->nofocus = r->nofocus;
-	c->noborder = r->noborder;
+	if (r->nofocus)
+		c->nofocus = True;
+	if (r->noborder)
+		c->noborder = True;
 	c->tags |= r->tags;
-	c->opacity = r->istransparent;
+	if (r->istransient != 1.)
+		c->opacity = r->istransparent;
 	c->rh = r->rh;
-	c->remap = r->remap;
+	if (r->remap != NULL)
+		c->remap = r->remap;
 	if (istransient)
 		c->isfixed = True;
+	if (r->noswallow)
+		c->noswallow = True;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
 	if(m)
 		c->mon = m;
@@ -1900,7 +1906,8 @@ manage(Window w, XWindowAttributes *wa) {
 	else {
 		c->mon = selmon;
 		applyrules(c);
-		term = termforwin(c);
+		if (!c->noswallow)
+			term = termforwin(c);
 	}
 	/* geometry */
 	c->x = c->oldx = wa->x + c->mon->wx;
