@@ -39,6 +39,8 @@
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/Xft/Xft.h>
+#include <X11/Xlib-xcb.h>
+#include <xcb/res.h>
 #include <pango/pango.h>
 #include <pango/pangoxft.h>
 #include <pango/pango-font.h>
@@ -132,8 +134,11 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isfullscreen;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isfullscreen, isterminal, noswallow;
+	pid_t pid;
 	Client *snext;
+	Client *swallowing;
+	unsigned int swallowxortags;
 	Monitor *mon;
 	Window win;
 	double opacity;
@@ -211,6 +216,8 @@ typedef struct {
 	const char *title;
 	unsigned int tags;
 	Bool isfloating;
+	int isterminal;
+	int noswallow;
 	double istransparent;
 	Bool nofocus;
 	Bool noborder;
@@ -296,6 +303,7 @@ static void killclient(const Arg *arg);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
+static unsigned int intersecttags(Client *c, Monitor *m);
 static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
@@ -318,6 +326,7 @@ static void scan(void);
 static Bool sendevent(Window w, Atom proto, int m, long d0, long d1, long d2, long d3, long d4);
 static void sendmon(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
+static void setclientopacity(Client *c);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, Bool fullscreen);
 static void monsetlayout(Monitor *m, const void* v);
@@ -367,6 +376,16 @@ static int xerror(Display *dpy, XErrorEvent *ee);
 static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
+static pid_t getparentprocess(pid_t p);
+static int isdescprocess(pid_t p, pid_t c);
+static Client *swallowingclient(Window w);
+static void swallow(Client *p, Client *c);
+static void swallowdetach(Client *c);
+static void unswallowattach(Client *c);
+static void unswallowcleanup(Client *c);
+static void toggleswallow(const Arg* arg);
+static Client *termforwin(const Client *c);
+static pid_t winpid(Window w);
 
 /* variables */
 static Systray *systray = NULL;
@@ -403,6 +422,7 @@ static Display *dpy;
 static DC dc;
 static Monitor *mons = NULL, *selmon = NULL;
 static Window root;
+static xcb_connection_t *xcon;
 static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
@@ -464,6 +484,7 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 	Monitor *m;
 
 	c->isfloating = r->isfloating;
+	c->isterminal = r->isterminal;
 	if (c->isfloating)
 		centerclient(c);
 	c->nofocus = r->nofocus;
@@ -569,13 +590,7 @@ applyrules(Client *c) {
 			r = &rules[i];
 			if(r->title && strstr(c->name, r->title))
 			{
-				c->isfloating = r->isfloating;
-				c->nofocus = r->nofocus;
-				c->noborder = r->noborder;
-				c->tags |= r->tags;
-				c->opacity = r->istransparent;
-				c->rh = r->rh;
-				c->remap = r->remap;
+				applyclientrule(c, r, False);
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
 					c->mon = m;
@@ -588,13 +603,7 @@ applyrules(Client *c) {
 		if(!found) {
 			fprintf(stderr, "No rule applied for: name == '%s'\n", c->name ? c->name : "NULL");
 			r = &defaultrule;
-			c->isfloating = r->isfloating;
-			c->nofocus = r->nofocus;
-			c->noborder = r->noborder;
-			c->tags |= r->tags;
-			c->opacity = r->istransparent;
-			c->rh = r->rh;
-			c->remap = r->remap;
+			applyclientrule(c, r, False);
 			for(m = mons; m && m->num != r->monitor; m = m->next);
 			if(m)
 				c->mon = m;
@@ -609,26 +618,20 @@ applyrules(Client *c) {
 		Client *cother;
 
 		if (!startup) {
-			Bool alone = True;
+			unsigned int intertags = intersecttags(c, c->mon);
 
-			for(cother = c->mon->clients; alone && cother; cother = cother->next) {
-				if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
-				{
-					alone = False;
-				}
-			}
-			if (alone && !c->nofocus && c->tags != ~0)
+			if (intertags != 0 && !c->nofocus)
 			{
 				if (c->tags == vtag)
 					viewstackadd(c->mon, vtag, True);
 				else
-					viewstackadd(c->mon, c->mon->vs->tagset | (c->tags), False);
+					viewstackadd(c->mon, intertags|c->mon->vs->tagset, False);
 				if (c->tags & c->mon->vs->tagset)
 					arrange(c->mon);
 			}
 		}
 		if(lastr && lastr->preflayout) {
-			if (lastr->preflayout != monoclelayout)
+			if (lastr->preflayout != monoclelt)
 				for(cother = c->mon->clients; cother; cother = cother->next)
 					if (cother != c && (cother->tags & c->tags) && !cother->nofocus)
 						++nc;
@@ -744,7 +747,6 @@ arrange(Monitor *m) {
 	focus(NULL);
 	if(m) {
 		arrangemon(m);
-		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
 }
@@ -780,6 +782,149 @@ void
 attachstack(Client *c) {
 	c->snext = c->mon->stack;
 	c->mon->stack = c;
+}
+
+void
+swallow(Client *term, Client *c) {
+	unsigned int termtags, clienttags;
+	Monitor *m;
+	double opacity;
+	Window w;
+
+	if (c->noswallow || c->isterminal)
+		return;
+
+	detach(c);
+	detachstack(c);
+
+	setclientstate(c, WithdrawnState);
+	XUnmapWindow(dpy, term->win);
+
+	term->swallowing = c;
+
+	m = term->mon;
+	term->mon = c->mon;
+	c->mon = m;
+	termtags = term->tags;
+	clienttags = c->tags;
+	term->tags = (termtags | clienttags);
+	term->swallowxortags = (termtags ^ clienttags);
+	c->tags = termtags;
+
+	opacity = term->opacity;
+	term->opacity = c->opacity;
+	c->opacity = opacity;
+
+	w = term->win;
+	term->win = c->win;
+	c->win = w;
+	updatetitle(term);
+	arrange(term->mon);
+	XMoveResizeWindow(dpy, term->win, term->x, term->y, term->w, term->h);
+	configure(term);
+	updateclientlist();
+}
+
+Client*
+unswallowclient(Client *term) {
+	Client* swallowing = term->swallowing;
+	unsigned int swallowxortags = term->swallowxortags;
+	unsigned int termtags;
+	Window w;
+	double opacity;
+
+	if (swallowing) {
+		termtags = swallowing->tags;
+		w = swallowing->win;
+		swallowing->win = term->win;
+		term->win = w;
+		opacity = swallowing->opacity;
+		swallowing->opacity = term->opacity;
+		term->opacity = opacity;
+
+		term->tags = termtags;
+		swallowing->tags = (swallowxortags ^ termtags);
+
+		term->swallowing = NULL;
+		term->swallowxortags = 0;
+
+		updatetitle(term);
+		XMapWindow(dpy, term->win);
+		configure(term);
+		setclientstate(term, NormalState);
+		setclientopacity(term);
+		arrange(NULL);
+	}
+
+	return swallowing;
+}
+
+void
+unswallowcleanup (Client *c) {
+	Client* swallowing = unswallowclient(c);
+
+	free(swallowing);
+}
+
+void
+swallowdetach(Client* c) {
+	Client *term = NULL;
+
+	if (c) {
+		term = termforwin(c);
+		if (term) {
+			swallow(term, c);
+			arrange(NULL);
+		}
+	}
+}
+
+void
+unswallowattach(Client* c) {
+	unsigned int intertags;
+
+	if (c)
+		c = unswallowclient(c);
+
+	if (c) {
+		updatetitle(c);
+		XMapWindow(dpy, c->win);
+		XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+		configure(c);
+		setclientstate(c, NormalState);
+		setclientopacity(c);
+		attach(c);
+		attachstack(c);
+		if ((c->tags & c->mon->vs->tagset) == 0) {
+			intertags = intersecttags(c, c->mon);
+			if (intertags != 0) {
+				monview(c->mon, intertags|c->mon->vs->tagset);
+				restorebar(c->mon);
+			}
+		}
+		arrange(c->mon);
+	}
+}
+
+void
+toggleswallow(const Arg* arg) {
+	Monitor *m;
+	Client *c;
+	Bool swallowedone = False;
+
+	if (selmon && selmon->sel) {
+		if (selmon->sel->swallowing)
+			unswallowattach(selmon->sel);
+		else {
+			for(m = mons; !swallowedone && m; m = m->next)
+				for (c = m->clients; !swallowedone && c; c = c->next) {
+					if (c && c != selmon->sel && termforwin(c) == selmon->sel) {
+						swallowdetach(c);
+						swallowedone = True;
+					}
+				}
+		}
+	}
 }
 
 void
@@ -1128,6 +1273,8 @@ destroynotify(XEvent *e) {
 		resizebarwin(selmon);
 		updatesystray();
 	}
+	else if ((c = swallowingclient(ev->window)))
+		unmanage(c->swallowing, 1);
 }
 
 void
@@ -1347,6 +1494,11 @@ window_opacity_set(Window win, double opacity)
   XSync(dpy, False);
 	}
 	XSync(dpy, False);
+}
+
+void
+setclientopacity(Client *c) {
+	window_opacity_set(c->win, c->opacity);
 }
 
 void
@@ -1691,7 +1843,7 @@ killclient(const Arg *arg) {
 
 void
 manage(Window w, XWindowAttributes *wa) {
-	Client *c, *t = NULL;
+	Client *c, *t = NULL, *term = NULL;
 	Window trans = None;
 	XWindowChanges wc;
 	int nc = 0;
@@ -1701,6 +1853,7 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->win = w;
+	c->pid = winpid(w);
 	updatetitle(c);
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
 		c->mon = t->mon;
@@ -1710,6 +1863,7 @@ manage(Window w, XWindowAttributes *wa) {
 	else {
 		c->mon = selmon;
 		applyrules(c);
+		term = termforwin(c);
 	}
 	/* geometry */
 	c->x = c->oldx = wa->x + c->mon->wx;
@@ -1755,6 +1909,8 @@ manage(Window w, XWindowAttributes *wa) {
 			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	XMapWindow(dpy, c->win);
+	if (term)
+		swallow(term, c);
 	setclientstate(c, NormalState);
 	arrange(c->mon);
 	grabremap(c, True);
@@ -1792,6 +1948,16 @@ maprequest(XEvent *e) {
 		manage(ev->window, &wa);
 }
 
+unsigned int
+intersecttags(Client *c, Monitor *m) {
+	unsigned int intertags = (c->tags|m->vs->tagset);
+	Client *cother;
+
+	for(cother = m->clients; cother; cother = cother->next)
+		if (cother != c && (cother->tags & intertags) != 0 && !cother->nofocus)
+			intertags &= ~(cother->tags & intertags);
+	return intertags;
+}
 void
 monocle(Monitor *m) {
 	unsigned int n = 0;
@@ -2288,7 +2454,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		XRaiseWindow(dpy, c->win);
 	}
 	else {
-		window_opacity_set(c->win, c->opacity);
+		setclientopacity(c);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)0, 0);
 		c->isfullscreen = False;
@@ -2650,6 +2816,20 @@ unmanage(Client *c, Bool destroyed) {
 	Monitor *m = c->mon;
 	XWindowChanges wc;
 
+	if (c->swallowing) {
+		unswallowcleanup(c);
+		return;
+	}
+
+	Client *s = swallowingclient(c->win);
+	if (s) {
+		free(s->swallowing);
+		s->swallowing = NULL;
+		arrange(m);
+		focus(NULL);
+		return;
+	}
+
 	/* The server grab construct avoids race conditions. */
 	grabremap(c, False);
 	detach(c);
@@ -2666,10 +2846,12 @@ unmanage(Client *c, Bool destroyed) {
 		XUngrabServer(dpy);
 	}
 	free(c);
-	focus(NULL);
-	updateclientlist();
-	cleartags(m);
-	arrange(m);
+	if (!s) {
+		focus(NULL);
+		updateclientlist();
+		cleartags(m);
+		arrange(m);
+	}
 }
 
 void
@@ -3182,6 +3364,103 @@ view(const Arg *arg) {
 	arrange(selmon);
 }
 
+pid_t
+winpid(Window w)
+{
+	pid_t result = 0;
+
+	xcb_res_client_id_spec_t spec = {0};
+	spec.client = w;
+	spec.mask = XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID;
+
+	xcb_generic_error_t *e = NULL;
+	xcb_res_query_client_ids_cookie_t c = xcb_res_query_client_ids(xcon, 1, &spec);
+	xcb_res_query_client_ids_reply_t *r = xcb_res_query_client_ids_reply(xcon, c, &e);
+
+	if (!r)
+		return (pid_t)0;
+
+	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
+	for (; i.rem; xcb_res_client_id_value_next(&i)) {
+		spec = i.data->spec;
+		if (spec.mask & XCB_RES_CLIENT_ID_MASK_LOCAL_CLIENT_PID) {
+			uint32_t *t = xcb_res_client_id_value_value(i.data);
+			result = *t;
+			break;
+		}
+	}
+
+	free(r);
+
+	if (result == (pid_t)-1)
+		result = 0;
+	return result;
+}
+
+pid_t
+getparentprocess(pid_t p)
+{
+	unsigned int v = 0;
+
+#ifdef __linux__
+	FILE *f;
+	char buf[256];
+	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
+
+	if (!(f = fopen(buf, "r")))
+		return 0;
+
+	fscanf(f, "%*u %*s %*c %u", &v);
+	fclose(f);
+#endif /* __linux__ */
+
+	return (pid_t)v;
+}
+
+int
+isdescprocess(pid_t p, pid_t c)
+{
+	while (p != c && c != 0)
+		c = getparentprocess(c);
+
+	return (int)c;
+}
+
+Client *
+termforwin(const Client *w)
+{
+	Client *c;
+	Monitor *m;
+
+	if (!w->pid || w->isterminal)
+		return NULL;
+
+	for (m = mons; m; m = m->next) {
+		for (c = m->clients; c; c = c->next) {
+			if (c->isterminal && !c->swallowing && c->pid && isdescprocess(c->pid, w->pid))
+				return c;
+		}
+	}
+
+	return NULL;
+}
+
+Client *
+swallowingclient(Window w)
+{
+	Client *c;
+	Monitor *m;
+
+	for (m = mons; m; m = m->next) {
+		for (c = m->clients; c; c = c->next) {
+			if (c->swallowing && c->swallowing->win == w)
+				return c;
+		}
+	}
+
+	return NULL;
+}
+
 Client *
 wintoclient(Window w) {
 	Client *c;
@@ -3285,6 +3564,8 @@ main(int argc, char *argv[]) {
 		fputs("warning: no locale support\n", stderr);
 	if(!(dpy = XOpenDisplay(NULL)))
 		die("dwm: cannot open display\n");
+	if (!(xcon = XGetXCBConnection(dpy)))
+		die("dwm: cannot get xcb connection\n");
 	checkotherwm();
 	setup();
 	scan();
