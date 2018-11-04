@@ -286,6 +286,7 @@ static void expose(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
 static void focusmon(const Arg *arg);
+static void setmonitorfocus(Monitor *m);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static unsigned long getcolor(const char *colstr, XftColor *color);
@@ -339,6 +340,7 @@ static void spawn(const Arg *arg);
 static void spawnimpl(const Arg *arg, Bool waitdeath);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
+static void swapclientscontent(Client *c1, Client *c2);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static int textnw(const char *text, unsigned int len);
@@ -382,7 +384,6 @@ static Client *swallowingclient(Window w);
 static void swallow(Client *p, Client *c);
 static void swallowdetach(Client *c);
 static void unswallowattach(Client *c);
-static void unswallowcleanup(Client *c);
 static void toggleswallow(const Arg* arg);
 static Client *termforwin(const Client *c);
 static pid_t winpid(Window w);
@@ -779,11 +780,29 @@ attachstack(Client *c) {
 }
 
 void
+swapclientscontent(Client *c1, Client *c2) {
+	double opacity = c1->opacity;
+	Bool isfloating = c1->isfloating;
+	Monitor *m = c1->mon;
+	unsigned int tags = c1->tags;
+	Window w = c1->win;
+
+	c1->opacity = c2->opacity;
+	c2->opacity = opacity;
+	c1->isfloating = c2->isfloating;
+	c2->isfloating = isfloating;
+	c1->mon = c2->mon;
+	c2->mon = m;
+	c1->tags = c2->tags;
+	c2->tags = tags;
+	c1->win = c2->win;
+	c2->win = w;
+}
+
+void
 swallow(Client *term, Client *c) {
 	unsigned int termtags, clienttags;
-	Monitor *m;
-	double opacity;
-	Window w;
+	Monitor *termmon, *cmon;
 
 	if (c->noswallow || c->isterminal)
 		return;
@@ -796,48 +815,55 @@ swallow(Client *term, Client *c) {
 
 	term->swallowing = c;
 
-	m = term->mon;
-	term->mon = c->mon;
-	c->mon = m;
+	termmon = term->mon;
+	cmon = c->mon;
 	termtags = term->tags;
 	clienttags = c->tags;
-	term->tags = (termtags | clienttags);
-	term->swallowxortags = (termtags ^ clienttags);
+
+	if (termmon != cmon) {
+		detach(term);
+		detachstack(term);
+	}
+
+	swapclientscontent(term, c);
+
+	if (termmon != cmon) {
+		attach(term);
+		attachstack(term);
+	}
+	else {
+		term->tags = (termtags | clienttags);
+		term->swallowxortags = (termtags ^ clienttags);
+	}
+
 	c->tags = termtags;
 
-	opacity = term->opacity;
-	term->opacity = c->opacity;
-	c->opacity = opacity;
-
-	w = term->win;
-	term->win = c->win;
-	c->win = w;
 	updatetitle(term);
-	arrange(term->mon);
+	arrange(NULL);
 	XMoveResizeWindow(dpy, term->win, term->x, term->y, term->w, term->h);
 	configure(term);
 	updateclientlist();
+
+	setmonitorfocus(term->mon);
+	setfocus(term);
 }
 
 Client*
 unswallowclient(Client *term) {
-	Client* swallowing = term->swallowing;
+	Client* c = term->swallowing;
 	unsigned int swallowxortags = term->swallowxortags;
 	unsigned int termtags;
-	Window w;
-	double opacity;
 
-	if (swallowing) {
-		termtags = swallowing->tags;
-		w = swallowing->win;
-		swallowing->win = term->win;
-		term->win = w;
-		opacity = swallowing->opacity;
-		swallowing->opacity = term->opacity;
-		term->opacity = opacity;
+	if (c) {
+		detach(term);
+		detachstack(term);
 
-		term->tags = termtags;
-		swallowing->tags = (swallowxortags ^ termtags);
+		termtags = c->tags;
+
+		swapclientscontent(term, c);
+
+		if (term->mon == c->mon)
+			c->tags = (swallowxortags ^ termtags);
 
 		term->swallowing = NULL;
 		term->swallowxortags = 0;
@@ -845,19 +871,20 @@ unswallowclient(Client *term) {
 		updatetitle(term);
 		XMapWindow(dpy, term->win);
 		configure(term);
+		XMoveResizeWindow(dpy, term->win, term->x, term->y, term->w, term->h);
+
 		setclientstate(term, NormalState);
 		setclientopacity(term);
+
+		attach(term);
+		attach(c);
+		attachstack(term);
+		attachstack(c);
+
 		arrange(NULL);
 	}
 
-	return swallowing;
-}
-
-void
-unswallowcleanup (Client *c) {
-	Client* swallowing = unswallowclient(c);
-
-	free(swallowing);
+	return c;
 }
 
 void
@@ -875,28 +902,27 @@ swallowdetach(Client* c) {
 
 void
 unswallowattach(Client* c) {
+	Client *swallowing = NULL;
 	unsigned int intertags;
 
 	if (c)
-		c = unswallowclient(c);
+		swallowing = unswallowclient(c);
 
-	if (c) {
-		updatetitle(c);
-		XMapWindow(dpy, c->win);
-		XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+	if (swallowing) {
+		updatetitle(swallowing);
+		XMapWindow(dpy, swallowing->win);
+		XMoveResizeWindow(dpy, swallowing->win, swallowing->x, swallowing->y, swallowing->w, swallowing->h);
 		configure(c);
-		setclientstate(c, NormalState);
-		setclientopacity(c);
-		attach(c);
-		attachstack(c);
-		if ((c->tags & c->mon->vs->tagset) == 0) {
-			intertags = intersecttags(c, c->mon);
+		setclientstate(swallowing, NormalState);
+		setclientopacity(swallowing);
+		if ((swallowing->tags & swallowing->mon->vs->tagset) == 0) {
+			intertags = intersecttags(swallowing, swallowing->mon);
 			if (intertags != 0) {
-				monview(c->mon, intertags|c->mon->vs->tagset);
-				restorebar(c->mon);
+				monview(swallowing->mon, intertags|swallowing->mon->vs->tagset);
+				restorebar(swallowing->mon);
 			}
 		}
-		arrange(c->mon);
+		arrange(swallowing->mon);
 	}
 }
 
@@ -1454,7 +1480,7 @@ enternotify(XEvent *e) {
 	if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;
 	c = wintoclient(ev->window);
-	if((m = wintomon(ev->window)) && m != selmon) {
+	if((m = wintomon(ev->window)) && m != selmon && ev->window != root) {
 		unfocus(selmon->sel, True);
 		selmon = m;
 	}
@@ -1506,7 +1532,7 @@ focus(Client *c) {
 		unfocus(selmon->sel, False);
 	if(c) {
 		if(c->mon != selmon)
-			selmon = c->mon;
+			setmonitorfocus(c->mon);
 		if(c->isurgent)
 			clearurgent(c);
 		detachstack(c);
@@ -1545,13 +1571,20 @@ focusmon(const Arg *arg) {
 		return;
 	if((m = dirtomon(arg->i)) == selmon)
 		return;
-	unfocus(selmon->sel, False);
-	selmon = m;
-	focus(NULL);
-	if (selmon->sel)
-		centerMouseInWindow(selmon->sel);
-	else
-		centerMouseInMonitor(selmon);
+	setmonitorfocus(m);
+}
+
+void
+setmonitorfocus(Monitor* m) {
+	if (selmon != m) {
+		unfocus(selmon->sel, False);
+		selmon = m;
+		focus(NULL);
+		if (selmon->sel)
+			centerMouseInWindow(selmon->sel);
+		else
+			centerMouseInMonitor(selmon);
+	}
 }
 
 void
@@ -2804,12 +2837,13 @@ unfocus(Client *c, Bool setfocus) {
 
 void
 unmanage(Client *c, Bool destroyed) {
+	Client *term = NULL;
 	Monitor *m = c->mon;
 	XWindowChanges wc;
 
 	if (c->swallowing) {
-		unswallowcleanup(c);
-		return;
+		term = c;
+		c = unswallowclient(term);
 	}
 
 	Client *s = swallowingclient(c->win);
@@ -2842,6 +2876,10 @@ unmanage(Client *c, Bool destroyed) {
 		updateclientlist();
 		cleartags(m);
 		arrange(m);
+	}
+	if (term) {
+		setmonitorfocus(term->mon);
+		setfocus(term);
 	}
 }
 
@@ -3470,8 +3508,10 @@ wintomon(Window w) {
 	Client *c;
 	Monitor *m;
 
-	if(w == root && getrootptr(&x, &y))
-		return recttomon(x, y, 1, 1);
+	if(w == root && getrootptr(&x, &y)) {
+		m = recttomon(x, y, 1, 1);
+		return m;
+	}
 	for(m = mons; m; m = m->next)
 		if(w == m->barwin)
 			return m;
