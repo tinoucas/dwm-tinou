@@ -76,13 +76,10 @@ static const int layoutaxis[] = {
 };
 /* layout(s) */
 static const float mfact      = 0.55; /* factor of master area size [0.05..0.95] */
-// static const Bool resizehints = True; /* True means respect size hints in tiled resizals */
-
 static int initlayout = 0;
+static double barOpacity = CLEAR;
 
-static double barOpacity = 0.65;
-
-#include "flextile.h"
+#include "flextile.c"
 #include "fibonacci.c"
 
 static const Layout layouts[] = {
