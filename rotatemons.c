@@ -55,6 +55,8 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 	else if (views == msrc->vs->tagset)
 		monview(mdst, msrc->vs->tagset);
 	monsetlayout(mdst, msrc->vs->lt[msrc->vs->curlt]);
+	if (views != ~0)
+		copyviewstack(mdst->vs, msrc->vs);
 }
 
 void
