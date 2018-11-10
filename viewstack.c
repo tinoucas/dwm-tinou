@@ -141,6 +141,12 @@ findtoggletagset (Monitor *m) {
 	ViewStack* v = m->vs;
 
 	/* rewind stack for different non-empty tagset that share some tags */
+	while (toggletags == curseltags && v) {
+		if ((v->tagset & curseltags) == 0 && hasclientson(m, v->tagset))
+			toggletags = v->tagset;
+		v = v->next;
+	}
+	/* rewind stack for different non-empty tagset that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if (v->tagset != curseltags && hasclientson(m, v->tagset))
