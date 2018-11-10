@@ -134,7 +134,8 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isfullscreen, isterminal, noswallow;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow;
+	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
 	Client *swallowing;
@@ -2485,11 +2486,12 @@ setfullscreen(Client *c, Bool fullscreen) {
 		window_opacity_set(c->win, 1.);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
-		c->isfullscreen = True;
+		c->isfullscreen = c->tags;
 		c->oldstate = c->isfloating;
 		c->oldbw = c->bw;
 		c->bw = 0;
 		c->isfloating = True;
+		c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 		XRaiseWindow(dpy, c->win);
 	}
@@ -2497,7 +2499,8 @@ setfullscreen(Client *c, Bool fullscreen) {
 		setclientopacity(c);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)0, 0);
-		c->isfullscreen = False;
+		c->tags = c->isfullscreen;
+		c->isfullscreen = 0;
 		c->isfloating = c->oldstate;
 		if (c->isfloating)
 			centerclient(c);
@@ -2507,8 +2510,10 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
-		arrange(c->mon);
 	}
+	monview(c->mon, 0);
+	restorebar(c->mon);
+	arrange(c->mon);
 }
 
 void
