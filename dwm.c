@@ -1471,13 +1471,17 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	y = dc.y + (dc.h / 2) - (h / 2);
 	x = dc.x + (h / 2);
 	/* shorten text if necessary */
-	for(len = MIN(olen, sizeof buf); len && textnw(text, len) > dc.w - h; len--);
+	len = MIN(olen, sizeof(buf));
+	memcpy(buf, text, len);
+	while(len) {
+		for (i = len; i && i > len - MIN(olen - len, 3); buf[--i] = '.') ;
+		if ((buf[len - 4] & (char)0x80) == 0 && textnw(buf, len) <= dc.w - h)
+			break;
+		--len;
+	}
 	if(!len)
 		return;
-	memcpy(buf, text, len);
-	if(len < olen)
-		for(i = len; i && i > len - 3; buf[--i] = '.');
-	pango_layout_set_text(dc.plo, text, len);
+	pango_layout_set_text(dc.plo, buf, len);
 	pango_xft_render_layout(dc.xftdrawable, (col==dc.norm?dc.xftnorm:dc.xftsel)+(invert?ColBG:ColFG), dc.plo, x * PANGO_SCALE, y * PANGO_SCALE);
 }
 
@@ -2764,6 +2768,7 @@ tagmon(const Arg *arg) {
 int
 textnw(const char *text, unsigned int len) {
 	PangoRectangle r;
+
 	pango_layout_set_text(dc.plo, text, len);
 	pango_layout_get_extents(dc.plo, 0, &r);
 	return r.width / PANGO_SCALE;
