@@ -2,19 +2,27 @@
 
 #ifdef CONFIG_HEAD
 /* tagging */
-static const char *tags[] = { "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" };
+static const char *tags[] = {
+	"main",  // 0
+	"text",  // 1
+	"term",  // 2
+	"files", // 3
+	"tools", // 4
+	"music", // 5
+	"misc",  // 6
+	"@",     // 7
+	"v"      // 8
+};
 
 static const unsigned int maintag = 1 << 0;
-static const unsigned int chattag = 1 << 1;
-static const unsigned int filestag = 1 << 2;
-static const unsigned int texttag = 1 << 3;
-static const unsigned int edittag = 1 << 4;
-static const unsigned int dltag = 1 << 5;
-static const unsigned int trrnttag = 1 << 6;
-static const unsigned int musictag = 1 << 7;
-static const unsigned int misctag = 1 << 8;
-static const unsigned int webtag = 1 << 9;
-static const unsigned int vtag = 1 << 10;
+static const unsigned int texttag = 1 << 1;
+static const unsigned int termtag = 1 << 2;
+static const unsigned int filestag = 1 << 3;
+static const unsigned int toolstag = 1 << 4;
+static const unsigned int musictag = 1 << 5;
+static const unsigned int misctag = 1 << 6;
+static const unsigned int webtag = 1 << 7;
+static const unsigned int vtag = 1 << 8;
 
 static const unsigned int anytag = 0;
 static const unsigned int alltags = ~0;
@@ -125,11 +133,10 @@ static const Rule rules[] = {
 	{ "veromix"        , NULL                , NULL        , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Alacritty"      , "Alacritty"         , NULL        , anytag    , False , False , False , CLEAR , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "kitty"          , "kitty"             , NULL        , anytag    , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "URxvt"          , NULL                , NULL        , maintag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "URxvt"          , "screen"            , NULL        , maintag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ "kitty"          , "nvim"              , NULL        , texttag   , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ "kitty"          , "terminal"          , NULL        , termtag   , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "ghost_terminal"    , NULL        , anytag    , False , False , False , OPAQU , True  , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "xterm"             , NULL        , anytag    , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Gimp"           , NULL                , NULL        , edittag   , False , False , False , OPAQU , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Firefox"        , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , monoclelt , False   , NULL      } , 
 	{ "vivaldi-stable" , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
 	{ NULL             , "Download"          , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
@@ -141,15 +148,12 @@ static const Rule rules[] = {
 	{ "Slimjet"        , "slimjet"           , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , monoclelt , False   , NULL      } , 
 	{ NULL             , "chrome_app_list"   , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
 	{ "Chromium"       , "chromium"          , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
-	{ NULL             , "Pidgin"            , NULL        , chattag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "sonata"            , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "ario"              , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Gmpc"           , NULL                , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Shredder"       , NULL                , NULL        , chattag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "screen"            , NULL        , maintag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "feh"            , NULL                , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "feh"            , NULL                , "mon0"      , vtag      , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , NULL      , False   , NULL      } , 
-	{ "feh"            , NULL                , "mon1"      , vtag      , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , NULL      , False   , NULL      } , 
+	{ "feh"            , NULL                , "mon0"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , NULL      , False   , NULL      } , 
+	{ "feh"            , NULL                , "mon1"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , NULL      , False   , NULL      } , 
 	{ NULL             , "savebox"           , NULL        , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Xfe"            , NULL                , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "ROX-Filer"         , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
@@ -168,57 +172,42 @@ static const Rule rules[] = {
 	{ NULL             , NULL                , "Déplacer"  , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , NULL                , "Monter"    , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Audacious"      , NULL                , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "MPlayer"        , NULL                , NULL        , vtag      , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "sView"          , "sView"             , NULL        , vtag      , False , False , True  , OPAQU , False , False , True  , -1  , sView  , monoclelt , False   , NULL      } , 
-	{ "qtwebflix"      , "qtwebflix"         , NULL        , vtag      , False , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , NULL        , vtag      , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , "mon0"      , vtag      , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , "mon1"      , vtag      , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , monoclelt , False   , NULL      } , 
+	{ "MPlayer"        , NULL                , NULL        , anytag    , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
+	{ "sView"          , "sView"             , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , -1  , sView  , monoclelt , False   , NULL      } , 
+	{ "qtwebflix"      , "qtwebflix"         , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
+	{ "mpv"            , NULL                , NULL        , anytag    , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
+	{ "mpv"            , NULL                , "mon0"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , monoclelt , False   , NULL      } , 
+	{ "mpv"            , NULL                , "mon1"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , monoclelt , False   , NULL      } , 
 	{ "Vlc"            , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Gcalctool"      , NULL                , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "gqmpeg"            , NULL        , musictag  , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "GQmpeg"         , "playlist"          , NULL        , chattag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "TzClock"           , NULL        , alltags   , True  , False , False , TRANS , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Guimup"         , "guimup"            , NULL        , musictag  , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "uzbl-core"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "gvim"              , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "vim"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Sublime_text"   , NULL                , NULL        , texttag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "MixVibes Cross"    , NULL        , misctag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "Cross Preferences" , NULL        , misctag   , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Evince"         , NULL                , NULL        , edittag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "FBReader"       , NULL                , NULL        , edittag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "stalonetray"       , NULL        , alltags   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Display"        , NULL                , NULL        , maintag   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "broken"         , NULL                , "Renoise"   , edittag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "emulator64-arm" , NULL                , NULL        , misctag   , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Deadbeef"       , "deadbeef"          , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "telegram-desktop"  , NULL        , chattag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Steam"          , "Steam"             , NULL        , misctag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , monoclelt , False   , NULL      } , 
-	{ "Steam.exe"      , "Steam.exe"         , NULL        , misctag   , False , False , False , OPAQU , False , True  , False , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "VPN Unlimited"  , "vpn-unlimited"     , NULL        , misctag   , True  , False , False , OPAQU , False , False , True  , 1   , NULL   , NULL      , False   , NULL      } , 
-	{ "qBittorrent"    , "qbittorrent"       , NULL        , trrnttag  , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "JDownloader"    , NULL                , NULL        , dltag     , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , NULL                , NULL        , musictag  , False , False , False , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , "spotify" } , 
-    { "broken"         , "broken"            , NULL        , vtag      , False , False , True  , OPAQU , False , False , True  , 1   , NULL   , monoclelt , False   , "yandex_browser" } , 
+    { "broken"         , "broken"            , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , 1   , NULL   , monoclelt , False   , "yandex_browser" } , 
+    { "thg"            , NULL                , NULL        , toolstag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
+    { "jetbrains-studio", NULL                , NULL        , maintag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
+    { "URxvt"          , NULL                , "build.gradle", misctag , True  , False , True  , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      },
 };
 
 /* key definitions */
 #define MODKEY Mod4Mask
 #define TAGKEYS(KEY,TAG) \
-	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
+	{ MODKEY,                       KEY,      view,           {.ui = TAG} }, \
+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = TAG} }, \
+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = TAG} }, \
+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = TAG} },
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
-#define WORKSPACE(KEY,TAG) \
-	{ MODKEY,   KEY,      view,     {.ui = TAG} },
-
 /* commands */
-static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "kitty", NULL };
@@ -263,29 +252,16 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_j,      pushdown,       {0} },
     { MODKEY|ControlMask,           XK_k,      pushup,         {0} },
     { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
-    { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
     { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") },
-    TAGKEYS(                        XK_1,                      0)
-    TAGKEYS(                        XK_2,                      1)
-    TAGKEYS(                        XK_3,                      2)
-    TAGKEYS(                        XK_4,                      3)
-    TAGKEYS(                        XK_5,                      4)
-    TAGKEYS(                        XK_6,                      5)
-    TAGKEYS(                        XK_7,                      6)
-    TAGKEYS(                        XK_8,                      7)
-    TAGKEYS(                        XK_9,                      8)
-    TAGKEYS(                        XK_0,                      9)
-    TAGKEYS(                        XK_ampersand,              0)
-    TAGKEYS(                        XK_eacute,                 1)
-    TAGKEYS(                        XK_quotedbl,               2)
-    TAGKEYS(                        XK_apostrophe,             3)
-    TAGKEYS(                        XK_parenleft,              4)
-    TAGKEYS(                        XK_minus,                  5)
-    TAGKEYS(                        XK_egrave,                 6)
-    TAGKEYS(                        XK_underscore,             7)
-    TAGKEYS(                        XK_ccedilla,               8)
-    WORKSPACE(                      XK_a,                      chattag | 1 << 5)
-    WORKSPACE(                      XK_w,                      maintag | texttag)
+    TAGKEYS(                        XK_1,                      maintag)
+    TAGKEYS(                        XK_2,                      texttag)
+    TAGKEYS(                        XK_3,                      termtag)
+    TAGKEYS(                        XK_4,                      filestag)
+    TAGKEYS(                        XK_5,                      toolstag)
+    TAGKEYS(                        XK_8,                      musictag)
+    TAGKEYS(                        XK_9,                      misctag)
+    TAGKEYS(                        XK_0,                      webtag)
+    TAGKEYS(                        XK_v,                      vtag)
     { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
     { MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
     { MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
