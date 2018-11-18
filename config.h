@@ -29,15 +29,7 @@ static const unsigned int alltags = ~0;
 #else
 
 /* appearance */
-//static const char font[]            = "-*-helvetica-bold-r-*-*-12-*-*-*-*-*-*-1";
-//static const char font[]            = "-*-freemono-medium-r-normal-*-*-*-*-*-*-*-*-1";
-//static const char font[]            = "-*-dejavu sans condensed-medium-r-*-*-*-*-*-*-*-*-ascii-*";
-//static const char font[]            = "-*-clean-medium-r-normal-*-12-*-*-*-*-*-iso8859-1";
-//static const char font[]            = "-*-droid sans-medium-r-*-*-12-*-*-*-*-*-ascii-*";
-//static const char font[]            = "-*-fixed-medium-r-*-*-13-*-*-*-*-*-*-15";
-//static const char font[]            = "-misc-liberation mono-medium-r-*-*-12-*-*-*-*-*-*-*";
 static const char font[]			= "Andale Mono Regular 11";
-//static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
 static const char selbordercolor[]  = "#ffffff";
@@ -185,6 +177,7 @@ static const Rule rules[] = {
 	{ "Guimup"         , "guimup"            , NULL        , musictag  , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "uzbl-core"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "gvim"              , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ NULL             , "oni"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "vim"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Sublime_text"   , NULL                , NULL        , texttag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "stalonetray"       , NULL        , alltags   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
@@ -213,6 +206,7 @@ static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", font, "-nb", normbgc
 static const char *termcmd[]  = { "kitty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
+static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const Rule clockrule =
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */

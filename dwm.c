@@ -314,6 +314,7 @@ static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
+static void updatedpi();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -1205,9 +1206,14 @@ configurenotify(XEvent *e) {
 	if(ev->window == root) {
 		sw = ev->width;
 		sh = ev->height;
+		if(dc.xftdrawable != 0)
+			XftDrawDestroy(dc.xftdrawable);
 		if(dc.drawable != 0)
 			XFreePixmap(dpy, dc.drawable);
 		dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
+		dc.xftdrawable = XftDrawCreate(dpy, dc.drawable, DefaultVisual(dpy,screen), DefaultColormap(dpy,screen));
+		updatedpi();
+		updategeom();
 		updatebars();
 		for(m = mons; m; m = m->next) {
 			for(c = m->clients; c; c = c->next)
@@ -2193,6 +2199,13 @@ removesystrayicon(Client *i) {
 }
 
 void
+updatedpi() {
+	const Arg arg = {.v = updatedpicmd };
+
+	spawn(&arg);
+}
+
+void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	int halfgap = windowgap / 2;
 	int nc;
@@ -3079,7 +3092,6 @@ updategeom(void) {
 				attachstack(c);
 			}
 			oldmons = m->next;
-			cleanupmon(m);
 		}
 	}
 	else
