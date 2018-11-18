@@ -178,7 +178,6 @@ static const Rule rules[] = {
 	{ NULL             , "uzbl-core"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "gvim"              , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "oni"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "vim"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Sublime_text"   , NULL                , NULL        , texttag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "stalonetray"       , NULL        , alltags   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Deadbeef"       , "deadbeef"          , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
