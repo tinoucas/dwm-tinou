@@ -207,7 +207,7 @@ struct Monitor {
 	Monitor *next;
 	Window barwin;
 	Bool hasclock;
-	ViewStack* vs;
+	ViewStack *vs;
 };
 
 typedef struct {
@@ -1067,6 +1067,7 @@ cleanupmon(Monitor *mon) {
 		for(m = mons; m && m->next != mon; m = m->next);
 		m->next = mon->next;
 	}
+	fprintf(stderr, "deleting barwin of mon[%d]\n", mon->num);
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
 	cleanupviewstack(mon->vs);
@@ -3053,7 +3054,8 @@ updategeom(void) {
 	if(XineramaIsActive(dpy)) {
 		int i, j, n;
 		Client *c;
-		Monitor *m, *oldmons = mons;
+		Monitor *oldmons = mons;
+		Monitor *m, *om = oldmons, *nm;
 		XineramaScreenInfo *info = XineramaQueryScreens(dpy, &n);
 		XineramaScreenInfo *unique = NULL;
 
@@ -3081,8 +3083,9 @@ updategeom(void) {
 		}
 		free(unique);
 		/* re-attach old clients and cleanup old monitor structure */
-		while(oldmons) {
-			m = oldmons;
+		nm = mons;
+		while(om) {
+			m = om;
 			while(m->clients) {
 				c = m->clients;
 				m->clients = c->next;
@@ -3091,7 +3094,19 @@ updategeom(void) {
 				attach(c);
 				attachstack(c);
 			}
-			oldmons = m->next;
+			om = m->next;
+			if (nm) {
+				nm->vs = m->vs;
+				m->vs = NULL;
+			}
+			nm = nm->next;
+		}
+		while (oldmons) {
+			om = oldmons;
+			XUnmapWindow(dpy, om->barwin);
+			XDestroyWindow(dpy, om->barwin);
+			oldmons = oldmons->next;
+			free(om);
 		}
 	}
 	else
