@@ -3098,8 +3098,8 @@ updategeom(void) {
 			if (nm) {
 				nm->vs = m->vs;
 				m->vs = NULL;
+				nm = nm->next;
 			}
-			nm = nm->next;
 		}
 		while (oldmons) {
 			om = oldmons;
