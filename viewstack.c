@@ -49,7 +49,7 @@ copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
 }
 
 ViewStack*
-createviewstack (Monitor *m, const ViewStack *vref) {
+createviewstack (const ViewStack *vref) {
 	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
 	int i;
 
@@ -66,6 +66,18 @@ createviewstack (Monitor *m, const ViewStack *vref) {
 			v->ltaxis[i] = layoutaxis[i];
 	}
 	return v;
+}
+
+ViewStack*
+getviewstackof(Monitor* m, const unsigned int tagset) {
+	ViewStack **pvs;
+
+	for(pvs = &m->vs; *pvs && (*pvs)->tagset != tagset; pvs = &(*pvs)->next) ;
+	if (!*pvs) {
+		*pvs = createviewstack(m->vs);
+		(*pvs)->tagset = tagset;
+	}
+	return *pvs;
 }
 
 void
@@ -98,7 +110,7 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 		movetoptoend(m);
 	}
 	if (!movetostacktop(m, ui)) {
-		v = createviewstack(m, newview ? NULL : vref);
+		v = createviewstack(newview ? NULL : vref);
 		v->next = m->vs;
 		m->vs = v;
 		m->vs->tagset = ui;
@@ -112,7 +124,7 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 
 	for(v = m->vs; v && v->tagset != ui; pv = &v->next, v = v->next) ;
 	if (!v) {
-		*pv = createviewstack(m, m->vs);
+		*pv = createviewstack(m->vs);
 		v = *pv;
 		v->tagset = ui;
 	}
@@ -131,6 +143,16 @@ rewindstack (const Arg *arg) {
 		selmon->vs = v;
 		arrange(selmon);
 	}
+}
+
+void
+settagsetlayout(Monitor* m, unsigned int tagset, const Layout *lt)
+{
+	ViewStack *vs = getviewstackof(m, tagset);
+
+	if (lt != vs->lt[vs->curlt])
+		vs->curlt ^= 1;
+	vs->lt[vs->curlt] = lt;
 }
 
 unsigned int

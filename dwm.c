@@ -1091,7 +1091,7 @@ cleartags(Monitor *m){
 	}
 	if (nc == 0) {
 		monsetlayout(m, &layouts[initlayout]);
-		if (m->vs->tagset == vtag)
+		if (m->vs->tagset == vtag && !hasclientson(m, vtag))
 			monview(m, 0);
 	}
 }
@@ -1285,7 +1285,7 @@ createmon(void) {
 
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
-	m->vs = createviewstack(m, NULL);
+	m->vs = createviewstack(NULL);
 	m->topbar = topbar;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 
@@ -1628,7 +1628,7 @@ focusstack(const Arg *arg) {
 		}
 	}
 	else {
-		for(i = selmon->clients; i != selmon->sel; i = i->next)
+		for(i = selmon->clients; i && i->next && i != selmon->sel; i = i->next)
 			if(ISVISIBLE(i) && !i->nofocus)
 				c = i;
 		if(!c)
@@ -2412,10 +2412,13 @@ sendmon(Client *c, Monitor *m) {
 	unfocus(c, True);
 	detach(c);
 	detachstack(c);
+	if (!hasclientson(m, c->tags))
+		settagsetlayout(m, c->tags, c->mon->vs->lt[c->mon->vs->curlt]);
 	c->mon = m;
-	c->tags = m->vs->tagset; /* assign tags of target monitor */
 	attach(c);
 	attachstack(c);
+	if (!(m->vs->tagset & c->tags))
+		monview(m, c->tags);
 	focus(NULL);
 	arrange(NULL);
 	for(m = mons; m; m = m->next)
@@ -2494,6 +2497,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 		XRaiseWindow(dpy, c->win);
+		monview(c->mon, vtag);
 	}
 	else {
 		setclientopacity(c);
@@ -2510,8 +2514,9 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
+		if (c->mon->vs->tagset == vtag && !hasclientson(c->mon, vtag))
+			monview(c->mon, 0);
 	}
-	monview(c->mon, 0);
 	restorebar(c->mon);
 	arrange(c->mon);
 }
