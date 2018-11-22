@@ -1,0 +1,86 @@
+ * transient window rules are broken
+
+ * push 'new window' tag as next for toggle view and don't toggle tag on new window
+   push 'urgent' too?
+
+ * unswallow should attachabove (same as 'new window')
+
+ * layout each tag with its layout, combining multiple layout a sub-clients
+
+	required change:
+		void (*arrange)(Monitor *);
+    to:
+	    struct LayoutZone {
+	        Monitor* m;
+	        int wx, wy, ww, wh;   /* window area  */
+	    }
+		void (*arrange)(LayoutZone *);
+
+	and struct Client could be with a Window or a LayoutZone*
+	all tags' LayoutZone created as non-Window Clients
+
+	LayoutZone* zones[DIM(tags)];
+
+	effectively:
+		for tagset = a|b
+			a->arrange(numclients(a) + 1)
+		and resize(b, ...) would call
+			b->arrange(numclients(b))
+
+	possible a,b ordering:
+	 - as is
+	 - order by layout if different
+	 - order by time (not practicle for monview(, 0))
+
+	for a call to arrange, count number of Clients: skip duplicates and empty LayoutZones
+	adapt nexttiled() method for count and iteration
+	make arrangemon() set a global to new value at each call (time?)
+	set arrangeid on each client to track duplicates in chain
+	same for zones for debug purposes (and avoid infinite loop)
+
+ * Requirement for merging branches: add config file with:
+   - tags (with names and associated keys)
+   - rules (as is, but optional fields can have default value)
+   - colors (already done, but could be a part of this)
+   - mappings ? or possibly mappings to put in rules
+   (json? -> find simple c implementation for that, stick to 'ini' style otherwise)
+
+ * fix window placement after restart (changes after hide/show bar)
+
+ * change rotatemon() to swapselmonclients({.i = [-1,+1])
+
+******************************
+done:
+ * add cycle current view through monitors (mon[n].view[c] -> mon[n+1].view[c] ; mon[n+1].view(c))
+	-> right click on status
+ * fix "previous layout should never be same a toggle one", ensure both are never equal
+ * an empty view should not be added to "previous"
+ * fix: don't switch view on things like "opened new tab in browser", set view's urgent flag
+ * remove in/out view stack (useless)
+ * fix or remove: restore layout after last view's window deleted
+
+ * special video view ("v"):
+
+view(null) ->
+if (no windows in video)
+	toggle with previous view
+else()
+	toggle with video
+end()
+
+	on video view, window removed from video -> toggle with previous view
+
+	(video view is not saved saved in views for view(null) (?))
+
+ * add qtwebflix rule (fullscreen)
+ * have saved layouts in list (stack) with added combinations (1 to 9 and then n|m combinations): don't mess up other view's layout
+
+ * fix pango warning
+" Invalid UTF-8 string passed to pango_layout_set_text()"
+only happens when draw more text than possible (prevent string clipping)
+
+ * try having any fullscreen window on the 'v' tag
+ * swap view's vs properties when rotating only one view
+ * when setting a window fullscreen, rotate 'v' tag if a window is already present
+ * don't toggle view when exiting fullscreen of window initialy on vtag
+ * rotate current view should keep source view if a window is present afterwards
