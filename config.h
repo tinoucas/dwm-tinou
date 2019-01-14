@@ -197,7 +197,7 @@ static const Rule rules[] = {
 	{ "broken"         , NULL                , "Renoise"   , edittag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "emulator64-arm" , NULL                , NULL        , misctag   , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Deadbeef"       , "deadbeef"          , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "Telegram"          , NULL        , chattag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ NULL             , "Telegram"          , NULL        , chattag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Steam"          , "Steam"             , NULL        , misctag   , False , False , False , OPAQU , False , False , True  , -1  , NULL   , monoclelt , False   , NULL      } , 
 	{ "Steam.exe"      , "Steam.exe"         , NULL        , misctag   , False , False , False , OPAQU , False , True  , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "VPN Unlimited"  , "vpn-unlimited"     , NULL        , misctag   , True  , False , False , OPAQU , False , False , True  , 1   , NULL   , NULL      , False   , NULL      } , 
@@ -206,6 +206,7 @@ static const Rule rules[] = {
 	/*{ "JDownloader"    , NULL                , NULL        , dltag     , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , True    , NULL      } , */
 	{ NULL             , NULL                , NULL        , musictag  , False , False , False , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , "spotify" } , 
     { "broken"         , "broken"            , NULL        , vtag      , False , False , True  , OPAQU , False , False , True  , 1   , NULL   , monoclelt , False   , "yandex_browser" } , 
+	{ "Pavucontrol"    , "pavucontrol"       , NULL        , musictag  , False , False , False , SUBTL , False , False , True  , 1   , NULL   , NULL      , False   , NULL      }, 
 };
 
 /* key definitions */
@@ -289,8 +290,6 @@ static Key keys[] = {
     TAGKEYS(                        XK_egrave,                 6)
     TAGKEYS(                        XK_underscore,             7)
     TAGKEYS(                        XK_ccedilla,               8)
-    WORKSPACE(                      XK_a,                      chattag | 1 << 5)
-    WORKSPACE(                      XK_w,                      maintag | texttag)
     { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
     { MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
     { MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
@@ -298,11 +297,15 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_Return, mirrorlayout,     {0} },
     { MODKEY|ControlMask,           XK_l,      shiftmastersplit, {.i = -1} },   /* reduce the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
-    { 0,                            XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
-    { 0,                            XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
-    { 0,                            XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
+    {      0,         XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+    {      0,         XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+    {      0,         XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+    {      0,         XF86XK_AudioNext,        spawn, SHCMD("playerctl next") },
+    {      0,         XF86XK_AudioPrev,        spawn, SHCMD("playerctl previous") },
+    {      0,         XF86XK_AudioStop,        spawn, SHCMD("playerctl stop") },
+    {      0,         XF86XK_AudioPlay,        spawn, SHCMD("playerctl play-pause") },
 };
 
 /* button definitions */
