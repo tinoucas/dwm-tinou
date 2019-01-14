@@ -155,6 +155,7 @@ settagsetlayout(Monitor* m, unsigned int tagset, const Layout *lt)
 	vs->lt[vs->curlt] = lt;
 }
 
+#if DEBUG_TAGSETS
 void
 printtagset (unsigned int ui) {
 	int i;
@@ -165,6 +166,7 @@ printtagset (unsigned int ui) {
 	}
 	fprintf(stderr, "\n");
 }
+#endif
 
 unsigned int
 findtoggletagset (Monitor *m) {
@@ -173,11 +175,13 @@ findtoggletagset (Monitor *m) {
 	unsigned int tag = 0;
 	ViewStack* v = m->vs;
 
+#if DEBUG_TAGSETS
 	fprintf(stderr, "stack:\n");
 	while (v) {
 		printtagset(v->tagset);
 		v = v->next;
 	}
+#endif
 
 	/* rewind stack for different non-empty tagset that share some tags */
 	v = m->vs;
