@@ -532,6 +532,17 @@ char* getwincmdline (Client* c) {
 	return cmdline;
 }
 
+unsigned int
+numvisibleclients(Monitor* m) {
+	unsigned int nc = 0;
+	Client *c;
+
+	for(c = m->clients; c; c = c->next)
+		if(ISVISIBLE(c) && !c->nofocus)
+			++nc;
+	return nc;
+}
+
 /* function implementations */
 void
 applyrules(Client *c) {
@@ -544,6 +555,8 @@ applyrules(Client *c) {
 	XClassHint ch = { 0 };
 	Bool found = False;
 	Bool istransient = False;
+	unsigned int currenttagset = c->mon->vs->tagset;
+	unsigned int nc = 0;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
@@ -614,24 +627,19 @@ applyrules(Client *c) {
 	if (c->isfloating)
 		centerclient(c);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->vs->tagset;
-	if (c->mon)
-	{
-		unsigned int tagset;
-
+	if (c->mon) {
 		if (!startup) {
-			unsigned int intertags = intersecttags(c, c->mon);
-
-			if (intertags != 0 && !c->nofocus)
-			{
+			if (intersecttags(c, c->mon) != 0 && !c->nofocus) {
 				if (c->tags == vtag)
 					viewstackadd(c->mon, vtag, True);
+				else if (c->isfloating)
+					viewstackadd(c->mon, c->tags | currenttagset, True);
 				else {
-					tagset = (c->tags|c->mon->vs->tagset);
+					nc = numvisibleclients(c->mon);
 					viewstackadd(c->mon, c->tags, True);
-					viewstackadd(c->mon, tagset, True);
+					if (nc > 0)
+						viewstackadd(c->mon, currenttagset, True);
 				}
-				if (c->tags & c->mon->vs->tagset)
-					arrange(c->mon);
 			}
 		}
 		if(lastr && lastr->preflayout) {
@@ -639,8 +647,7 @@ applyrules(Client *c) {
 			if (c->tags == c->mon->vs->tagset)
 				arrange(c->mon);
 		}
-		else if (!startup && !c->nofocus )
-		{
+		else if (!startup && !c->nofocus ) {
 			c->isurgent = True;
 			if ((c->tags & c->mon->vs->tagset) == 0)
 				drawbar(c->mon);
@@ -1086,8 +1093,7 @@ cleartags(Monitor *m){
 			++nc;
 		}
 	if(newtags && newtags != m->vs->tagset) {
-		m->vs->tagset = newtags;
-		arrange(m);
+		monview(m, newtags);
 	}
 	if (nc == 0) {
 		monsetlayout(m, &layouts[initlayout]);
@@ -1959,6 +1965,8 @@ manage(Window w, XWindowAttributes *wa) {
 		client_opacity_set(c, c->opacity);
 	if (c->nofocus)
 		unmanage(c, False);
+	else if (c->tags & c->mon->vs->tagset)
+		cleartags(c->mon);
 }
 
 void

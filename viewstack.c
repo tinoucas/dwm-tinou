@@ -155,6 +155,17 @@ settagsetlayout(Monitor* m, unsigned int tagset, const Layout *lt)
 	vs->lt[vs->curlt] = lt;
 }
 
+void
+printtagset (unsigned int ui) {
+	int i;
+
+	for(i = 0; i < LENGTH(tags); ++i) {
+		if (ui & (1 << i))
+			fprintf(stderr, "%d ", i);
+	}
+	fprintf(stderr, "\n");
+}
+
 unsigned int
 findtoggletagset (Monitor *m) {
 	unsigned int toggletags = m->vs->tagset;
@@ -162,38 +173,60 @@ findtoggletagset (Monitor *m) {
 	unsigned int tag = 0;
 	ViewStack* v = m->vs;
 
+	fprintf(stderr, "stack:\n");
+	while (v) {
+		printtagset(v->tagset);
+		v = v->next;
+	}
+
 	/* rewind stack for different non-empty tagset that share some tags */
+	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if ((v->tagset & curseltags) == 0 && hasclientson(m, v->tagset))
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "different non-empty tagset that share some tags\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
 	}
 	/* rewind stack for different non-empty tagset that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if (v->tagset != curseltags && hasclientson(m, v->tagset))
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "different non-empty tagset that share some tags\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
+	}
+	/* try any tag different than current */
+	while (toggletags == curseltags && tag < LENGTH(tags)) {
+		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
+		{
+			fprintf(stderr, "any tag different than current\n");
+				toggletags = (1 << tag);
+		}
+		++tag;
 	}
 	/* rewind stack for tagset (empty) with no tags in common */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if ((v->tagset & curseltags) == 0)
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "tagset (empty) with no tags in common\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
 	}
 	/* rewind stack for different tagset (empty) that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if (v->tagset != curseltags)
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "different tagset (empty) that share some tags\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
-	}
-	/* try any tag different than current */
-	while (toggletags == curseltags && tag < LENGTH(tags)) {
-		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
-			toggletags = (1 << tag);
-		++tag;
 	}
 	return toggletags;
 }
