@@ -1,8 +1,5 @@
  * transient window rules are broken
 
- * push 'new window' tag as next for toggle view and don't toggle tag on new window
-   push 'urgent' too?
-
  * unswallow should attachabove (same as 'new window')
 
  * layout each tag with its layout, combining multiple layout a sub-clients
@@ -23,7 +20,7 @@
 
 	effectively:
 		for tagset = a|b
-			a->arrange(numclients(a) + 1)
+			a->arrange(numclients(a) + numzones)
 		and resize(b, ...) would call
 			b->arrange(numclients(b))
 
@@ -38,6 +35,8 @@
 	set arrangeid on each client to track duplicates in chain
 	same for zones for debug purposes (and avoid infinite loop)
 
+	nexttiled(LayoutZone *zone, Client *c)
+
  * Requirement for merging branches: add config file with:
    - tags (with names and associated keys)
    - rules (as is, but optional fields can have default value)
@@ -45,9 +44,26 @@
    - mappings ? or possibly mappings to put in rules
    (json? -> find simple c implementation for that, stick to 'ini' style otherwise)
 
- * fix window placement after restart (changes after hide/show bar)
+   small json implementation: https://bitbucket.org/yarosla/nxjson
+   if errors found at launch, stick with built-in rules
+   auto reload config file, use if no errors found
+
+ * fix window placement after restart (border visible until hide/show bar)
 
  * change rotatemon() to swapselmonclients({.i = [-1,+1])
+
+ * floating window tag 'f' (if no rule or transiant) (toggle with mod-space)
+ * floating window should be hidden when ruled on tag different from current
+ * intelligent floating window placement
+ * default layout per tag (remove rule "prefered layout")
+ * add "volume control" rule (music tag, mon 2)
+
+ * keyboard focus after xtrlock exit
+
+ * exit from fullscreen on embedded youtube looses browser window
+(yandex, url: https://www.polygon.com/2018/12/20/18001832/men-in-black-international-first-trailer?utm_campaign=polygon&utm_content=chorus&utm_medium=social&utm_source=twitter)
+
+ * add for new hidden floating window 'needsPositioning' bool to Client, and reposition the window when shown
 
 ******************************
 done:
@@ -84,3 +100,4 @@ only happens when draw more text than possible (prevent string clipping)
  * when setting a window fullscreen, rotate 'v' tag if a window is already present
  * don't toggle view when exiting fullscreen of window initialy on vtag
  * rotate current view should keep source view if a window is present afterwards
+ * push 'new window' tag as next for toggle view and don't toggle tag on new window
