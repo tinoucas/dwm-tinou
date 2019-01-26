@@ -1040,6 +1040,26 @@ checkotherwm(void) {
 	XSync(dpy, False);
 }
 
+void
+cleanrule (Rule *rule) {
+	free(rule->class);
+	free(rule->instance);
+	free(rule->title);
+	free(rule->procname);
+	free(rule);
+}
+
+void
+cleanrules(void) {
+	Rule *r;
+
+	while (rules) {
+		r = rules;
+		rules = r->next;
+		cleanrule(r);
+	}
+	rules = NULL;
+}
 
 void
 cleanup(void) {
@@ -1065,6 +1085,7 @@ cleanup(void) {
 		XDestroyWindow(dpy, systray->win);
 		free(systray);
 	}
+	cleanrules();
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
