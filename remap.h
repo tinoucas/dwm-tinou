@@ -26,4 +26,14 @@ static const Remap chrome[] = {
 	{ 0 },
 };
 
+#define REMAP(a) { #a, a }
 
+const struct {
+	const char *name;
+	const Remap *remap;
+}
+remaps[] = {
+	REMAP(mpv),
+	REMAP(sView),
+	REMAP(chrome),
+};

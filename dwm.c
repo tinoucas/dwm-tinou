@@ -179,6 +179,7 @@ typedef struct {
 typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
+	const char *name;
 	int borderpx;
 } Layout;
 
@@ -211,10 +212,12 @@ struct Monitor {
 	ViewStack* vs;
 };
 
-typedef struct {
-	const char *class;
-	const char *instance;
-	const char *title;
+
+typedef struct Rule Rule;
+struct Rule {
+	char *class;
+	char *instance;
+	char *title;
 	unsigned int tags;
 	Bool isfloating;
 	int isterminal;
@@ -227,8 +230,9 @@ typedef struct {
 	const Remap* remap;
 	const Layout* preflayout;
 	Bool istransient;
-	const char* procname;
-} Rule;
+	char* procname;
+	Rule *next;
+};
 
 typedef struct {
 	const char* process_name;
@@ -570,16 +574,17 @@ applyrules(Client *c) {
 	if(XGetClassHint(dpy, c->win, &ch) || wincmdline) {
 		class = ch.res_class ? ch.res_class : broken;
 		instance = ch.res_name ? ch.res_name : broken;
-		for(i = 0; i < LENGTH(rules); i++) {
-			r = &rules[i];
+		i = 0;
+		for (r = rules; r; r = r->next) {
 			if (clientmatchesrule(c, class, instance, istransient, wincmdline, r))
 			{
 				applyclientrule(c, r, istransient);
 				lastr = r;
-				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s'\n",
-						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
+				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d'\n",
+						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1);
 				found = True;
 			}
+			++i;
 		}
 		if (clientmatchesrule(c, class, instance, istransient, wincmdline, &clockrule)) {
 			applyclientrule(c, &clockrule, istransient);
@@ -601,10 +606,9 @@ applyrules(Client *c) {
 	}
 	else
 	{
-		for(i = 0; i < LENGTH(rules); i++) {
-			r = &rules[i];
-			if(r->title && strstr(c->name, r->title))
-			{
+		i = 0;
+		for (r = rules; r; r = r->next) {
+			if(r->title && strstr(c->name, r->title)) {
 				applyclientrule(c, r, False);
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
@@ -614,6 +618,7 @@ applyrules(Client *c) {
 				fprintf(stderr, "Applying rule %d ('%s'): name == '%s'\n",
 						i, r->title ? r->title : "NULL", c->name ? c->name : "NULL");
 			}
+			++i;
 		}
 		if(!found) {
 			fprintf(stderr, "No rule applied for: name == '%s'\n", c->name ? c->name : "NULL");
@@ -2624,6 +2629,9 @@ setup(void) {
 
 	/* read colors */
 	readcolors();
+
+	/* read rules */
+	readrules();
 
 	*ooftraysbl = 0;
 	if (outoffocustraysymbol)
