@@ -16,7 +16,7 @@ static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 		PARSE_ATTRIBUTE(class),
 		PARSE_ATTRIBUTE(instance),
 		PARSE_ATTRIBUTE(title),
-		PARSE_ATTRIBUTE(tags),
+		PARSE_ATTRIBUTE(tag),
 		PARSE_ATTRIBUTE(isfloating),
 		PARSE_ATTRIBUTE(isterminal),
 		PARSE_ATTRIBUTE(noswallow),

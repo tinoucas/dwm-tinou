@@ -20,9 +20,11 @@ static void titleparser (const struct nx_json *js, Rule *rule) {
 	copystring(&rule->title, js);
 }
 
-static void tagsparser (const struct nx_json *js, Rule *rule) {
-	rule->tags = js->int_value;
-	fprintf(stderr, "reading tag: %d\n", rules->tags);
+static void tagparser (const struct nx_json *js, Rule *rule) {
+	if (js->int_value == 0)
+		rule->tags = ~0;
+	else
+		rule->tags = (1 << (js->int_value - 1));
 }
 
 static void isfloatingparser (const struct nx_json *js, Rule *rule) {

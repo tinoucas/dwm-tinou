@@ -34,13 +34,13 @@
 		},
 		{
 			"class": "URxvt",
-			"tags": 1,
+			"tag": 1,
 			"istransparent": 0.75
 		},
 		{
 			"class": "URxvt",
 			"instance": "screen",
-			"tags": 1,
+			"tag": 1,
 			"istransparent": 0.75
 		},
 		{
@@ -54,54 +54,54 @@
 		},
 		{
 			"class": "Gimp",
-			"tags": 16,
+			"tag": 5,
 			"istransparent": 1.0,
 			"rh":   0
 		},
 		{
 			"class": "Firefox",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome",
 			"preflayout": "monocle"
 		},
 		{
 			"class": "vivaldi-stable",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome"
 		},
 		{
 			"instance": "Download",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0
 		},
 		{
 			"instance": "Navigator",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Gran Paradiso",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Opera",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Google-chrome",
 			"instance": "google-chrome",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome"
 		},
 		{
 			"class": "Yandex-browser",
 			"instance": "yandex-browser",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome",
 			"preflayout": "monocle"
@@ -109,7 +109,7 @@
 		{
 			"class": "Slimjet",
 			"instance": "slimjet",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome",
 			"preflayout": "monocle"
@@ -123,38 +123,38 @@
 		{
 			"class": "Chromium",
 			"instance": "chromium",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0,
 			"remap": "chrome"
 		},
 		{
 			"instance": "Pidgin",
-			"tags": 2,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "sonata",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "ario",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.75
 		},
 		{
 			"class": "Gmpc",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.75
 		},
 		{
 			"class": "Shredder",
-			"tags": 2,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "screen",
-			"tags": 1,
+			"tag": 1,
 			"istransparent": 0.75
 		},
 		{
@@ -165,7 +165,7 @@
 		{
 			"class": "feh",
 			"title": "mon0",
-			"tags": 1024,
+			"tag": 11,
 			"isfloating": 1,
 			"noswallow": 1,
 			"istransparent": 1.0,
@@ -175,7 +175,7 @@
 		{
 			"class": "feh",
 			"title": "mon1",
-			"tags": 1024,
+			"tag": 11,
 			"isfloating": 1,
 			"noswallow": 1,
 			"istransparent": 1.0,
@@ -189,32 +189,32 @@
 		},
 		{
 			"class": "Xfe",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "ROX-Filer",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "spacefm",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "thunar",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "dolphin",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "pantheon-files",
-			"tags": 4,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
@@ -269,7 +269,7 @@
 		},
 		{
 			"class": "Audacious",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.75
 		},
 		{
@@ -283,7 +283,7 @@
 		{
 			"class": "sView",
 			"instance": "sView",
-			"tags": 1024,
+			"tag": 11,
 			"noswallow": 1,
 			"istransparent": 1.0,
 			"remap": "sView",
@@ -292,7 +292,7 @@
 		{
 			"class": "qtwebflix",
 			"instance": "qtwebflix",
-			"tags": 1024,
+			"tag": 11,
 			"noswallow": 1,
 			"istransparent": 1.0,
 			"remap": "mpv",
@@ -337,19 +337,19 @@
 		},
 		{
 			"instance": "gqmpeg",
-			"tags": 128,
+			"tag": 8,
 			"isfloating": 1,
 			"istransparent": 1.0
 		},
 		{
 			"class": "GQmpeg",
 			"instance": "playlist",
-			"tags": 2,
+			"tag": 3,
 			"istransparent": 1.0
 		},
 		{
 			"instance": "TzClock",
-			"tags": ~0,
+			"tag": 0,
 			"isfloating": 1,
 			"istransparent": 0.75,
 			"nofocus": 1,
@@ -358,61 +358,61 @@
 		{
 			"class": "Guimup",
 			"instance": "guimup",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 1.0
 		},
 		{
 			"instance": "uzbl-core",
-			"tags": 512,
+			"tag": 10,
 			"istransparent": 1.0
 		},
 		{
 			"instance": "gvim",
-			"tags": 8,
+			"tag": 4,
 			"istransparent": 0.75,
 			"rh":   0
 		},
 		{
 			"instance": "vim",
-			"tags": 8,
+			"tag": 4,
 			"istransparent": 0.75,
 			"rh":   0
 		},
 		{
 			"class": "Sublime_text",
-			"tags": 8,
+			"tag": 4,
 			"istransparent": 0.75
 		},
 		{
 			"class": "oni",
 			"instance": "oni",
-			"tags": 8,
+			"tag": 4,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "MixVibes Cross",
-			"tags": 256,
+			"tag": 9,
 			"istransparent": 1.0
 		},
 		{
 			"instance": "Cross Preferences",
-			"tags": 256,
+			"tag": 9,
 			"isfloating": 1,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Evince",
-			"tags": 16,
+			"tag": 3,
 			"istransparent": 1.0
 		},
 		{
 			"class": "FBReader",
-			"tags": 16,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "stalonetray",
-			"tags": ~0,
+			"tag": 0,
 			"isfloating": 1,
 			"istransparent": 1.0,
 			"nofocus": 1,
@@ -420,7 +420,7 @@
 		},
 		{
 			"class": "Display",
-			"tags": 1,
+			"tag": 1,
 			"isfloating": 1,
 			"istransparent": 1.0,
 			"nofocus": 1,
@@ -429,37 +429,37 @@
 		{
 			"class": "broken",
 			"title": "Renoise",
-			"tags": 16,
+			"tag": 5,
 			"istransparent": 1.0
 		},
 		{
 			"class": "emulator64-arm",
-			"tags": 256,
+			"tag": 9,
 			"isfloating": 1,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Deadbeef",
 			"instance": "deadbeef",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.75
 		},
 		{
 			"instance": "Telegram",
-			"tags": 2,
+			"tag": 3,
 			"istransparent": 0.75
 		},
 		{
 			"class": "Steam",
 			"instance": "Steam",
-			"tags": 256,
+			"tag": 9,
 			"istransparent": 1.0,
 			"preflayout": "monocle"
 		},
 		{
 			"class": "Steam.exe",
 			"instance": "Steam.exe",
-			"tags": 256,
+			"tag": 9,
 			"istransparent": 1.0,
 			"noborder": 1,
 			"rh":   0
@@ -467,7 +467,7 @@
 		{
 			"class": "VPN Unlimited",
 			"instance": "vpn-unlimited",
-			"tags": 256,
+			"tag": 9,
 			"isfloating": 1,
 			"istransparent": 1.0,
 			"monitor":  1
@@ -475,23 +475,23 @@
 		{
 			"class": "qBittorrent",
 			"instance": "qbittorrent",
-			"tags": 64,
+			"tag": 7,
 			"istransparent": 1.0
 		},
 		{
 			"class": "JDownloader",
-			"tags": 32,
+			"tag": 6,
 			"istransparent": 1.0
 		},
 		{
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.92,
 			"procname": "spotify" 
 		},
 		{
 			"class": "broken",
 			"instance": "broken",
-			"tags": 1024,
+			"tag": 11,
 			"noswallow": 1,
 			"istransparent": 1.0,
 			"monitor":  1,
@@ -501,7 +501,7 @@
 		{
 			"class": "Pavucontrol",
 			"instance": "pavucontrol",
-			"tags": 128,
+			"tag": 8,
 			"istransparent": 0.92,
 			"monitor":  1
 		}
