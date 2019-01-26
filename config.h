@@ -28,7 +28,7 @@ static const unsigned int alltags = ~0;
 //static const char font[]            = "-*-droid sans-medium-r-*-*-12-*-*-*-*-*-ascii-*";
 //static const char font[]            = "-*-fixed-medium-r-*-*-13-*-*-*-*-*-*-15";
 //static const char font[]            = "-misc-liberation mono-medium-r-*-*-12-*-*-*-*-*-*-*";
-static const char font[]			= "Andale Mono Regular 11";
+static const char font[]			= "DejaVu Sans Mono Book 12";
 //static const char font[]            = "-*-proggyclean-medium-*-*-*-*-*-*-*-*-*-*-1";
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
@@ -123,7 +123,7 @@ static const Rule rules[] = {
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */
 	{ NULL             , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "veromix"        , NULL                , NULL        , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Alacritty"      , "Alacritty"         , NULL        , anytag    , False , False , False , CLEAR , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ "Alacritty"      , "Alacritty"         , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "kitty"          , "kitty"             , NULL        , anytag    , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "kitty"          , "kitty"             , "mon0"      , anytag    , False , True  , False , OPAQU , False , False , True  ,  0  , NULL   , NULL      , False   , NULL      } , 
 	{ "kitty"          , "kitty"             , "mon1"      , anytag    , False , True  , False , OPAQU , False , False , True  ,  1  , NULL   , NULL      , False   , NULL      } , 
@@ -227,7 +227,7 @@ static const Rule rules[] = {
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "kitty", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
