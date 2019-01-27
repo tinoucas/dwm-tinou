@@ -21,10 +21,26 @@ static void titleparser (const struct nx_json *js, Rule *rule) {
 }
 
 static void tagparser (const struct nx_json *js, Rule *rule) {
-	if (js->int_value == 0)
-		rule->tags = ~0;
-	else
-		rule->tags = (1 << (js->int_value - 1));
+	int i;
+
+	switch(js->type) {
+	case NX_JSON_INTEGER:
+		if (js->int_value == 0)
+			rule->tags = ~0;
+		else
+			rule->tags = (1 << (js->int_value - 1));
+		break;
+	case NX_JSON_STRING:
+		for (i = 0; i < numtags; ++i)
+			if (!strcmp(js->text_value, tags[i])) {
+				rule->tags = (1 << i);
+				break;
+			}
+		break;
+	default:
+		fprintf(stderr, "Unsupported tag type '%d'\n", (int)js->type);
+		break;
+	}
 }
 
 static void isfloatingparser (const struct nx_json *js, Rule *rule) {

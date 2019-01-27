@@ -160,7 +160,7 @@ void
 printtagset (unsigned int ui) {
 	int i;
 
-	for(i = 0; i < getnumtags(); ++i) {
+	for(i = 0; i < numtags; ++i) {
 		if (ui & (1 << i))
 			fprintf(stderr, "%d ", i);
 	}
@@ -204,7 +204,7 @@ findtoggletagset (Monitor *m) {
 		v = v->next;
 	}
 	/* try any tag different than current */
-	while (toggletags == curseltags && tag < getnumtags()) {
+	while (toggletags == curseltags && tag < numtags) {
 		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
 		{
 			fprintf(stderr, "any tag different than current\n");

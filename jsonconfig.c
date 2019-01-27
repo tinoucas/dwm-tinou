@@ -128,7 +128,3 @@ static void readconfig () {
 		free(content);
 	}
 }
-
-static int getnumtags() {
-	return numtags;
-t

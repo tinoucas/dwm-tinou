@@ -65,7 +65,7 @@
 #define MOUSEMASK				(BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)				((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)				((X)->h + 2 * (X)->bw)
-#define TAGMASK					((1 << getnumtags()) - 1)
+#define TAGMASK					((1 << numtags) - 1)
 #define TEXTW(X)				(textnw(X, strlen(X)) + dc.font.height)
 
 #define SYSTEM_TRAY_REQUEST_DOCK    0
@@ -986,8 +986,8 @@ buttonpress(XEvent *e) {
 		i = x = 0;
 		do
 			x += TEXTW(tags[i]);
-		while(ev->x >= x && ++i < getnumtags());
-		if(i < getnumtags()) {
+		while(ev->x >= x && ++i < numtags);
+		if(i < numtags) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
 		}
@@ -1419,7 +1419,7 @@ drawbar(Monitor *m) {
 			occ &= ~vtag;
 	}
 	dc.x = 0;
-	for(i = 0; i < getnumtags(); i++) {
+	for(i = 0; i < numtags; i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
