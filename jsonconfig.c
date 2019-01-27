@@ -104,7 +104,7 @@ static void readtags (const struct nx_json *jsontags) {
 
 static void readconfig () {
 	const char* homedir = getenv("HOME");
-	const char* relconfig = ".config/dwm/rules.json";
+	const char* relconfig = ".config/dwm/config.json";
 	char* rulesFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
 	char* content;
 	const nx_json *json, *js;
@@ -131,4 +131,4 @@ static void readconfig () {
 
 static int getnumtags() {
 	return numtags;
-}
+t
