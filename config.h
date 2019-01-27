@@ -2,7 +2,8 @@
 
 #ifdef CONFIG_HEAD
 /* tagging */
-static const char *tags[] = { "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" };
+static char **tags;
+static int numtags;
 
 static const unsigned int maintag = 1 << 0;
 static const unsigned int chattag = 1 << 1;
@@ -104,21 +105,20 @@ enum layout {
 
 static const Layout *const monoclelt = &layouts[MONOCLE];
 
-#include "viewstack.c"
-#include "push.c"
-#include "rotatemons.c"
-#include "remap.c"
-#include "misc.c"
-
-#include <X11/XF86keysym.h>
-
 static const Rule defaultrule = 
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname, next */
     {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL    , NULL };
 
 static Rule* rules = NULL;
 
-#include "jsonrule.c"
+#include "remap.c"
+#include "jsonconfig.c"
+#include "viewstack.c"
+#include "push.c"
+#include "rotatemons.c"
+#include "misc.c"
+
+#include <X11/XF86keysym.h>
 
 /* key definitions */
 #define MODKEY Mod4Mask

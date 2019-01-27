@@ -89,7 +89,20 @@ static char* load_file(const char* filepath) {
 	return text;
 }
 
-static void readrules () {
+static void readtags (const struct nx_json *jsontags) {
+	numtags = jsontags->length;
+	int i;
+	struct nx_json *js;
+
+	tags = calloc(numtags + 1, sizeof(char*));
+
+	for (i = 0, js = jsontags->child; js; js = js->next, ++i) {
+		tags[i] = calloc(strlen(js->text_value) + 1, sizeof(char));
+		strcpy(tags[i], js->text_value);
+	}
+}
+
+static void readconfig () {
 	const char* homedir = getenv("HOME");
 	const char* relconfig = ".config/dwm/rules.json";
 	char* rulesFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
@@ -105,9 +118,17 @@ static void readrules () {
 	if (content) {
 		json = nx_json_parse_utf8(content);
 
-		for (js = json->child; js; js = js->next)
-			readjsonrules(js);
+		for (js = json->child; js; js = js->next) {
+			if (!strcmp(js->key, "rules"))
+				readjsonrules(js);
+			else if (!strcmp(js->key, "tags"))
+				readtags(js);
+		}
 		nx_json_free(json);
 		free(content);
 	}
+}
+
+static int getnumtags() {
+	return numtags;
 }

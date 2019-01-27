@@ -1,5 +1,11 @@
 {
+	"tags": [ "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" ],
 	"rules": [
+		{
+			"class": "keepassxc",
+			"instance": "keepassxc",
+			"tag": 9
+		},
 		{
 			"class": "veromix",
 			"isfloating": 1,

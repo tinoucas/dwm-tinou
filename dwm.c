@@ -65,7 +65,7 @@
 #define MOUSEMASK				(BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)				((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)				((X)->h + 2 * (X)->bw)
-#define TAGMASK					((1 << LENGTH(tags)) - 1)
+#define TAGMASK					((1 << getnumtags()) - 1)
 #define TEXTW(X)				(textnw(X, strlen(X)) + dc.font.height)
 
 #define SYSTEM_TRAY_REQUEST_DOCK    0
@@ -438,9 +438,6 @@ static unsigned int statuscommutator = 0;
 #include "config.h"
 
 static char ooftraysbl[OOFTRAYLEN];
-
-/* compile-time check if all tags fit into an unsigned int bit array. */
-struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
 
 Window getWindowParent (Window winId) {
 	Window wroot, parent, *children = NULL;
@@ -989,8 +986,8 @@ buttonpress(XEvent *e) {
 		i = x = 0;
 		do
 			x += TEXTW(tags[i]);
-		while(ev->x >= x && ++i < LENGTH(tags));
-		if(i < LENGTH(tags)) {
+		while(ev->x >= x && ++i < getnumtags());
+		if(i < getnumtags()) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
 		}
@@ -1062,6 +1059,15 @@ cleanrules(void) {
 }
 
 void
+cleantags(void) {
+	int i;
+
+	for (i = 0; tags[i]; ++i)
+		free(tags[i]);
+	free(tags);
+}
+
+void
 cleanup(void) {
 	Arg a = {.ui = ~0};
 	Layout foo = { "", NULL };
@@ -1086,6 +1092,7 @@ cleanup(void) {
 		free(systray);
 	}
 	cleanrules();
+	cleantags();
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
@@ -1412,7 +1419,7 @@ drawbar(Monitor *m) {
 			occ &= ~vtag;
 	}
 	dc.x = 0;
-	for(i = 0; i < LENGTH(tags); i++) {
+	for(i = 0; i < getnumtags(); i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
@@ -2651,8 +2658,8 @@ setup(void) {
 	/* read colors */
 	readcolors();
 
-	/* read rules */
-	readrules();
+	/* read config */
+	readconfig();
 
 	*ooftraysbl = 0;
 	if (outoffocustraysymbol)
