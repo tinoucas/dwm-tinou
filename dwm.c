@@ -1094,7 +1094,6 @@ cleanup(void) {
 	}
 	cleanrules();
 	cleantags();
-	free(font);
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
