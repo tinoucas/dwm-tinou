@@ -49,7 +49,7 @@ copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
 }
 
 ViewStack*
-createviewstack (Monitor *m, const ViewStack *vref) {
+createviewstack (const ViewStack *vref) {
 	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
 	int i;
 
@@ -66,6 +66,18 @@ createviewstack (Monitor *m, const ViewStack *vref) {
 			v->ltaxis[i] = layoutaxis[i];
 	}
 	return v;
+}
+
+ViewStack*
+getviewstackof(Monitor* m, const unsigned int tagset) {
+	ViewStack **pvs;
+
+	for(pvs = &m->vs; *pvs && (*pvs)->tagset != tagset; pvs = &(*pvs)->next) ;
+	if (!*pvs) {
+		*pvs = createviewstack(m->vs);
+		(*pvs)->tagset = tagset;
+	}
+	return *pvs;
 }
 
 void
@@ -98,7 +110,7 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 		movetoptoend(m);
 	}
 	if (!movetostacktop(m, ui)) {
-		v = createviewstack(m, newview ? NULL : vref);
+		v = createviewstack(newview ? NULL : vref);
 		v->next = m->vs;
 		m->vs = v;
 		m->vs->tagset = ui;
@@ -112,7 +124,7 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 
 	for(v = m->vs; v && v->tagset != ui; pv = &v->next, v = v->next) ;
 	if (!v) {
-		*pv = createviewstack(m, m->vs);
+		*pv = createviewstack(m->vs);
 		v = *pv;
 		v->tagset = ui;
 	}
@@ -133,6 +145,29 @@ rewindstack (const Arg *arg) {
 	}
 }
 
+void
+settagsetlayout(Monitor* m, unsigned int tagset, const Layout *lt)
+{
+	ViewStack *vs = getviewstackof(m, tagset);
+
+	if (lt != vs->lt[vs->curlt])
+		vs->curlt ^= 1;
+	vs->lt[vs->curlt] = lt;
+}
+
+#if DEBUG_TAGSETS
+void
+printtagset (unsigned int ui) {
+	int i;
+
+	for(i = 0; i < numtags; ++i) {
+		if (ui & (1 << i))
+			fprintf(stderr, "%d ", i);
+	}
+	fprintf(stderr, "\n");
+}
+#endif
+
 unsigned int
 findtoggletagset (Monitor *m) {
 	unsigned int toggletags = m->vs->tagset;
@@ -140,32 +175,62 @@ findtoggletagset (Monitor *m) {
 	unsigned int tag = 0;
 	ViewStack* v = m->vs;
 
+#if DEBUG_TAGSETS
+	fprintf(stderr, "stack:\n");
+	while (v) {
+		printtagset(v->tagset);
+		v = v->next;
+	}
+#endif
+
+	/* rewind stack for different non-empty tagset that share some tags */
+	v = m->vs;
+	while (toggletags == curseltags && v) {
+		if ((v->tagset & curseltags) == 0 && hasclientson(m, v->tagset))
+		{
+			fprintf(stderr, "different non-empty tagset that share some tags\n");
+				toggletags = v->tagset;
+		}
+		v = v->next;
+	}
 	/* rewind stack for different non-empty tagset that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if (v->tagset != curseltags && hasclientson(m, v->tagset))
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "different non-empty tagset that share some tags\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
+	}
+	/* try any tag different than current */
+	while (toggletags == curseltags && tag < numtags) {
+		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
+		{
+			fprintf(stderr, "any tag different than current\n");
+				toggletags = (1 << tag);
+		}
+		++tag;
 	}
 	/* rewind stack for tagset (empty) with no tags in common */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if ((v->tagset & curseltags) == 0)
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "tagset (empty) with no tags in common\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
 	}
 	/* rewind stack for different tagset (empty) that share some tags */
 	v = m->vs;
 	while (toggletags == curseltags && v) {
 		if (v->tagset != curseltags)
-			toggletags = v->tagset;
+		{
+			fprintf(stderr, "different tagset (empty) that share some tags\n");
+				toggletags = v->tagset;
+		}
 		v = v->next;
-	}
-	/* try any tag different than current */
-	while (toggletags == curseltags && tag < LENGTH(tags)) {
-		if (((1 << tag) & curseltags) == 0 && hasclientson(m, 1 << tag))
-			toggletags = (1 << tag);
-		++tag;
 	}
 	return toggletags;
 }

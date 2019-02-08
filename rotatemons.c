@@ -17,16 +17,14 @@ changemon(Client *c, Monitor *m) {
 }
 
 void
-movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
+movetomon (const unsigned int views, Monitor *msrc, Monitor *mdst) {
 	Client* c;
 	ClientListItem* nextitem = NULL;
 	ClientListItem* baseitem = NULL;
-	ClientListItem* item;
-
+	ClientListItem* item = NULL;
 
 	for(c = msrc->stack; c; c = c->snext)
 		if (c->tags & views) {
-			fprintf(stderr, "add client '%s' to list\n", c->name);
 			item = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 			item->c = c;
 			item->next = nextitem;
@@ -34,7 +32,6 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 		}
 	baseitem = item;
 	for(item = baseitem; item && item->c; item = item->next) {
-		fprintf(stderr, "changeing mon of client '%s'\n", item->c->name);
 		changemon(item->c, mdst);
 	}
 
@@ -52,13 +49,10 @@ movetomon (unsigned int views, Monitor *msrc, Monitor *mdst) {
 
 	if (views == ~0)
 		mdst->vs = msrc->vs;
-	else if (views == msrc->vs->tagset)
-		monview(mdst, msrc->vs->tagset);
-	monsetlayout(mdst, msrc->vs->lt[msrc->vs->curlt]);
 }
 
 void
-swapmonitors(unsigned int views, Monitor *mon1, Monitor *mon2, Monitor *sparem) {
+swapmonitors(const unsigned int views, Monitor *mon1, Monitor *mon2, Monitor *sparem) {
 	movetomon(views, mon1, sparem);
 	movetomon(views, mon2, mon1);
 	movetomon(views, sparem, mon2);
@@ -66,26 +60,36 @@ swapmonitors(unsigned int views, Monitor *mon1, Monitor *mon2, Monitor *sparem) 
 
 void
 rotatemonitor(const Arg* arg) {
-	Monitor* sparem = createmon();
-	Monitor* m;
-	Monitor* nextm;
+	Monitor *m, *nextm, *lastm, *sparem = createmon();
 	Bool allviews = (arg->i != 0);
-	unsigned int views = allviews ? ~0 : selmon->vs->tagset;
+	const ViewStack *vs;
+	const unsigned int views = allviews ? ~0 : selmon->vs->tagset;
 	int i;
 
 	rotatingMons = True;
+	/* rotate clients */
 	for(m = mons, nextm = mons->next; nextm; m = m->next, nextm = nextm->next) {
 		if (!nextm)
 			nextm = mons;
 		swapmonitors(views, m, nextm, sparem);
 	}
 	free(sparem);
+	/* tidy monitors (num, tagset, lt) */
+	for(lastm = mons; lastm && lastm->next; lastm = lastm->next) ;
 	for (i = 0, m = mons; m; m = m->next, ++i) {
 		m->num = i;
-		if(!allviews && !hasclientson(m, m->vs->tagset))
-			monview(m, 0);
+		if(!allviews) {
+			if (hasclientson(m, views)) {
+				monview(m, views);
+				vs = getviewstackof(lastm, views);
+				copyviewstack(m->vs, vs);
+			}
+			else if (!hasclientson(m, m->vs->tagset))
+				monview(m, 0);
+		}
 		restorebar(m);
 		arrange(m);
+		lastm = m;
 	}
 	rotatingMons = False;
 }

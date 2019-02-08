@@ -22,7 +22,13 @@ static const unsigned int alltags = ~0;
 #else
 
 /* appearance */
-static const char font[]	= "DejaVu Sans Mono Book 12";
+//<<<<<<< HEAD
+//static const char font[]			= "Andale Mono Regular 11";
+//=======
+//static const char font[]			= "DejaVu Sans Mono Book 12";
+//>>>>>>> origin/master
+static const char fallbackfont[]	= "DejaVu Sans Mono Book 12";
+static char* font = NULL;
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
 static const char selbordercolor[]  = "#ffffff";
@@ -128,7 +134,7 @@ static Rule* rules = NULL;
 	{ MODKEY,   KEY,      view,     {.ui = TAG} },
 
 /* commands */
-static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
+static const char *dclipcmd[] = { "dclip", "paste", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 static const char *termcmd[]  = { "alacritty", NULL };

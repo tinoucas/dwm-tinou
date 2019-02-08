@@ -65,7 +65,7 @@
 #define MOUSEMASK				(BUTTONMASK|PointerMotionMask)
 #define WIDTH(X)				((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)				((X)->h + 2 * (X)->bw)
-#define TAGMASK					((1 << LENGTH(tags)) - 1)
+#define TAGMASK					((1 << numtags) - 1)
 #define TEXTW(X)				(textnw(X, strlen(X)) + dc.font.height)
 
 #define SYSTEM_TRAY_REQUEST_DOCK    0
@@ -134,7 +134,8 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isfullscreen, isterminal, noswallow;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow;
+	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
 	Client *swallowing;
@@ -178,6 +179,7 @@ typedef struct {
 typedef struct {
 	const char *symbol;
 	void (*arrange)(Monitor *);
+	const char *name;
 	int borderpx;
 } Layout;
 
@@ -210,10 +212,12 @@ struct Monitor {
 	ViewStack *vs;
 };
 
-typedef struct {
-	const char *class;
-	const char *instance;
-	const char *title;
+
+typedef struct Rule Rule;
+struct Rule {
+	char *class;
+	char *instance;
+	char *title;
 	unsigned int tags;
 	Bool isfloating;
 	int isterminal;
@@ -226,8 +230,9 @@ typedef struct {
 	const Remap* remap;
 	const Layout* preflayout;
 	Bool istransient;
-	const char* procname;
-} Rule;
+	char* procname;
+	Rule *next;
+};
 
 typedef struct {
 	const char* process_name;
@@ -435,9 +440,6 @@ static unsigned int statuscommutator = 0;
 
 static char ooftraysbl[OOFTRAYLEN];
 
-/* compile-time check if all tags fit into an unsigned int bit array. */
-struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
-
 Window getWindowParent (Window winId) {
 	Window wroot, parent, *children = NULL;
 	unsigned int num_children;
@@ -532,6 +534,17 @@ char* getwincmdline (Client* c) {
 	return cmdline;
 }
 
+unsigned int
+numvisibleclients(Monitor* m) {
+	unsigned int nc = 0;
+	Client *c;
+
+	for(c = m->clients; c; c = c->next)
+		if(ISVISIBLE(c) && !c->nofocus)
+			++nc;
+	return nc;
+}
+
 /* function implementations */
 void
 applyrules(Client *c) {
@@ -544,6 +557,8 @@ applyrules(Client *c) {
 	XClassHint ch = { 0 };
 	Bool found = False;
 	Bool istransient = False;
+	unsigned int currenttagset = c->mon->vs->tagset;
+	unsigned int nc = 0;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
@@ -557,16 +572,17 @@ applyrules(Client *c) {
 	if(XGetClassHint(dpy, c->win, &ch) || wincmdline) {
 		class = ch.res_class ? ch.res_class : broken;
 		instance = ch.res_name ? ch.res_name : broken;
-		for(i = 0; i < LENGTH(rules); i++) {
-			r = &rules[i];
+		i = 0;
+		for (r = rules; r; r = r->next) {
 			if (clientmatchesrule(c, class, instance, istransient, wincmdline, r))
 			{
 				applyclientrule(c, r, istransient);
 				lastr = r;
-				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s'\n",
-						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
+				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d'\n",
+						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1);
 				found = True;
 			}
+			++i;
 		}
 		if (clientmatchesrule(c, class, instance, istransient, wincmdline, &clockrule)) {
 			applyclientrule(c, &clockrule, istransient);
@@ -588,10 +604,9 @@ applyrules(Client *c) {
 	}
 	else
 	{
-		for(i = 0; i < LENGTH(rules); i++) {
-			r = &rules[i];
-			if(r->title && strstr(c->name, r->title))
-			{
+		i = 0;
+		for (r = rules; r; r = r->next) {
+			if(r->title && strstr(c->name, r->title)) {
 				applyclientrule(c, r, False);
 				for(m = mons; m && m->num != r->monitor; m = m->next);
 				if(m)
@@ -601,6 +616,7 @@ applyrules(Client *c) {
 				fprintf(stderr, "Applying rule %d ('%s'): name == '%s'\n",
 						i, r->title ? r->title : "NULL", c->name ? c->name : "NULL");
 			}
+			++i;
 		}
 		if(!found) {
 			fprintf(stderr, "No rule applied for: name == '%s'\n", c->name ? c->name : "NULL");
@@ -614,24 +630,19 @@ applyrules(Client *c) {
 	if (c->isfloating)
 		centerclient(c);
 	c->tags = c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->vs->tagset;
-	if (c->mon)
-	{
-		unsigned int tagset;
-
+	if (c->mon) {
 		if (!startup) {
-			unsigned int intertags = intersecttags(c, c->mon);
-
-			if (intertags != 0 && !c->nofocus)
-			{
+			if (intersecttags(c, c->mon) != 0 && !c->nofocus) {
 				if (c->tags == vtag)
 					viewstackadd(c->mon, vtag, True);
+				else if (c->isfloating)
+					viewstackadd(c->mon, c->tags | currenttagset, True);
 				else {
-					tagset = (c->tags|c->mon->vs->tagset);
+					nc = numvisibleclients(c->mon);
 					viewstackadd(c->mon, c->tags, True);
-					viewstackadd(c->mon, tagset, True);
+					if (nc > 0)
+						viewstackadd(c->mon, currenttagset, True);
 				}
-				if (c->tags & c->mon->vs->tagset)
-					arrange(c->mon);
 			}
 		}
 		if(lastr && lastr->preflayout) {
@@ -639,8 +650,7 @@ applyrules(Client *c) {
 			if (c->tags == c->mon->vs->tagset)
 				arrange(c->mon);
 		}
-		else if (!startup && !c->nofocus )
-		{
+		else if (!startup && !c->nofocus ) {
 			c->isurgent = True;
 			if ((c->tags & c->mon->vs->tagset) == 0)
 				drawbar(c->mon);
@@ -977,8 +987,8 @@ buttonpress(XEvent *e) {
 		i = x = 0;
 		do
 			x += TEXTW(tags[i]);
-		while(ev->x >= x && ++i < LENGTH(tags));
-		if(i < LENGTH(tags)) {
+		while(ev->x >= x && ++i < numtags);
+		if(i < numtags) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
 		}
@@ -1028,6 +1038,35 @@ checkotherwm(void) {
 	XSync(dpy, False);
 }
 
+void
+cleanrule (Rule *rule) {
+	free(rule->class);
+	free(rule->instance);
+	free(rule->title);
+	free(rule->procname);
+	free(rule);
+}
+
+void
+cleanrules(void) {
+	Rule *r;
+
+	while (rules) {
+		r = rules;
+		rules = r->next;
+		cleanrule(r);
+	}
+	rules = NULL;
+}
+
+void
+cleantags(void) {
+	int i;
+
+	for (i = 0; tags[i]; ++i)
+		free(tags[i]);
+	free(tags);
+}
 
 void
 cleanup(void) {
@@ -1053,6 +1092,9 @@ cleanup(void) {
 		XDestroyWindow(dpy, systray->win);
 		free(systray);
 	}
+	cleanrules();
+	cleantags();
+	free(font);
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
@@ -1087,12 +1129,11 @@ cleartags(Monitor *m){
 			++nc;
 		}
 	if(newtags && newtags != m->vs->tagset) {
-		m->vs->tagset = newtags;
-		arrange(m);
+		monview(m, newtags);
 	}
 	if (nc == 0) {
 		monsetlayout(m, &layouts[initlayout]);
-		if (m->vs->tagset == vtag)
+		if (m->vs->tagset == vtag && !hasclientson(m, vtag))
 			monview(m, 0);
 	}
 }
@@ -1291,7 +1332,7 @@ createmon(void) {
 
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
-	m->vs = createviewstack(m, NULL);
+	m->vs = createviewstack(NULL);
 	m->topbar = topbar;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 
@@ -1386,7 +1427,7 @@ drawbar(Monitor *m) {
 			occ &= ~vtag;
 	}
 	dc.x = 0;
-	for(i = 0; i < LENGTH(tags); i++) {
+	for(i = 0; i < numtags; i++) {
 		dc.w = TEXTW(tags[i]);
 		col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
 		drawtext(tags[i], col, urg & 1 << i);
@@ -1478,13 +1519,17 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	y = dc.y + (dc.h / 2) - (h / 2);
 	x = dc.x + (h / 2);
 	/* shorten text if necessary */
-	for(len = MIN(olen, sizeof buf); len && textnw(text, len) > dc.w - h; len--);
+	len = MIN(olen, sizeof(buf));
+	memcpy(buf, text, len);
+	while(len) {
+		for (i = len; i && i > len - MIN(olen - len, 3); buf[--i] = '.') ;
+		if ((buf[len - 4] & (char)0x80) == 0 && textnw(buf, len) <= dc.w - h)
+			break;
+		--len;
+	}
 	if(!len)
 		return;
-	memcpy(buf, text, len);
-	if(len < olen)
-		for(i = len; i && i > len - 3; buf[--i] = '.');
-	pango_layout_set_text(dc.plo, text, len);
+	pango_layout_set_text(dc.plo, buf, len);
 	pango_xft_render_layout(dc.xftdrawable, (col==dc.norm?dc.xftnorm:dc.xftsel)+(invert?ColBG:ColFG), dc.plo, x * PANGO_SCALE, y * PANGO_SCALE);
 }
 
@@ -1630,7 +1675,7 @@ focusstack(const Arg *arg) {
 		}
 	}
 	else {
-		for(i = selmon->clients; i != selmon->sel; i = i->next)
+		for(i = selmon->clients; i && i->next && i != selmon->sel; i = i->next)
 			if(ISVISIBLE(i) && !i->nofocus)
 				c = i;
 		if(!c)
@@ -1961,6 +2006,8 @@ manage(Window w, XWindowAttributes *wa) {
 		client_opacity_set(c, c->opacity);
 	if (c->nofocus)
 		unmanage(c, False);
+	else if (c->tags & c->mon->vs->tagset)
+		cleartags(c->mon);
 }
 
 void
@@ -2421,10 +2468,13 @@ sendmon(Client *c, Monitor *m) {
 	unfocus(c, True);
 	detach(c);
 	detachstack(c);
+	if (!hasclientson(m, c->tags))
+		settagsetlayout(m, c->tags, c->mon->vs->lt[c->mon->vs->curlt]);
 	c->mon = m;
-	c->tags = m->vs->tagset; /* assign tags of target monitor */
 	attach(c);
 	attachstack(c);
+	if (!(m->vs->tagset & c->tags))
+		monview(m, c->tags);
 	focus(NULL);
 	arrange(NULL);
 	for(m = mons; m; m = m->next)
@@ -2495,19 +2545,22 @@ setfullscreen(Client *c, Bool fullscreen) {
 		window_opacity_set(c->win, 1.);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
-		c->isfullscreen = True;
+		c->isfullscreen = c->tags;
 		c->oldstate = c->isfloating;
 		c->oldbw = c->bw;
 		c->bw = 0;
 		c->isfloating = True;
+		c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 		XRaiseWindow(dpy, c->win);
+		monview(c->mon, vtag);
 	}
 	else {
 		setclientopacity(c);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)0, 0);
-		c->isfullscreen = False;
+		c->tags = c->isfullscreen;
+		c->isfullscreen = 0;
 		c->isfloating = c->oldstate;
 		if (c->isfloating)
 			centerclient(c);
@@ -2517,8 +2570,11 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->w = c->oldw;
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
-		arrange(c->mon);
+		if (c->mon->vs->tagset == vtag && !hasclientson(c->mon, vtag))
+			monview(c->mon, 0);
 	}
+	restorebar(c->mon);
+	arrange(c->mon);
 }
 
 void
@@ -2616,6 +2672,9 @@ setup(void) {
 
 	/* read colors */
 	readcolors();
+
+	/* read config */
+	readconfig();
 
 	*ooftraysbl = 0;
 	if (outoffocustraysymbol)
@@ -2778,6 +2837,7 @@ tagmon(const Arg *arg) {
 int
 textnw(const char *text, unsigned int len) {
 	PangoRectangle r;
+
 	pango_layout_set_text(dc.plo, text, len);
 	pango_layout_get_extents(dc.plo, 0, &r);
 	return r.width / PANGO_SCALE;
