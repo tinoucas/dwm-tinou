@@ -3,22 +3,22 @@
 #ifdef CONFIG_HEAD
 /* tagging */
 static const char *tags[] = {
-	"main",  // 0
-	"text",  // 1
-	"term",  // 2
-	"files", // 3
-	"tools", // 4
-	"music", // 5
-	"misc",  // 6
-	"@",     // 7
-	"v"      // 8
+	"main",  // 0 maintag
+	"text",  // 1 texttag
+	"term",  // 2 termtag
+	"tools", // 3 toolstag
+	"files", // 4 filestag
+	"music", // 5 musictag
+	"misc",  // 6 misctag
+	"@",     // 7 webtag
+	"v"      // 8 vtag
 };
 
 static const unsigned int maintag = 1 << 0;
 static const unsigned int texttag = 1 << 1;
 static const unsigned int termtag = 1 << 2;
-static const unsigned int filestag = 1 << 3;
-static const unsigned int toolstag = 1 << 4;
+static const unsigned int toolstag = 1 << 3;
+static const unsigned int filestag = 1 << 4;
 static const unsigned int musictag = 1 << 5;
 static const unsigned int misctag = 1 << 6;
 static const unsigned int webtag = 1 << 7;
@@ -67,6 +67,7 @@ static const char* outoffocustraysymbol = "X";
 #define SPCTR 0.2
 #define CLEAR 0.618
 #define TRANS 0.75
+#define RDLBL 0.82
 #define SUBTL 0.92
 #define OPAQU 1.0
 
@@ -177,13 +178,14 @@ static const Rule rules[] = {
 	{ "Guimup"         , "guimup"            , NULL        , musictag  , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "uzbl-core"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "gvim"              , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
+	{ NULL             , "nvim-qt"           , NULL        , texttag   , False , False , False , RDLBL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "oni"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Sublime_text"   , NULL                , NULL        , texttag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , "stalonetray"       , NULL        , alltags   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ "Deadbeef"       , "deadbeef"          , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
 	{ NULL             , NULL                , NULL        , musictag  , False , False , False , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , "spotify" } , 
     { "broken"         , "broken"            , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , 1   , NULL   , monoclelt , False   , "yandex_browser" } , 
-    { "thg"            , NULL                , NULL        , toolstag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
+    { NULL             , "thg"               , NULL        , toolstag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
     { "jetbrains-studio", NULL                , NULL        , maintag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
     { "URxvt"          , NULL                , "build.gradle", misctag , True  , False , True  , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      },
 };
@@ -249,8 +251,8 @@ static Key keys[] = {
     TAGKEYS(                        XK_1,                      maintag)
     TAGKEYS(                        XK_2,                      texttag)
     TAGKEYS(                        XK_3,                      termtag)
-    TAGKEYS(                        XK_4,                      filestag)
-    TAGKEYS(                        XK_5,                      toolstag)
+    TAGKEYS(                        XK_4,                      toolstag)
+    TAGKEYS(                        XK_5,                      filestag)
     TAGKEYS(                        XK_8,                      musictag)
     TAGKEYS(                        XK_9,                      misctag)
     TAGKEYS(                        XK_0,                      webtag)
