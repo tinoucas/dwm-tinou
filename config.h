@@ -2,34 +2,27 @@
 
 #ifdef CONFIG_HEAD
 /* tagging */
-static const char *tags[] = {
-	"main",  // 0 maintag
-	"text",  // 1 texttag
-	"term",  // 2 termtag
-	"tools", // 3 toolstag
-	"files", // 4 filestag
-	"music", // 5 musictag
-	"misc",  // 6 misctag
-	"@",     // 7 webtag
-	"v"      // 8 vtag
-};
+static char **tags;
+static int numtags;
 
 static const unsigned int maintag = 1 << 0;
-static const unsigned int texttag = 1 << 1;
-static const unsigned int termtag = 1 << 2;
-static const unsigned int toolstag = 1 << 3;
-static const unsigned int filestag = 1 << 4;
-static const unsigned int musictag = 1 << 5;
-static const unsigned int misctag = 1 << 6;
-static const unsigned int webtag = 1 << 7;
-static const unsigned int vtag = 1 << 8;
+static const unsigned int chattag = 1 << 1;
+static const unsigned int filestag = 1 << 2;
+static const unsigned int texttag = 1 << 3;
+static const unsigned int edittag = 1 << 4;
+static const unsigned int dltag = 1 << 5;
+static const unsigned int trrnttag = 1 << 6;
+static const unsigned int musictag = 1 << 7;
+static const unsigned int misctag = 1 << 8;
+static const unsigned int webtag = 1 << 9;
+static const unsigned int vtag = 1 << 10;
 
 static const unsigned int anytag = 0;
 static const unsigned int alltags = ~0;
 #else
 
 /* appearance */
-static const char font[]			= "Andale Mono Regular 11";
+static const char font[]	= "DejaVu Sans Mono Book 12";
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
 static const char selbordercolor[]  = "#ffffff";
@@ -84,13 +77,15 @@ static double barOpacity = CLEAR;
 #include "flextile.c"
 #include "fibonacci.c"
 
+#define LT(a) a, #a
+
 static const Layout layouts[] = {
 	/* symbol     arrange function   window border width */
-	{ "[]=",      tile,              DEFAULT_BORDER_PX },
-	{ "[]@",      spiral,            DEFAULT_BORDER_PX },
-	{ "[]G",      dwindle,           DEFAULT_BORDER_PX },
-	{ "><>",      NULL,              DEFAULT_BORDER_PX },
-	{ "[M]",      monocle,           0 },
+	{ "[]=",      LT(tile),              DEFAULT_BORDER_PX },
+	{ "[]@",      LT(spiral),            DEFAULT_BORDER_PX },
+	{ "[]G",      LT(dwindle),           DEFAULT_BORDER_PX },
+	{ "><>",      NULL, "",              DEFAULT_BORDER_PX },
+	{ "[M]",      LT(monocle),           0 },
 };
 
 enum layout {
@@ -103,108 +98,40 @@ enum layout {
 
 static const Layout *const monoclelt = &layouts[MONOCLE];
 
+static const Rule defaultrule = 
+	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname, next */
+    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL    , NULL };
+
+static Rule* rules = NULL;
+
+#include "remap.c"
+#include "jsonconfig.c"
 #include "viewstack.c"
 #include "push.c"
 #include "rotatemons.c"
-#include "remap.c"
 #include "misc.c"
 
 #include <X11/XF86keysym.h>
 
-static const Rule defaultrule = 
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */
-    {   NULL           , NULL                , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL };
-
-static const Rule rules[] = {
-	/* xprop(1):
-	 * 
-	 *	WM_CLASS(STRING) = instance, class
-	 *	WM_NAME(STRING) = title
-	 */
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */
-	{ NULL             , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "veromix"        , NULL                , NULL        , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Alacritty"      , "Alacritty"         , NULL        , anytag    , False , False , False , CLEAR , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "kitty"          , "kitty"             , NULL        , anytag    , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "kitty"          , "nvim"              , NULL        , texttag   , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "kitty"          , "terminal"          , NULL        , termtag   , False , True  , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "ghost_terminal"    , NULL        , anytag    , False , False , False , OPAQU , True  , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "xterm"             , NULL        , anytag    , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Firefox"        , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , monoclelt , False   , NULL      } , 
-	{ "vivaldi-stable" , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
-	{ NULL             , "Download"          , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "Navigator"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Gran Paradiso"  , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Opera"          , NULL                , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Google-chrome"  , "google-chrome"     , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
-	{ "Yandex-browser" , "yandex-browser"    , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , monoclelt , False   , NULL      } , 
-	{ "Slimjet"        , "slimjet"           , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , monoclelt , False   , NULL      } , 
-	{ NULL             , "chrome_app_list"   , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
-	{ "Chromium"       , "chromium"          , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , chrome , NULL      , False   , NULL      } , 
-	{ NULL             , "sonata"            , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "ario"              , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Gmpc"           , NULL                , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "feh"            , NULL                , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "feh"            , NULL                , "mon0"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , NULL      , False   , NULL      } , 
-	{ "feh"            , NULL                , "mon1"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , NULL      , False   , NULL      } , 
-	{ NULL             , "savebox"           , NULL        , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Xfe"            , NULL                , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "ROX-Filer"         , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "spacefm"           , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "thunar"            , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "dolphin"           , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "pantheon-files"    , NULL        , filestag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Rename"    , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Delete"    , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Copy"      , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Move"      , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Mount"     , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Renommer"  , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Supprimer" , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Copier"    , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Déplacer"  , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , "Monter"    , anytag    , True  , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Audacious"      , NULL                , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "MPlayer"        , NULL                , NULL        , anytag    , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "sView"          , "sView"             , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , -1  , sView  , monoclelt , False   , NULL      } , 
-	{ "qtwebflix"      , "qtwebflix"         , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , NULL        , anytag    , True  , False , True  , OPAQU , False , False , True  , -1  , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , "mon0"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 0   , mpv    , monoclelt , False   , NULL      } , 
-	{ "mpv"            , NULL                , "mon1"      , anytag    , True  , False , True  , OPAQU , False , False , True  , 1   , mpv    , monoclelt , False   , NULL      } , 
-	{ "Vlc"            , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Gcalctool"      , NULL                , NULL        , anytag    , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "gqmpeg"            , NULL        , musictag  , True  , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "TzClock"           , NULL        , alltags   , True  , False , False , TRANS , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Guimup"         , "guimup"            , NULL        , musictag  , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "uzbl-core"         , NULL        , webtag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "gvim"              , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "nvim-qt"           , NULL        , texttag   , False , False , False , RDLBL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "oni"               , NULL        , texttag   , False , False , False , TRANS , False , False , False , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Sublime_text"   , NULL                , NULL        , texttag   , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , "stalonetray"       , NULL        , alltags   , True  , False , False , OPAQU , True  , True  , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ "Deadbeef"       , "deadbeef"          , NULL        , musictag  , False , False , False , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } , 
-	{ NULL             , NULL                , NULL        , musictag  , False , False , False , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , "spotify" } , 
-    { "broken"         , "broken"            , NULL        , anytag    , False , False , True  , OPAQU , False , False , True  , 1   , NULL   , monoclelt , False   , "yandex_browser" } , 
-    { NULL             , "thg"               , NULL        , toolstag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
-    { "jetbrains-studio", NULL                , NULL        , maintag  , False , False , True  , SUBTL , False , False , True  , -1  , NULL   , NULL      , False   , NULL      } ,
-    { "URxvt"          , NULL                , "build.gradle", misctag , True  , False , True  , TRANS , False , False , True  , -1  , NULL   , NULL      , False   , NULL      },
-};
-
 /* key definitions */
 #define MODKEY Mod4Mask
 #define TAGKEYS(KEY,TAG) \
-	{ MODKEY,                       KEY,      view,           {.ui = TAG} }, \
-	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = TAG} }, \
-	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = TAG} }, \
-	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = TAG} },
+	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
+#define WORKSPACE(KEY,TAG) \
+	{ MODKEY,   KEY,      view,     {.ui = TAG} },
+
 /* commands */
-static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *dclipcmd[] = { "dclip", "paste", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
+static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "kitty", NULL };
+static const char *termcmd[]  = { "alacritty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
@@ -247,16 +174,27 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_j,      pushdown,       {0} },
     { MODKEY|ControlMask,           XK_k,      pushup,         {0} },
     { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
+    { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
     { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") },
-    TAGKEYS(                        XK_1,                      maintag)
-    TAGKEYS(                        XK_2,                      texttag)
-    TAGKEYS(                        XK_3,                      termtag)
-    TAGKEYS(                        XK_4,                      toolstag)
-    TAGKEYS(                        XK_5,                      filestag)
-    TAGKEYS(                        XK_8,                      musictag)
-    TAGKEYS(                        XK_9,                      misctag)
-    TAGKEYS(                        XK_0,                      webtag)
-    TAGKEYS(                        XK_v,                      vtag)
+    TAGKEYS(                        XK_1,                      0)
+    TAGKEYS(                        XK_2,                      1)
+    TAGKEYS(                        XK_3,                      2)
+    TAGKEYS(                        XK_4,                      3)
+    TAGKEYS(                        XK_5,                      4)
+    TAGKEYS(                        XK_6,                      5)
+    TAGKEYS(                        XK_7,                      6)
+    TAGKEYS(                        XK_8,                      7)
+    TAGKEYS(                        XK_9,                      8)
+    TAGKEYS(                        XK_0,                      9)
+    TAGKEYS(                        XK_ampersand,              0)
+    TAGKEYS(                        XK_eacute,                 1)
+    TAGKEYS(                        XK_quotedbl,               2)
+    TAGKEYS(                        XK_apostrophe,             3)
+    TAGKEYS(                        XK_parenleft,              4)
+    TAGKEYS(                        XK_minus,                  5)
+    TAGKEYS(                        XK_egrave,                 6)
+    TAGKEYS(                        XK_underscore,             7)
+    TAGKEYS(                        XK_ccedilla,               8)
     { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
     { MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
     { MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
@@ -264,11 +202,15 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_Return, mirrorlayout,     {0} },
     { MODKEY|ControlMask,           XK_l,      shiftmastersplit, {.i = -1} },   /* reduce the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
-    { 0,                            XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
-    { 0,                            XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
-    { 0,                            XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
+    {      0,         XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+    {      0,         XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+    {      0,         XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+    {      0,         XF86XK_AudioNext,        spawn, SHCMD("playerctl next") },
+    {      0,         XF86XK_AudioPrev,        spawn, SHCMD("playerctl previous") },
+    {      0,         XF86XK_AudioStop,        spawn, SHCMD("playerctl stop") },
+    {      0,         XF86XK_AudioPlay,        spawn, SHCMD("playerctl play-pause") },
 };
 
 /* button definitions */
@@ -280,7 +222,8 @@ static Button buttons[] = {
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
 	{ ClkLtSymbol,          0,              Button5,        viewscroll,     {.f = +0.05 } },
 	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
-	{ ClkWinTitle,          0,              Button3,        zoom,           {0} },
+	{ ClkWinTitle,          0,              Button1,        zoom,           {0} },
+	{ ClkWinTitle,          0,              Button3,        tagmon,         {.i = +1 } },
 	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
 	{ ClkWinTitle,          0,              Button5,        ttbarclick,     {.f = +0.05 } },
 	{ ClkWinTitle,          0,              Button6,        shiftmastersplit,  {.i = +1} },
