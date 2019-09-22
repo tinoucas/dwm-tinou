@@ -3425,7 +3425,6 @@ updatesystray(void) {
 	XMapSubwindows(dpy, systray->win);
 	/* redraw background */
 	XSetForeground(dpy, dc.gc, dc.norm[ColBG]);
-	fprintf(stderr, "repaint systray background\n");
 	XFillRectangle(dpy, systray->win, dc.gc, 0, 0, w, bh);
 	XSync(dpy, False);
 }
