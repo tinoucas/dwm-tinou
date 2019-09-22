@@ -137,7 +137,7 @@ static Rule* rules = NULL;
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "alacritty", NULL };
+static const char *termcmd[]  = { "kitty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
@@ -148,7 +148,7 @@ static const Rule clockrule =
 
 static Key keys[] = {
     /* modifier                     key        function        argument */
-    { MODKEY|ShiftMask,             XK_l,      spawn,             SHCMD("$HOME/hacks/scripts/lockX.sh") },
+    { MODKEY|ControlMask|ShiftMask, XK_l,      spawn,             SHCMD("$HOME/hacks/scripts/lockX.sh") },
     { MODKEY,                       XK_Menu,   focuslast,      {0} },
     { MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
     /*{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },*/
@@ -182,6 +182,7 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
     { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
     { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") },
+	{ ControlMask|Mod1Mask,			XK_l,	   spawn,		   SHCMD("exec slimlock") },
     TAGKEYS(                        XK_1,                      0)
     TAGKEYS(                        XK_2,                      1)
     TAGKEYS(                        XK_3,                      2)
@@ -210,9 +211,12 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
+    {      0,         XF86XK_MonBrightnessUp, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh up") },
+    {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh down") },
     {      0,         XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
     {      0,         XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
     {      0,         XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+    {      0,         XF86XK_AudioMicMute,     spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh micmute") },
     {      0,         XF86XK_AudioNext,        spawn, SHCMD("playerctl next") },
     {      0,         XF86XK_AudioPrev,        spawn, SHCMD("playerctl previous") },
     {      0,         XF86XK_AudioStop,        spawn, SHCMD("playerctl stop") },
