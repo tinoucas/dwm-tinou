@@ -89,7 +89,7 @@
 enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
-enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation,
+enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetActiveWindow, NetWMWindowType,
 	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetClientList, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
@@ -395,7 +395,6 @@ static pid_t winpid(Window w);
 
 /* variables */
 static Systray *systray = NULL;
-static unsigned long systrayorientation = _NET_SYSTEM_TRAY_ORIENTATION_HORZ;
 static const char broken[] = "broken";
 static char stext[256];
 static int screen;
@@ -978,7 +977,7 @@ buttonpress(XEvent *e) {
 		}
 		else if(ev->x < x + blw)
 			click = ClkLtSymbol;
-		else if(ev->x > selmon->ww - TEXTW(stext))
+		else if(ev->x > selmon->ww - TEXTW(stext) - getsystraywidth())
 			click = ClkStatusText;
 		else
 			click = ClkWinTitle;
@@ -1156,7 +1155,6 @@ clientmessage(XEvent *e) {
 			c->x = c->oldx = c->y = c->oldy = 0;
 			c->w = c->oldw = wa.width;
 			c->h = c->oldh = wa.height;
-			fprintf(stderr, "new systray icon, size: %dx%d\n", c->w, c->h);
 			c->oldbw = wa.border_width;
 			c->bw = 0;
 			c->isfloating = True;
@@ -1169,9 +1167,7 @@ clientmessage(XEvent *e) {
 			XReparentWindow(dpy, c->win, systray->win, 0, 0);
 			/* use parents background color */
 			swa.background_pixel  = dc.norm[ColBG];
-			swa.border_pixel  = dc.norm[ColBG];
-			swa.background_pixmap = ParentRelative;
-			XChangeWindowAttributes(dpy, c->win, CWBackPixel|CWBorderPixel|CWBackPixmap, &swa);
+			XChangeWindowAttributes(dpy, c->win, CWBackPixel, &swa);
 			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_EMBEDDED_NOTIFY, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
 			/* FIXME not sure if I have to send these events, too */
 			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_FOCUS_IN, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
@@ -2691,6 +2687,7 @@ setup(void) {
 	netatom[NetSystemTray] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_S0", False);
 	netatom[NetSystemTrayOP] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_OPCODE", False);
 	netatom[NetSystemTrayOrientation] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_ORIENTATION", False);
+	netatom[NetSystemTrayOrientationHorz] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_ORIENTATION_HORZ", False);
 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
@@ -2837,7 +2834,6 @@ textnw(const char *text, unsigned int len) {
 void
 monshowbar(Monitor* m, Bool show) {
 	m->vs->showbar = show;
-	fprintf(stderr, "setting showbar @%d to %s\n", m->vs->tagset, m->vs->showbar ? "True" : "False");
 	updatebarpos(m);
 	resizebarwin(m);
 	if(showsystray) {
@@ -2967,9 +2963,7 @@ unmapnotify(XEvent *e) {
 	if((c = wintoclient(ev->window)))
 		unmanage(c, False);
 	else if((c = wintosystrayicon(ev->window))) {
-		fprintf(stderr, "unmapped icon\n");
-		removesystrayicon(c);
-		resizebarwin(selmon);
+		XMapRaised(dpy, c->win);
 		updatesystray();
 	}
 }
@@ -3323,8 +3317,7 @@ updatesystrayicongeom(Client *i, int w, int h) {
 			i->w = w;
 		else
 			i->w = (int) ((float)bh * ((float)w / (float)h));
-		if (applysizehints(i, &(i->x), &(i->y), &(i->w), &(i->h), False))
-			fprintf(stderr, "Size hint change to: %d %d %d %d\n", i->x, i->y, i->w, i->h);
+		applysizehints(i, &(i->x), &(i->y), &(i->w), &(i->h), False);
 		/* force icons into the systray dimenons if they don't want to */
 		if(i->h > bh) {
 			if(i->w == i->h)
@@ -3382,11 +3375,10 @@ updatesystray(void) {
 		wa.event_mask        = ButtonPressMask | ExposureMask;
 		wa.override_redirect = True;
 		wa.background_pixel  = dc.norm[ColBG];
-		wa.border_pixel  = dc.norm[ColBG];
 		XSelectInput(dpy, systray->win, SubstructureNotifyMask);
 		XChangeProperty(dpy, systray->win, netatom[NetSystemTrayOrientation], XA_CARDINAL, 32,
-				PropModeReplace, (unsigned char *)&systrayorientation, 1);
-		XChangeWindowAttributes(dpy, systray->win, CWEventMask|CWOverrideRedirect|CWBackPixel|CWBorderPixel, &wa);
+				PropModeReplace, (unsigned char *)&netatom[NetSystemTrayOrientationHorz], 1);
+		XChangeWindowAttributes(dpy, systray->win, CWEventMask|CWOverrideRedirect|CWBackPixel, &wa);
 		XMapRaised(dpy, systray->win);
 		window_opacity_set(systray->win, barOpacity);
 		XSetSelectionOwner(dpy, netatom[NetSystemTray], systray->win, CurrentTime);
@@ -3404,9 +3396,7 @@ updatesystray(void) {
 	for(w = 0, i = systray->icons; i; i = i->next) {
 		/* make sure the background color stays the same */
 		wa.background_pixel  = dc.norm[ColBG];
-		wa.border_pixel  = dc.norm[ColBG];
-		wa.background_pixmap = ParentRelative;
-		XChangeWindowAttributes(dpy, i->win, CWBackPixel|CWBorderPixel|CWBackPixmap, &wa);
+		XChangeWindowAttributes(dpy, i->win, CWBackPixel, &wa);
 		XMapRaised(dpy, i->win);
 		w += systrayspacing;
 		i->x = w;
