@@ -102,6 +102,11 @@ static void readtags (const struct nx_json *jsontags) {
 	}
 }
 
+static void readfont (const struct nx_json *js) {
+	font = calloc(strlen(js->text_value) + 1, sizeof(char));
+	strcpy(font, js->text_value);
+}
+
 static void readconfig () {
 	const char* homedir = getenv("HOME");
 	const char* relconfig = ".config/dwm/config.json";
@@ -123,8 +128,14 @@ static void readconfig () {
 				readjsonrules(js);
 			else if (!strcmp(js->key, "tags"))
 				readtags(js);
+			else if (!strcmp(js->key, "font"))
+				readfont(js);
 		}
 		nx_json_free(json);
 		free(content);
+	}
+	if (!font) {
+		font = calloc(strlen(fallbackfont) + 1, sizeof(char));
+		strcpy(font, fallbackfont);
 	}
 }

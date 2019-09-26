@@ -20,9 +20,9 @@ static const Remap sView[] = {
 static const Remap chrome[] = {
 	{ Button11, 0,  XK_k, 0},
 	{ Button10, 0,  XK_j, 0},
-	/*{ Button9, 0, XK_w, 0},*/
-	/*{ Button8, 0, XK_b, 0},*/
-	{ Button12, 0, XK_w, ControlMask},
+	{ Button9, 0, XK_k, 0},
+	{ Button8, 0, XK_j, 0},
+	{ Button12, 0, XK_r, 0},
 	{ 0 },
 };
 
