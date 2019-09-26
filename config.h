@@ -51,7 +51,7 @@ static const Bool systraypinningfailfirst = True;   /* True: if pinning fails, d
 static const Bool showsystray       = True;     /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool topbar            = True;    /* False means bottom bar */
-static const int windowgap			= 14; /* gap between windows */
+static const int windowgap			= 36; /* gap between windows */
 static const int focusmonstart		= 0;
 static const Bool statusallmonitor  = True;
 #define OOFTRAYLEN 5
