@@ -2557,7 +2557,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->h = c->oldh;
 		resizeclient(c, c->x, c->y, c->w, c->h);
 		if (c->mon->vs->tagset == vtag && !hasclientson(c->mon, vtag)){
-			monview(c->mon, 0);
+			monview(c->mon, c->tags);
 		}
 	}
 	restorebar(c->mon);
