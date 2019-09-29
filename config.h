@@ -211,16 +211,16 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
-    {      0,         XF86XK_MonBrightnessUp, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh up") },
-    {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh down") },
-    {      0,         XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
-    {      0,         XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
-    {      0,         XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
-    {      0,         XF86XK_AudioMicMute,     spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh micmute") },
-    {      0,         XF86XK_AudioNext,        spawn, SHCMD("playerctl next") },
-    {      0,         XF86XK_AudioPrev,        spawn, SHCMD("playerctl previous") },
-    {      0,         XF86XK_AudioStop,        spawn, SHCMD("playerctl stop") },
-    {      0,         XF86XK_AudioPlay,        spawn, SHCMD("playerctl play-pause") },
+    {      0,         XF86XK_MonBrightnessUp,   spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh up") },
+    {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh down") },
+    {      0,         XF86XK_AudioRaiseVolume,  spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+    {      0,         XF86XK_AudioLowerVolume,  spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+    {      0,         XF86XK_AudioMute,         spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+    {      0,         XF86XK_AudioMicMute,      spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh micmute") },
+    {      0,         XF86XK_AudioNext,         spawn, SHCMD("playerctl next") },
+    {      0,         XF86XK_AudioPrev,         spawn, SHCMD("playerctl previous") },
+    {      0,         XF86XK_AudioStop,         spawn, SHCMD("playerctl stop") },
+    {      0,         XF86XK_AudioPlay,         spawn, SHCMD("playerctl play-pause") },
 };
 
 /* button definitions */
