@@ -1053,6 +1053,14 @@ cleantags(void) {
 }
 
 void
+cleanupconfig() {
+	cleanrules();
+	cleantags();
+	free(font);
+	free(terminal[0]);
+}
+
+void
 cleanup(void) {
 	Arg a = {.ui = ~0};
 	Layout foo = { "", NULL };
@@ -1076,8 +1084,7 @@ cleanup(void) {
 		XDestroyWindow(dpy, systray->win);
 		free(systray);
 	}
-	cleanrules();
-	cleantags();
+	cleanupconfig();
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
