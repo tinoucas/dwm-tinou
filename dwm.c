@@ -342,6 +342,7 @@ static void setup(void);
 static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
+static void systrayaddwindow (Window win);
 static void spawnimpl(const Arg *arg, Bool waitdeath);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
@@ -1135,8 +1136,6 @@ clearurgent(Client *c) {
 
 void
 clientmessage(XEvent *e) {
-	XWindowAttributes wa;
-	XSetWindowAttributes swa;
 	XClientMessageEvent *cme = &e->xclient;
 	Client *c = wintoclient(cme->window);
 
@@ -1145,38 +1144,7 @@ clientmessage(XEvent *e) {
 		fprintf(stderr, "Creating systray icon client.\n");
 
 		if(cme->data.l[1] == SYSTEM_TRAY_REQUEST_DOCK) {
-			if(!(c = (Client *)calloc(1, sizeof(Client))))
-				die("fatal: could not malloc() %u bytes\n", sizeof(Client));
-			c->win = cme->data.l[2];
-			c->mon = selmon;
-			c->next = systray->icons;
-			systray->icons = c;
-			XGetWindowAttributes(dpy, c->win, &wa);
-			c->x = c->oldx = c->y = c->oldy = 0;
-			c->w = c->oldw = wa.width;
-			c->h = c->oldh = wa.height;
-			c->oldbw = wa.border_width;
-			c->bw = 0;
-			c->isfloating = True;
-			/* reuse tags field as mapped status */
-			c->tags = 1;
-			updatesizehints(c);
-			updatesystrayicongeom(c, c->w, c->h);
-			XAddToSaveSet(dpy, c->win);
-			XSelectInput(dpy, c->win, StructureNotifyMask | PropertyChangeMask | ResizeRedirectMask);
-			XReparentWindow(dpy, c->win, systray->win, 0, 0);
-			/* use parents background color */
-			swa.background_pixel  = dc.norm[ColBG];
-			XChangeWindowAttributes(dpy, c->win, CWBackPixel, &swa);
-			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_EMBEDDED_NOTIFY, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
-			/* FIXME not sure if I have to send these events, too */
-			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_FOCUS_IN, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
-			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_WINDOW_ACTIVATE, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
-			sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_MODALITY_ON, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
-			XSync(dpy, False);
-			resizebarwin(selmon);
-			updatesystray();
-			setclientstate(c, NormalState);
+			systrayaddwindow(cme->data.l[2]);
 		}
 		return;
 	}
@@ -2635,6 +2603,7 @@ readcolors() {
 void
 updatecolors(const Arg *arg) {
 	Monitor *m;
+	Client *icons, *c;
 
 	spawnimpl(arg, True);
 	readcolors();
@@ -2646,7 +2615,24 @@ updatecolors(const Arg *arg) {
 
 	for(m = mons; m; m = m->next)
 		drawbar(m);
-	updatesystray();
+	if (systray) {
+		if(showsystray) {
+			icons = systray->icons;
+			systray->icons = NULL;
+			updatesystray();
+			c = icons;
+			while (c) {
+				systrayaddwindow(c->win);
+				c = c->next;
+			}
+			c = icons;
+			while (c) {
+				icons = c->next;
+				free(c);
+				c = icons;
+			}
+		}
+	}
 	createclocks();
 }
 
@@ -2776,6 +2762,46 @@ spawnimpl(const Arg *arg, Bool waitdeath) {
 void
 spawn(const Arg *arg) {
 	spawnimpl(arg, False);
+}
+
+void
+systrayaddwindow (Window win) {
+	XWindowAttributes wa;
+	XSetWindowAttributes swa;
+	Client* c;
+
+	if(!(c = (Client *)calloc(1, sizeof(Client))))
+		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
+	c->mon = selmon;
+	c->win = win;
+	c->next = systray->icons;
+	systray->icons = c;
+	XGetWindowAttributes(dpy, c->win, &wa);
+	c->x = c->oldx = c->y = c->oldy = 0;
+	c->w = c->oldw = wa.width;
+	c->h = c->oldh = wa.height;
+	c->oldbw = wa.border_width;
+	c->bw = 0;
+	c->isfloating = True;
+	/* reuse tags field as mapped status */
+	c->tags = 1;
+	updatesizehints(c);
+	updatesystrayicongeom(c, c->w, c->h);
+	XAddToSaveSet(dpy, c->win);
+	XSelectInput(dpy, c->win, StructureNotifyMask | PropertyChangeMask | ResizeRedirectMask);
+	XReparentWindow(dpy, c->win, systray->win, 0, 0);
+	/* use parents background color */
+	swa.background_pixel  = dc.norm[ColBG];
+	XChangeWindowAttributes(dpy, c->win, CWBackPixel, &swa);
+	sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_EMBEDDED_NOTIFY, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
+	/* FIXME not sure if I have to send these events, too */
+	sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_FOCUS_IN, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
+	sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_WINDOW_ACTIVATE, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
+	sendevent(c->win, netatom[Xembed], StructureNotifyMask, CurrentTime, XEMBED_MODALITY_ON, 0 , systray->win, XEMBED_EMBEDDED_VERSION);
+	XSync(dpy, False);
+	resizebarwin(selmon);
+	updatesystray();
+	setclientstate(c, NormalState);
 }
 
 Monitor *
