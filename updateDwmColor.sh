@@ -11,7 +11,7 @@ fi
 DWMCOLORS=~/.config/dwm/colors
 XRESOURCES=~/.Xresources
 DUNSTRC=~/.config/dunst/dunstrc
-COLORS="$(~/bin/colorart -s "0.628" -F 'normbg "%b", normfg "%d", selbg "%p", selfg "%b";%p;%d;%p;%b' "$BGIMAGE")"
+COLORS="$(~/bin/colorart -s "0.628" -F 'normbg "%b", normfg "%d", selbg "%d", selfg "%b";%p;%d;%p;%b' "$BGIMAGE")"
 echo $COLORS | cut -d\; -f1 > $DWMCOLORS
 GHOSTFGCOLOR="$(echo $COLORS | cut -d\; -f2)"
 CLOCKCOLOR="$(echo $COLORS | cut -d\; -f3)"
