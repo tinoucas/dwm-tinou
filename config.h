@@ -29,6 +29,8 @@ static const unsigned int alltags = ~0;
 //>>>>>>> origin/master
 static const char fallbackfont[]	= "DejaVu Sans Mono Book 12";
 static char* font = NULL;
+static char* terminal[2] = { NULL, NULL };
+static const char* defaultterminal[] = { "kitty", NULL };
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
 static const char selbordercolor[]  = "#ffffff";
@@ -137,7 +139,6 @@ static Rule* rules = NULL;
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
 static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
 //static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "kitty", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
@@ -152,7 +153,7 @@ static Key keys[] = {
     { MODKEY,                       XK_Menu,   focuslast,      {0} },
     { MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
     /*{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },*/
-    { MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+    { MODKEY|ShiftMask,             XK_Return, spawnterm,      {0} },
     { MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } },
     { MODKEY,                       XK_b,      togglebar,      {0} },
     { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
@@ -211,16 +212,16 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
-    {      0,         XF86XK_MonBrightnessUp, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh up") },
-    {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/home/tinou/hacks/scripts/backlight.sh down") },
-    {      0,         XF86XK_AudioRaiseVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
-    {      0,         XF86XK_AudioLowerVolume, spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
-    {      0,         XF86XK_AudioMute,        spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
-    {      0,         XF86XK_AudioMicMute,     spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh micmute") },
-    {      0,         XF86XK_AudioNext,        spawn, SHCMD("playerctl next") },
-    {      0,         XF86XK_AudioPrev,        spawn, SHCMD("playerctl previous") },
-    {      0,         XF86XK_AudioStop,        spawn, SHCMD("playerctl stop") },
-    {      0,         XF86XK_AudioPlay,        spawn, SHCMD("playerctl play-pause") },
+    {      0,         XF86XK_MonBrightnessUp,   spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh up") },
+    {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh down") },
+    {      0,         XF86XK_AudioRaiseVolume,  spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
+    {      0,         XF86XK_AudioLowerVolume,  spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+    {      0,         XF86XK_AudioMute,         spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+    {      0,         XF86XK_AudioMicMute,      spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh micmute") },
+    {      0,         XF86XK_AudioNext,         spawn, SHCMD("playerctl next") },
+    {      0,         XF86XK_AudioPrev,         spawn, SHCMD("playerctl previous") },
+    {      0,         XF86XK_AudioStop,         spawn, SHCMD("playerctl stop") },
+    {      0,         XF86XK_AudioPlay,         spawn, SHCMD("playerctl play-pause") },
 };
 
 /* button definitions */
@@ -242,7 +243,7 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button9,        rotateclients,  {.i = -1} },
 	{ ClkWinTitle,          MODKEY,         Button4,        opacitychange,  {.f = -0.05 } },
 	{ ClkWinTitle,          MODKEY,         Button5,        opacitychange,  {.f = +0.05 } },
-	{ ClkStatusText,        MODKEY,         Button2,        spawn,          {.v = termcmd } },
+	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
 	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
 	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },

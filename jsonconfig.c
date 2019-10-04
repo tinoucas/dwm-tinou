@@ -107,6 +107,11 @@ static void readfont (const struct nx_json *js) {
 	strcpy(font, js->text_value);
 }
 
+static void readterminal (const struct nx_json *js) {
+	terminal[0] = calloc(strlen(js->text_value) + 1, sizeof(char));
+	strcpy(terminal[0], js->text_value);
+}
+
 static void readconfig () {
 	const char* homedir = getenv("HOME");
 	const char* relconfig = ".config/dwm/config.json";
@@ -130,6 +135,8 @@ static void readconfig () {
 				readtags(js);
 			else if (!strcmp(js->key, "font"))
 				readfont(js);
+			else if (!strcmp(js->key, "terminal"))
+				readterminal(js);
 		}
 		nx_json_free(json);
 		free(content);

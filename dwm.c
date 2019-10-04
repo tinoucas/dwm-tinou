@@ -344,6 +344,7 @@ static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void systrayaddwindow (Window win);
 static void spawnimpl(const Arg *arg, Bool waitdeath);
+static void spawnterm(const Arg *arg);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
 static void swapclientscontent(Client *c1, Client *c2);
@@ -1053,6 +1054,14 @@ cleantags(void) {
 }
 
 void
+cleanupconfig() {
+	cleanrules();
+	cleantags();
+	free(font);
+	free(terminal[0]);
+}
+
+void
 cleanup(void) {
 	Arg a = {.ui = ~0};
 	Layout foo = { "", NULL };
@@ -1076,8 +1085,7 @@ cleanup(void) {
 		XDestroyWindow(dpy, systray->win);
 		free(systray);
 	}
-	cleanrules();
-	cleantags();
+	cleanupconfig();
 	XSync(dpy, False);
 	XSetInputFocus(dpy, PointerRoot, RevertToPointerRoot, CurrentTime);
 }
@@ -2756,6 +2764,21 @@ spawnimpl(const Arg *arg, Bool waitdeath) {
 	}
 	if (waitdeath) {
 		waitpid(childpid, NULL, 0);
+	}
+}
+
+void
+spawnterm(const Arg* arg) {
+	int childpid = fork();
+	const char** termcmd = (const char**)terminal;
+
+	if(childpid == 0) {
+		if (termcmd[0] == NULL)
+			termcmd = defaultterminal;
+		execvp(termcmd[0], (char**)termcmd);
+		fprintf(stderr, "dwm: execvp %s", ((char **)arg->v)[0]);
+		perror(" failed");
+		exit(EXIT_SUCCESS);
 	}
 }
 
