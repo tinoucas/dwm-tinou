@@ -8,10 +8,12 @@ if [ -n "$ONEDRIVE" ] && [ -n "$(echo $BGIMAGE | grep "^$ONEDRIVE")" ]; then
 	~/hacks/scripts/setAsWallpaper.sh "$BGIMAGE" && exit 0
 fi
 
-DWMCOLORS=~/.config/dwm/colors
+DWMCONFDIR=~/.config/dwm
+DWMCOLORS=$DWMCONFDIR/colors
 XRESOURCES=~/.Xresources
 DUNSTRC=~/.config/dunst/dunstrc
 COLORS="$(~/bin/colorart -s "0.628" -F 'normbg "%b", normfg "%d", selbg "%p", selfg "%b";%p;%d;%p;%b' "$BGIMAGE")"
+mkdir -p $DWMCONFDIR
 echo $COLORS | cut -d\; -f1 > $DWMCOLORS
 GHOSTFGCOLOR="$(echo $COLORS | cut -d\; -f2)"
 CLOCKCOLOR="$(echo $COLORS | cut -d\; -f3)"
