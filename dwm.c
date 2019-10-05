@@ -2634,7 +2634,7 @@ readcolors() {
 void
 updatecolors(const Arg *arg) {
 	Monitor *m;
-	Client *icons, *c;
+	Client *icons, *c, *next;
 
 	spawnimpl(arg, True);
 	readcolors();
@@ -2651,6 +2651,14 @@ updatecolors(const Arg *arg) {
 			icons = systray->icons;
 			systray->icons = NULL;
 			updatesystray();
+			c = icons;
+			icons = NULL;
+			while (c) {
+				next = c->next;
+				c->next = icons;
+				icons = c;
+				c = next;
+			}
 			c = icons;
 			while (c) {
 				systrayaddwindow(c->win);
