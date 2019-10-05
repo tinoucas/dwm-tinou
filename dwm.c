@@ -2676,6 +2676,16 @@ updatecolors(const Arg *arg) {
 }
 
 void
+startuserscript() {
+	if (userscript) {
+		const char* cmd[] = { "/bin/zsh", userscript, NULL };
+		const Arg arg = {.v = cmd };
+	
+		spawn(&arg);
+	}
+}
+
+void
 setup(void) {
 	XSetWindowAttributes wa;
 
@@ -2756,6 +2766,7 @@ setup(void) {
 	XChangeWindowAttributes(dpy, root, CWEventMask|CWCursor, &wa);
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys(root);
+	startuserscript();
 }
 
 void

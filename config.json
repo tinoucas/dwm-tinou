@@ -2,6 +2,7 @@
 	"font": "Monospace Regular 14",
 	"tags": [ "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" ],
 	"terminal": "urxvt",
+	"startupscript": "/home/tinou/hacks/scripts/startPlank.sh",
 	"rules": [
 		{
 			"class": "keepassxc",

@@ -22,14 +22,10 @@ static const unsigned int alltags = ~0;
 #else
 
 /* appearance */
-//<<<<<<< HEAD
-//static const char font[]			= "Andale Mono Regular 11";
-//=======
-//static const char font[]			= "DejaVu Sans Mono Book 12";
-//>>>>>>> origin/master
 static const char fallbackfont[]	= "DejaVu Sans Mono Book 12";
 static char* font = NULL;
 static char* terminal[2] = { NULL, NULL };
+static char* userscript = NULL;
 static const char* defaultterminal[] = { "kitty", NULL };
 static const char histfile[]        = "/home/tinou/.surf/history.dmenu";
 static const char normbordercolor[] = "#444444";
