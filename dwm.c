@@ -434,6 +434,7 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
+static Bool plankShown = False;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -728,6 +729,27 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 }
 
 void
+showplank (Bool show) {
+	const Arg arg = {.v = show ? showplankcmd : hideplankcmd };
+
+	spawn(&arg);
+	plankShown = show;
+}
+
+void
+updateplank() {
+	Client* c;
+	int n = 0;
+
+	if (selmon->vs->lt[selmon->vs->curlt]->arrange)
+		for(c = mons->clients; c; c = c->next)
+			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
+				++n;
+	if (plankShown && n > 0 || !plankShown && n == 0)
+		showplank(n == 0);
+}
+
+void
 arrange(Monitor *m) {
 	if(m)
 		showhide(m->stack);
@@ -738,6 +760,7 @@ arrange(Monitor *m) {
 		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
+	updateplank();
 }
 
 void
