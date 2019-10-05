@@ -741,7 +741,7 @@ updateplank() {
 	Client* c;
 	int n = 0;
 
-	if (selmon->vs->lt[selmon->vs->curlt]->arrange)
+	if (mons->vs->lt[mons->vs->curlt]->arrange)
 		for(c = mons->clients; c; c = c->next)
 			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
 				++n;
