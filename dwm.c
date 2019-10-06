@@ -273,6 +273,7 @@ static void client_opacity_set(Client *c, double opacity);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
+static unsigned int counttiledclients (Monitor* m);
 static void createclocks(void);
 static Bool clientmatchesrule (Client *c, const char* class, const char* instance, Bool istransient, const char* wincmdline, const Rule *r);
 static Monitor *createmon(void);
@@ -359,7 +360,7 @@ static void toggleview(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
-static Bool updateborderwidth(Monitor *m, int* nc);
+static void updateborderswidth(Monitor *m);
 static void updatecolors(const Arg *arg);
 static void updategeom(void);
 static void updatebarpos(Monitor *m);
@@ -1297,6 +1298,16 @@ configurerequest(XEvent *e) {
 	XSync(dpy, False);
 }
 
+unsigned int
+counttiledclients (Monitor* m) {
+	unsigned int nc = 0;
+	Client* c;
+
+	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
+		++nc;
+	return nc;
+}
+
 Monitor *
 createmon(void) {
 	Monitor *m;
@@ -1906,7 +1917,6 @@ manage(Window w, XWindowAttributes *wa) {
 	Client *c, *t = NULL, *term = NULL;
 	Window trans = None;
 	XWindowChanges wc;
-	int nc = 0;
 	int bpx = 0;
 
 	fprintf(stderr, "Creating client\n");
@@ -1940,12 +1950,13 @@ manage(Window w, XWindowAttributes *wa) {
 	/* only fix client y-offset, if the client center might cover the bar */
 	c->y = MAX(c->y, ((c->mon->by == c->mon->my) && (c->x + (c->w / 2) >= c->mon->wx)
 				&& (c->x + (c->w / 2) < c->mon->wx + c->mon->ww)) ? bh : c->mon->my);
-	for(Client* cother = c->mon->clients; cother; cother = cother->next)
-		if (ISVISIBLE(cother) && !cother->nofocus && cother->tags != TAGMASK)
-			++nc;
-	if (nc > 0)
-		bpx = c->mon->vs->lt[c->mon->vs->curlt]->borderpx;
-	c->bw = c->noborder ? 0 : bpx;
+	ViewStack* vs = getviewstackof(c->mon, c->tags);
+	if (vs) {
+		bpx = vs->lt[vs->curlt]->borderpx;
+		if (vs->lt[vs->curlt]->arrange == &monocle || !hasclientson(c->mon, c->tags) || c->noborder)
+			bpx = 0;
+	}
+	c->bw = bpx;
 	wc.border_width = c->bw;
 	XConfigureWindow(dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(dpy, w, dc.norm[ColBorder]);
@@ -2139,7 +2150,8 @@ pop(Client *c) {
 	attach(c);
 	focus(c);
 	arrange(c->mon);
- }
+}
+
 void
 propertynotify(XEvent *e) {
 	Client *c;
@@ -2235,24 +2247,20 @@ updatedpi() {
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	int halfgap = windowgap / 2;
-	int nc;
-	Bool changed = False;
+	unsigned int nc = 0;
 
 	if (!c->isfloating) {
-		changed = updateborderwidth(c->mon, &nc);
-		if(nc > 1 && c->mon->vs->lt[c->mon->vs->curlt]->arrange && c->mon->vs->lt[c->mon->vs->curlt]->arrange != &monocle)
-		{
+		nc = counttiledclients(c->mon);
+		if(nc > 1 && c->mon->vs->lt[c->mon->vs->curlt]->arrange && c->mon->vs->lt[c->mon->vs->curlt]->arrange != &monocle) {
 			x += halfgap;
 			y += halfgap;
 			w -= windowgap;
 			h -= windowgap;
 		}
 	}
-	if (changed)
-		arrange(c->mon);
-	else
-		if(applysizehints(c, &x, &y, &w, &h, interact))
-			resizeclient(c, x, y, w, h);
+	updateborderswidth(c->mon);
+	if(applysizehints(c, &x, &y, &w, &h, interact))
+		resizeclient(c, x, y, w, h);
 }
 
 void
@@ -3054,47 +3062,27 @@ unmapnotify(XEvent *e) {
 	}
 }
 
-Bool
-updateborderwidth(Monitor* m, int* nc) {
+void
+updateborderswidth(Monitor* m) {
 	Client* c;
-	Client* first = NULL;
 	Bool changed = False;
+	unsigned int nc, bw;
 
-	*nc = 0;
-	for(c = m->clients; m->vs->lt[m->vs->curlt] && c; c = c->next)
-		if (ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK)
-		{
-			if (first == NULL)
-			{
-				if (!c->isfloating)
-				{
-					first = c;
-					if (first->bw != 0)
-					{
-						changed = True;
-						first->bw = 0;
-					}
-				}
+	if (m->vs->lt[m->vs->curlt]) {
+		nc = counttiledclients(m);
+		for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+			bw = 0;
+			if ((nc > 1 || c->isfloating) && !c->noborder)
+				bw = m->vs->lt[m->vs->curlt]->borderpx;
+			if (c->bw != bw) {
+				c->bw = bw;
+				configure(c);
+				changed = True;
 			}
-			else
-			{
-				if (!first->noborder)
-				{
-					if (changed)
-						changed = False;
-					first->bw = m->vs->lt[m->vs->curlt]->borderpx;
-				}
-				if (!c->noborder && c->bw != m->vs->lt[m->vs->curlt]->borderpx)
-				{
-					c->bw = m->vs->lt[m->vs->curlt]->borderpx;
-					changed = True;
-				}
-			}
-			if (!c->isfloating)
-				++(*nc);
-			configure(c);
 		}
-	return changed;
+	}
+	if (changed)
+		XSync(dpy, False);
 }
 
 void
