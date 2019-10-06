@@ -1188,15 +1188,10 @@ clientmessage(XEvent *e) {
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
-			c->isurgent = True;
-			drawbars();
+			monview(c->mon, c->tags);
 		}
-#if 0
-		pop(c);
-#else
 		focus(c);
 		arrange(c->mon);
-#endif
 	}
 }
 
