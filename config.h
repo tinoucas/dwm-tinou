@@ -141,6 +141,7 @@ static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/script
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const char *showplankcmd[] = { "/bin/zsh", "/home/tinou/hacks/scripts/showPlank.sh", "show", NULL };
 static const char *hideplankcmd[] = { "/bin/zsh", "/home/tinou/hacks/scripts/showPlank.sh", "hide", NULL };
+static const char *rofiwindowcmd[] = { "rofi", "-show", "window", NULL };
 static const Rule clockrule =
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */
     {  NULL            , "oclock"            , NULL        , alltags   , True  , False , True  , SPCTR , True  , True  , True  ,-1   , NULL   , NULL      , False   , NULL };
@@ -160,6 +161,7 @@ static Key keys[] = {
     { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
     { MODKEY,                       XK_Return, zoom,           {0} },
     { MODKEY,                       XK_Tab,    view,           {0} },
+    { Mod1Mask,                     XK_Tab,    spawn,          {.v = rofiwindowcmd } },
     { MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
     { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[TILE]} },
     { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[FLOAT]} },
