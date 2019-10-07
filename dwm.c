@@ -766,6 +766,7 @@ arrange(Monitor *m) {
 
 void
 arrangemon(Monitor *m) {
+	updateborderswidth(m);
 	strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 	if(m->vs->lt[m->vs->curlt]->arrange)
 		m->vs->lt[m->vs->curlt]->arrange(m);
@@ -2258,7 +2259,6 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 			h -= windowgap;
 		}
 	}
-	updateborderswidth(c->mon);
 	if(applysizehints(c, &x, &y, &w, &h, interact))
 		resizeclient(c, x, y, w, h);
 }
