@@ -2547,6 +2547,17 @@ setfullscreen(Client *c, Bool fullscreen) {
 
 void
 monsetlayout(Monitor *m, const void* v) {
+	unsigned int nc = counttiledclients(m);
+	Client *c;
+	int gapw, gaph;
+
+	if (nc == 1 && !((Layout*)v)->arrange) {
+		c = nexttiled(m->clients);
+		c->bw = ((Layout*)v)->borderpx;
+		gapw = m->ww / 5;
+		gaph = m->wh / 5;
+		resize(c, c->x + gapw / 2, c->y + gaph / 2, c->w - gapw, c->h - gaph, True);
+	}
 	if(!v || v != m->vs->lt[m->vs->curlt])
 		m->vs->curlt ^= 1;
 	if(v)
