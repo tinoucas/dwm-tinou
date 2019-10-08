@@ -3047,11 +3047,11 @@ updateborderswidth(Monitor* m) {
 	Bool changed = False;
 	unsigned int nc, bw;
 
-	if (m->vs->lt[m->vs->curlt]) {
-		nc = counttiledclients(m);
-		for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+	nc = counttiledclients(m);
+	for(c = m->clients; c; c = c->next)
+		if (ISVISIBLE(c) && !c->nofocus) {
 			bw = 0;
-			if ((nc > 1 || c->isfloating) && !c->noborder)
+			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange) && !c->noborder)
 				bw = m->vs->lt[m->vs->curlt]->borderpx;
 			if (c->bw != bw) {
 				c->bw = bw;
@@ -3059,7 +3059,6 @@ updateborderswidth(Monitor* m) {
 				changed = True;
 			}
 		}
-	}
 	if (changed)
 		XSync(dpy, False);
 }
