@@ -323,7 +323,6 @@ static void updatedpi();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
-static void resizefast(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void resizerequest(XEvent *e);
 static void restack(Monitor *m);
@@ -2077,6 +2076,7 @@ movemouse(const Arg *arg) {
 	Client *c, *c2;
 	Monitor *m;
 	XEvent ev;
+	Time lasttime = 0;
 
 	if(!(c = selmon->sel))
 		return;
@@ -2111,23 +2111,22 @@ movemouse(const Arg *arg) {
 				}
 			} else {
 				/* move floating window */
+				if ((ev.xmotion.time - lasttime) <= (1000 / 60))
+					continue;
+				lasttime = ev.xmotion.time;
+
 				nx = ocx + (ev.xmotion.x - x);
 				ny = ocy + (ev.xmotion.y - y);
-				if(nx >= selmon->wx && nx <= selmon->wx + selmon->ww
-						&& ny >= selmon->wy && ny <= selmon->wy + selmon->wh) {
-					if(abs(selmon->wx - nx) < snap)
-						nx = selmon->wx;
-					else if(abs((selmon->wx + selmon->ww) - (nx + c->w + 2 * c->bw)) < snap)
-						nx = selmon->wx + selmon->ww;
-					if(abs(selmon->wy - ny) < snap)
-						ny = selmon->wy;
-					else if(abs((selmon->wy + selmon->wh) - (ny + c->h + 2 * c->bw)) < snap)
-						ny = selmon->wy + selmon->wh;
-				}
-				resizefast(c, nx, ny, c->w, c->h);
+				if (abs(selmon->wx - nx) < snap)
+					nx = selmon->wx;
+				else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
+					nx = selmon->wx + selmon->ww - WIDTH(c);
+				if (abs(selmon->wy - ny) < snap)
+					ny = selmon->wy;
+				else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap)
+					ny = selmon->wy + selmon->wh - HEIGHT(c);
+				resize(c, nx, ny, c->w, c->h, True);
 			}
-			if(!selmon->vs->lt[selmon->vs->curlt]->arrange || c->isfloating)
-				resizefast(c, nx, ny, c->w, c->h);
 			break;
 		}
 	} while(ev.type != ButtonRelease);
@@ -2272,26 +2271,6 @@ resizebarwin(Monitor *m) {
 }
 
 void
-resizefast(Client *c, int x, int y, int w, int h) {
-	XWindowChanges wc;
-	XEvent ev;
-	Bool hadMotionEvents = False;
-
-	c->oldx = c->x; c->x = wc.x = x;
-	c->oldy = c->y; c->y = wc.y = y;
-	c->oldw = c->w; c->w = wc.width = w;
-	c->oldh = c->h; c->h = wc.height = h;
-	wc.border_width = c->bw;
-	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-	configure(c);
-	while (XCheckMaskEvent(dpy, PointerMotionMask, &ev))
-		hadMotionEvents = True;
-	if (hadMotionEvents)
-		XPutBackEvent(dpy, &ev);
-	XSync(dpy, False);
-}
-
-void
 resizeclient(Client *c, int x, int y, int w, int h) {
 	XWindowChanges wc;
 
@@ -2343,7 +2322,7 @@ resizemouse(const Arg *arg) {
 					togglefloating(NULL);
 			}
 			if(!selmon->vs->lt[selmon->vs->curlt]->arrange || c->isfloating)
-				resizefast(c, c->x, c->y, nw, nh);
+				resize(c, c->x, c->y, nw, nh, True);
 			break;
 		}
 	} while(ev.type != ButtonRelease && False == XCheckMaskEvent(dpy, ButtonReleaseMask, &ev));
