@@ -202,6 +202,7 @@ struct Monitor {
 	int by;				  /* bar geometry */
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
+	int mho;
 	Bool topbar;
 	Client *clients;
 	Client *sel;
@@ -740,13 +741,15 @@ void
 updateplank() {
 	Client* c;
 	int n = 0;
+	Bool shouldshow;
 
 	if (mons->vs->lt[mons->vs->curlt]->arrange)
 		for(c = mons->clients; c; c = c->next)
 			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
 				++n;
-	if (plankShown && n > 0 || !plankShown && n == 0)
-		showplank(n == 0);
+	shouldshow = (n == 0 || n > 1 && mons->vs->lt[mons->vs->curlt] != &layouts[MONOCLE]);
+	if (plankShown && !shouldshow || !plankShown && shouldshow)
+		showplank(shouldshow);
 }
 
 void
@@ -3076,6 +3079,14 @@ updateborderswidth(Monitor* m) {
 		}
 	if (changed)
 		XSync(dpy, False);
+	if (m == mons) {
+		if (nc > 1 && m->vs->lt[m->vs->curlt] != &layouts[MONOCLE])
+			m->mh = m->mho - m->mho * 3 / 100;
+		else
+			m->mh = m->mho;
+		updatebarpos(m);
+		updateplank();
+	}
 }
 
 void
@@ -3190,7 +3201,7 @@ updategeom(void) {
 			m->mx = m->wx = unique[i].x_org;
 			m->my = m->wy = unique[i].y_org;
 			m->mw = m->ww = unique[i].width;
-			m->mh = m->wh = unique[i].height;
+			m->mho = m->mh = m->wh = unique[i].height;
 			updatebarpos(m);
 		}
 		free(unique);
@@ -3229,7 +3240,7 @@ updategeom(void) {
 			mons = createmon();
 		if(mons->mw != sw || mons->mh != sh) {
 			mons->mw = mons->ww = sw;
-			mons->mh = mons->wh = sh;
+			mons->mho = mons->mh = mons->wh = sh;
 			updatebarpos(mons);
 		}
 	}
