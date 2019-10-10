@@ -56,8 +56,8 @@ createviewstack (const ViewStack *vref) {
 	if (vref != NULL)
 		copyviewstack(v, vref);
 	else {
-		v->lt[0] = &layouts[initlayout];
-		v->lt[1] = &layouts[1 % LENGTH(layouts)];
+		v->lt[0] = &layouts[FLOAT];
+		v->lt[1] = &layouts[initlayout];
 		v->showbar = showbar;
 		v->tagset = 1;
 		v->mfact = mfact;

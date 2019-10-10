@@ -100,8 +100,6 @@ enum layout {
 	MONOCLE,
 };
 
-static const Layout *const monoclelt = &layouts[MONOCLE];
-
 static const Rule defaultrule = 
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname, next */
     {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL    , NULL };
@@ -161,7 +159,8 @@ static Key keys[] = {
     { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
     { MODKEY,                       XK_Return, zoom,           {0} },
     { MODKEY,                       XK_Tab,    view,           {0} },
-    { MODKEY,                       XK_space,  spawn,          {.v = rofiwindowcmd } },
+    { MODKEY,                       XK_space,  setlayout,      {.v = 0 } },
+    { Mod1Mask,                     XK_Tab,    spawn,          {.v = rofiwindowcmd } },
     { MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
     { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[TILE]} },
     { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[FLOAT]} },
@@ -227,8 +226,9 @@ static Key keys[] = {
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
-	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = monoclelt} },
+	{ ClkLtSymbol,          0,              Button1,        setlayout,      {.v = &layouts[FLOAT] } },
+	{ ClkLtSymbol,          0,              Button2,        setlayout,      {.v = &layouts[TILE] } },
+	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[MONOCLE] } },
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
 	{ ClkLtSymbol,          0,              Button5,        viewscroll,     {.f = +0.05 } },
 	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
