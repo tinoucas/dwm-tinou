@@ -759,7 +759,7 @@ updateplank() {
 		for(c = selmon->clients; c; c = c->next)
 			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
 				++n;
-	shouldshow = (n == 0 || n > 1 && selmon->vs->lt[selmon->vs->curlt] != &layouts[MONOCLE]);
+	shouldshow = (n == 0 || n > 1 && mons->vs->lt[mons->vs->curlt] != &layouts[MONOCLE] && mons->vs->showbar);
 	showplank(shouldshow);
 }
 
@@ -3096,9 +3096,9 @@ updateborderswidth(Monitor* m) {
 		}
 	if (changed)
 		XSync(dpy, False);
-	if (m == selmon) {
-		if (nc > 1 && m->vs->lt[m->vs->curlt] != &layouts[MONOCLE])
-			m->mh = m->mho - m->mho * 3 / 100;
+	if (m == mons) {
+		if (nc > 1 && m->vs->lt[m->vs->curlt] != &layouts[MONOCLE] && m->vs->showbar)
+			m->mh = m->mho - m->mho * 4 / 100;
 		else
 			m->mh = m->mho;
 		updatebarpos(m);
