@@ -2547,25 +2547,26 @@ setfullscreen(Client *c, Bool fullscreen) {
 
 void
 monsetlayout(Monitor *m, const void* v) {
-	unsigned int nc;
 	Client *c;
 	int gapw, gaph;
+	Bool onewindowvisible;
 
-	m->vs->curlt ^= 1;
-	if (!v || v == m->vs->lt[m->vs->curlt ^ 1])
-		v = m->vs->lt[m->vs->curlt];
-	if(v) {
-		nc = counttiledclients(m);
-		if (nc == 1 && !((Layout*)v)->arrange) {
-			c = nexttiled(m->clients);
-			c->bw = ((Layout*)v)->borderpx;
+	if (v != m->vs->lt[m->vs->curlt]) {
+		if (!v)
+			v = m->vs->lt[m->vs->curlt ^ 1];
+		onewindowvisible = (counttiledclients(m) == 1 || m->vs->lt[m->vs->curlt] == &layouts[MONOCLE]);
+		if (onewindowvisible && !((Layout*)v)->arrange) {
 			gapw = m->ww / 5;
 			gaph = m->wh / 5;
-			resize(c, c->x + gapw / 2, c->y + gaph / 2, c->w - gapw, c->h - gaph, True);
+			for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+				c->bw = ((Layout*)v)->borderpx;
+				resize(c, c->x + gapw / 2, c->y + gaph / 2, c->w - gapw, c->h - gaph, True);
+			}
 		}
+		m->vs->curlt ^= 1;
 		m->vs->lt[m->vs->curlt] = (Layout *)v;
+		strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 	}
-	strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 }
 
 void

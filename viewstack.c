@@ -128,7 +128,7 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 		v = *pv;
 		v->tagset = ui;
 	}
-	if (v->lt[v->curlt] == lt)
+	if (v->lt[v->curlt] != lt)
 		v->curlt ^= 1;
 	v->lt[v->curlt] = lt;
 }
