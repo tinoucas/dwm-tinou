@@ -332,6 +332,7 @@ static void run(void);
 static void scan(void);
 static Bool sendevent(Window w, Atom proto, int m, long d0, long d1, long d2, long d3, long d4);
 static void sendmon(Client *c, Monitor *m);
+static void selectmon(Monitor* m);
 static void setclientstate(Client *c, long state);
 static void setclientopacity(Client *c);
 static void setfocus(Client *c);
@@ -435,7 +436,7 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
-static Bool plankShown = False;
+static int plankShown = -1;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -731,10 +732,21 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 
 void
 showplank (Bool show) {
-	const Arg arg = {.v = show ? showplankcmd : hideplankcmd };
+	if (plankShown != (show ? selmon->num : -1)) {
+		char** cmd = showplankcmd;
+		char charmon[2];
 
-	spawn(&arg);
-	plankShown = show;
+		charmon[0] = (char)selmon->num + '0';
+		charmon[1] = 0;
+
+		cmd[2] = show ? "show" : "hide";
+		cmd[3] = &charmon[0];
+
+		const Arg arg = {.v = cmd };
+
+		spawn(&arg);
+		plankShown = show ? selmon->num : -1;
+	}
 }
 
 void
@@ -743,13 +755,12 @@ updateplank() {
 	int n = 0;
 	Bool shouldshow;
 
-	if (mons->vs->lt[mons->vs->curlt]->arrange)
-		for(c = mons->clients; c; c = c->next)
+	if (selmon->vs->lt[selmon->vs->curlt]->arrange)
+		for(c = selmon->clients; c; c = c->next)
 			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
 				++n;
-	shouldshow = (n == 0 || n > 1 && mons->vs->lt[mons->vs->curlt] != &layouts[MONOCLE]);
-	if (plankShown && !shouldshow || !plankShown && shouldshow)
-		showplank(shouldshow);
+	shouldshow = (n == 0 || n > 1 && selmon->vs->lt[selmon->vs->curlt] != &layouts[MONOCLE]);
+	showplank(shouldshow);
 }
 
 void
@@ -992,7 +1003,7 @@ buttonpress(XEvent *e) {
 	/* focus monitor if necessary */
 	if((m = wintomon(ev->window)) && m != selmon) {
 		unfocus(selmon->sel, True);
-		selmon = m;
+		selectmon(m);
 		focus(NULL);
 	}
 	if(ev->window == selmon->barwin) {
@@ -1529,7 +1540,7 @@ enternotify(XEvent *e) {
 	c = wintoclient(ev->window);
 	if((m = wintomon(ev->window)) && m != selmon && ev->window != root) {
 		unfocus(selmon->sel, True);
-		selmon = m;
+		selectmon(m);
 	}
 	else if(c == selmon->sel || c == NULL)
 		return;
@@ -1626,7 +1637,7 @@ void
 setmonitorfocus(Monitor* m) {
 	if (selmon != m) {
 		unfocus(selmon->sel, False);
-		selmon = m;
+		selectmon(m);
 		focus(NULL);
 		if (selmon->sel)
 			centerMouseInWindow(selmon->sel);
@@ -2066,7 +2077,7 @@ motionnotify(XEvent *e) {
 		return;
 	if((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
 		unfocus(selmon->sel, True);
-		selmon = m;
+		selectmon(m);
 		focus(NULL);
 	}
 
@@ -2136,7 +2147,7 @@ movemouse(const Arg *arg) {
 	XUngrabPointer(dpy, CurrentTime);
 	if((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
-		selmon = m;
+		selectmon(m);
 		focus(NULL);
 	}
 }
@@ -2336,7 +2347,7 @@ resizemouse(const Arg *arg) {
 	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 	if((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
-		selmon = m;
+		selectmon(m);
 		focus(NULL);
 	}
 }
@@ -2449,6 +2460,12 @@ sendmon(Client *c, Monitor *m) {
 	arrange(NULL);
 	for(m = mons; m; m = m->next)
 		cleartags(m);
+}
+
+void
+selectmon(Monitor* m) {
+	selmon = m;
+	updateplank();
 }
 
 void
@@ -3079,7 +3096,7 @@ updateborderswidth(Monitor* m) {
 		}
 	if (changed)
 		XSync(dpy, False);
-	if (m == mons) {
+	if (m == selmon) {
 		if (nc > 1 && m->vs->lt[m->vs->curlt] != &layouts[MONOCLE])
 			m->mh = m->mho - m->mho * 3 / 100;
 		else
@@ -3245,10 +3262,10 @@ updategeom(void) {
 		}
 	}
 	if (selmon != mons) {
-		selmon = mons;
+		selectmon(mons);
 		centerMouseInMonitorIndex(focusmonstart);
 	}
-	selmon = wintomon(root);
+	selectmon(wintomon(root));
 	createclocks();
 }
 
