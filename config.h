@@ -137,7 +137,6 @@ static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
-static char *showplankcmd[] = { "/bin/zsh", "/home/tinou/hacks/scripts/showPlank.sh", NULL, NULL, NULL };
 static const char *rofiwindowcmd[] = { "rofi", "-modi", "combi", "-show", "combi", "-combi-modi", "window,drun" , NULL };
 static const Rule clockrule =
 	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */

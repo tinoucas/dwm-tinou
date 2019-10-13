@@ -444,7 +444,6 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
-static int plankShown = -1;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -739,39 +738,6 @@ applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact) {
 }
 
 void
-showplank (Bool show) {
-	if (plankShown != (show ? selmon->num : -1)) {
-		char** cmd = showplankcmd;
-		char charmon[2];
-
-		charmon[0] = (char)selmon->num + '0';
-		charmon[1] = 0;
-
-		cmd[2] = show ? "show" : "hide";
-		cmd[3] = &charmon[0];
-
-		const Arg arg = {.v = cmd };
-
-		spawn(&arg);
-		plankShown = show ? selmon->num : -1;
-	}
-}
-
-void
-updateplank() {
-	Client* c;
-	int n = 0;
-	Bool shouldshow;
-
-	if (selmon->vs->lt[selmon->vs->curlt]->arrange)
-		for(c = selmon->clients; c; c = c->next)
-			if(ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK && !c->isfloating)
-				++n;
-	shouldshow = (n == 0 || n > 1 && mons->vs->lt[mons->vs->curlt] != &layouts[MONOCLE] && mons->vs->showbar);
-	showplank(shouldshow);
-}
-
-void
 arrange(Monitor *m) {
 	if(m)
 		showhide(m->stack);
@@ -782,7 +748,6 @@ arrange(Monitor *m) {
 		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
-	updateplank();
 }
 
 void
@@ -2477,7 +2442,6 @@ sendmon(Client *c, Monitor *m) {
 void
 selectmon(Monitor* m) {
 	selmon = m;
-	updateplank();
 }
 
 void
@@ -3156,7 +3120,6 @@ updateborderswidth(Monitor* m) {
 		else
 			m->mh = m->mho;
 		updatebarpos(m);
-		updateplank();
 	}
 }
 
