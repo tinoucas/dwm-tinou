@@ -66,6 +66,7 @@
 #define WIDTH(X)				((X)->w + 2 * (X)->bw)
 #define HEIGHT(X)				((X)->h + 2 * (X)->bw)
 #define TAGMASK					((1 << numtags) - 1)
+#define TAGSLENGTH              (numtags)
 #define TEXTW(X)				(textnw(X, strlen(X)) + dc.font.height)
 
 #define SYSTEM_TRAY_REQUEST_DOCK    0
@@ -90,8 +91,8 @@ enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
-	   NetWMName, NetWMState, NetWMFullscreen, NetActiveWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetClientList, NetLast }; /* EWMH atoms */
+	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetWMWindowType,
+	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
@@ -334,13 +335,18 @@ static Bool sendevent(Window w, Atom proto, int m, long d0, long d1, long d2, lo
 static void sendmon(Client *c, Monitor *m);
 static void selectmon(Monitor* m);
 static void setclientstate(Client *c, long state);
+static void setcurrentdesktop(void);
+static void setdesktopnames(void);
 static void setclientopacity(Client *c);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, Bool fullscreen);
 static void monsetlayout(Monitor *m, const void* v);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
+static void setnumdesktops(void);
 static void setup(void);
+static void setviewport(void);
+static void setgeometry();
 static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
@@ -361,6 +367,8 @@ static void toggleview(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
+static void updateclientdesktop(Client *c);
+static void updatecurrentdesktop(void);
 static void updateborderswidth(Monitor *m);
 static void updatecolors(const Arg *arg);
 static void updategeom(void);
@@ -779,7 +787,11 @@ arrange(Monitor *m) {
 
 void
 arrangemon(Monitor *m) {
+	Client *c;
 	updateborderswidth(m);
+	for (c = m->clients; c; c = c->next) {
+		updateclientdesktop(c);
+	}
 	strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 	if(m->vs->lt[m->vs->curlt]->arrange)
 		m->vs->lt[m->vs->curlt]->arrange(m);
@@ -1563,8 +1575,7 @@ expose(XEvent *e) {
 #define OPACITY	"_NET_WM_WINDOW_OPACITY"
 
 void
-window_opacity_set(Window win, double opacity)
-{
+window_opacity_set(Window win, double opacity) {
 	if(opacity >= 0. && opacity <= 1.)
 	{
 		unsigned int copacity = (unsigned int)(opacity * OPAQUE);
@@ -2476,6 +2487,18 @@ setclientstate(Client *c, long state) {
 			PropModeReplace, (unsigned char *)data, 2);
 }
 
+void
+setcurrentdesktop(void) {
+	long data[] = { 0 };
+	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
+}
+
+void setdesktopnames(void) {
+	XTextProperty text;
+	Xutf8TextListToTextProperty(dpy, tags, TAGSLENGTH, XUTF8StringStyle, &text);
+	XSetTextProperty(dpy, root, &text, netatom[NetDesktopNames]);
+}
+
 Bool
 sendevent(Window w, Atom proto, int mask, long d0, long d1, long d2, long d3, long d4) {
 	int n;
@@ -2508,6 +2531,12 @@ sendevent(Window w, Atom proto, int mask, long d0, long d1, long d2, long d3, lo
 		XSendEvent(dpy, w, False, mask, &ev);
 	}
 	return exists;
+}
+
+void
+setnumdesktops(void) {
+	long data[] = { TAGSLENGTH };
+	XChangeProperty(dpy, root, netatom[NetNumberOfDesktops], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 }
 
 void
@@ -2743,10 +2772,17 @@ setup(void) {
 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
 	netatom[NetWMFullscreen] = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	netatom[NetWMMaximized] = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
+	netatom[NetWMDesktop] = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
+	netatom[NetDesktopViewport] = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
+	netatom[NetDesktopGeometry] = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
+	netatom[NetNumberOfDesktops] = XInternAtom(dpy, "_NET_NUMBER_OF_DESKTOPS", False);
+	netatom[NetCurrentDesktop] = XInternAtom(dpy, "_NET_CURRENT_DESKTOP", False);
+	netatom[NetDesktopNames] = XInternAtom(dpy, "_NET_DESKTOP_NAMES", False);
 	xatom[Manager] = XInternAtom(dpy, "MANAGER", False);
 	xatom[Xembed] = XInternAtom(dpy, "_XEMBED", False);
 	xatom[XembedInfo] = XInternAtom(dpy, "_XEMBED_INFO", False);
@@ -2775,6 +2811,11 @@ setup(void) {
 	/* EWMH support per view */
 	XChangeProperty(dpy, root, netatom[NetSupported], XA_ATOM, 32,
 			PropModeReplace, (unsigned char *) netatom, NetLast);
+	setnumdesktops();
+	setcurrentdesktop();
+	setdesktopnames();
+	setviewport();
+	setgeometry();
 	XDeleteProperty(dpy, root, netatom[NetClientList]);
 	/* select for events */
 	wa.cursor = cursor[CurNormal];
@@ -2784,6 +2825,18 @@ setup(void) {
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys(root);
 	startuserscript();
+}
+
+void
+setviewport(void) {
+	long data[] = { 0, 0 };
+	XChangeProperty(dpy, root, netatom[NetDesktopViewport], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 2);
+}
+
+void
+setgeometry() {
+	long data[] = { mons->ww, mons->wh };
+	XChangeProperty(dpy, root, netatom[NetDesktopGeometry], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 2);
 }
 
 void
@@ -2988,19 +3041,19 @@ toggletag(const Arg *arg) {
 		restorebar(selmon);
 		arrange(selmon);
 	}
+	updatecurrentdesktop();
 }
 
 void
 toggleview(const Arg *arg) {
 	unsigned int newtagset = selmon->vs->tagset ^ (arg->ui & TAGMASK);
 
-	/*if(newtagset) {*/
 	if (selmon->vs->tagset != newtagset)
 	{
 		viewstackadd(selmon, newtagset, False);
 		arrange(selmon);
 	}
-	/*}*/
+	updatecurrentdesktop();
 }
 
 void
@@ -3084,7 +3137,7 @@ updateborderswidth(Monitor* m) {
 
 	nc = counttiledclients(m);
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c) && !c->nofocus) {
+		if (ISVISIBLE(c) && !c->nofocus && !c->isfullscreen) {
 			bw = 0;
 			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange) && !c->noborder)
 				bw = m->vs->lt[m->vs->curlt]->borderpx;
@@ -3161,6 +3214,29 @@ updateclientlist() {
 			                (unsigned char *) &(c->win), 1);
 }
 
+void
+updateclientdesktop(Client* c) {
+	long rawdata[] = { c->tags };
+	int i=0;
+
+	while(*rawdata >> i+1) {
+		i++;
+	}
+	long data[] = { i };
+	XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
+}
+
+void
+updatecurrentdesktop(void) {
+	long rawdata[] = { selmon->vs->tagset };
+	int i=0;
+	while(*rawdata >> i+1){
+		i++;
+	}
+	long data[] = { i };
+	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
+}
+ 
 void
 killclocks(void) {
 	Monitor *m;
@@ -3567,6 +3643,7 @@ view(const Arg *arg) {
 	focus(NULL);
 	restorebar(selmon);
 	arrange(selmon);
+	updatecurrentdesktop();
 }
 
 pid_t
