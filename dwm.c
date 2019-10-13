@@ -1791,32 +1791,31 @@ grabremap(Client *c, Bool manage) {
 
 void
 grabbuttons(Client *c, Bool focused) {
+	unsigned int i, j;
+	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+
 	updatenumlockmask();
-	{
-		unsigned int i, j;
-		unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
-		XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
-		if(focused) {
-			for(i = 0; i < LENGTH(buttons); i++)
-				if(buttons[i].click == ClkClientWin)
-					for(j = 0; j < LENGTH(modifiers); j++)
-						XGrabButton(dpy, buttons[i].button,
-									buttons[i].mask | modifiers[j],
-									c->win, False, BUTTONMASK,
-									GrabModeAsync, GrabModeSync, None, None);
-			if (c->remap)
-				for(i = 0; c->remap[i].keysymto; i++)
-					for(j = 0; j < LENGTH(modifiers); j++)
-						if (c->remap[i].mousebuttonfrom)
-							XGrabButton(dpy, c->remap[i].mousebuttonfrom,
-									modifiers[j],
-									c->win, True, BUTTONMASK,
-									GrabModeAsync, GrabModeSync, None, CurrentTime);
-		}
-		else
-			XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
-						BUTTONMASK, GrabModeAsync, GrabModeSync, None, None);
+	XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
+	if(focused) {
+		for(i = 0; i < LENGTH(buttons); i++)
+			if(buttons[i].click == ClkClientWin)
+				for(j = 0; j < LENGTH(modifiers); j++)
+					XGrabButton(dpy, buttons[i].button,
+							buttons[i].mask | modifiers[j],
+							c->win, False, BUTTONMASK,
+							GrabModeAsync, GrabModeSync, None, None);
+		if (c->remap)
+			for(i = 0; c->remap[i].keysymto; i++)
+				for(j = 0; j < LENGTH(modifiers); j++)
+					if (c->remap[i].mousebuttonfrom)
+						XGrabButton(dpy, c->remap[i].mousebuttonfrom,
+								modifiers[j],
+								c->win, True, BUTTONMASK,
+								GrabModeAsync, GrabModeSync, None, CurrentTime);
 	}
+	else
+		XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
+				BUTTONMASK, GrabModeAsync, GrabModeSync, None, None);
 }
 
 void
