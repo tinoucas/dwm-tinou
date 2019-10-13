@@ -638,6 +638,7 @@ applyrules(Client *c) {
 					if (nc > 0)
 						viewstackadd(c->mon, currenttagset, True);
 				}
+				updatecurrentdesktop();
 			}
 		}
 		if(lastr && lastr->preflayout) {
