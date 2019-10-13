@@ -1216,6 +1216,7 @@ clientmessage(XEvent *e) {
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
 			monview(c->mon, c->tags);
+			updatecurrentdesktop();
 		}
 		focus(c);
 		arrange(c->mon);
