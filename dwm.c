@@ -1561,7 +1561,7 @@ focus(Client *c) {
 	Client *inc = c;
 
 	if(!c || !ISVISIBLE(c))
-		for(c = selmon->stack; c && !ISVISIBLE(c); c = c->snext);
+		for(c = selmon->stack; c && (!ISVISIBLE(c) || c->tags == TAGMASK); c = c->snext);
 	/* was if(selmon->sel) */
 	if(selmon->sel && selmon->sel != c)
 		unfocus(selmon->sel, False);
@@ -1573,7 +1573,7 @@ focus(Client *c) {
 		detachstack(c);
 		attachstack(c);
 	}
-	while (!inc && c && (c->nofocus || c->tags == TAGMASK))
+	while (!inc && c && c->nofocus)
 		c = c->next;
 	if (c && !ISVISIBLE(c))
 		c = NULL;
@@ -1985,7 +1985,7 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
-	if (c->nofocus || c->tags == TAGMASK)
+	if (c->nofocus)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2350,9 +2350,9 @@ restack(Monitor *m) {
 	drawbar(m);
 	if(!m->sel) {
 		for(c = m->clients; c; c = c->next)
-			if(!c->nofocus && ISVISIBLE(c))
+			if(!c->nofocus && ISVISIBLE(c) && c->tags != TAGMASK)
 				break;
-		if (c && m == selmon)
+		if (c)
 			focus(c);
 		else
 			m->sel = c;
