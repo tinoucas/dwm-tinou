@@ -4,7 +4,7 @@ hasclientson(Monitor *m, unsigned int tagset) {
 	unsigned int nc;
 
 	for(c = m->clients, nc = 0; c; c = c->next)
-		if(!c->nofocus && (c->tags & tagset))
+		if(!c->nofocus && (c->tags & tagset) && c->tags != TAGMASK)
 			++nc;
 	return nc > 0;
 
