@@ -2570,11 +2570,11 @@ monsetlayout(Monitor *m, const void* v) {
 			v = m->vs->lt[m->vs->curlt ^ 1];
 		onewindowvisible = (counttiledclients(m) == 1 || m->vs->lt[m->vs->curlt] == &layouts[MONOCLE]);
 		if (onewindowvisible && !((Layout*)v)->arrange) {
-			gapw = m->ww / 10;
-			gaph = m->wh / 10;
+			gapw = m->mw / 10;
+			gaph = m->mh / 10;
 			for (c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
 				c->bw = ((Layout*)v)->borderpx;
-				resize(c, c->x + gapw / 2, c->y + gaph / 2, c->w - gapw, c->h - gaph, True);
+				resize(c, m->mx + gapw / 2, m->my + gaph / 2, m->mw - gapw, m->mh - gaph, True);
 			}
 		}
 		m->vs->curlt ^= 1;
