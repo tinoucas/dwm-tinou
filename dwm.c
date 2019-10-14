@@ -1823,19 +1823,17 @@ grabbuttons(Client *c, Bool focused) {
 
 void
 grabkeys(Window window) {
-	updatenumlockmask();
-	{
-		unsigned int i, j;
-		unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
-		KeyCode code;
+	unsigned int i, j;
+	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+	KeyCode code;
 
-		XUngrabKey(dpy, AnyKey, AnyModifier, window);
-		for(i = 0; i < LENGTH(keys); i++)
-			if((code = XKeysymToKeycode(dpy, keys[i].keysym)))
-				for(j = 0; j < LENGTH(modifiers); j++)
-					XGrabKey(dpy, code, keys[i].mod | modifiers[j], window,
-						 True, GrabModeAsync, GrabModeAsync);
-	}
+	updatenumlockmask();
+	XUngrabKey(dpy, AnyKey, AnyModifier, window);
+	for(i = 0; i < LENGTH(keys); i++)
+		if((code = XKeysymToKeycode(dpy, keys[i].keysym)))
+			for(j = 0; j < LENGTH(modifiers); j++)
+				XGrabKey(dpy, code, keys[i].mod | modifiers[j], window,
+						True, GrabModeAsync, GrabModeAsync);
 }
 
 void
