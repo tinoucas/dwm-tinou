@@ -1003,6 +1003,7 @@ buttonpress(XEvent *e) {
 	else if((c = wintoclient(ev->window))) {
 		focus(c);
 		click = ClkClientWin;
+		XSendEvent(dpy, c->win, False, ButtonPressMask, e);
 	}
 	for(i = 0; i < LENGTH(buttons); i++)
 		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
@@ -1019,6 +1020,7 @@ buttonrelease(XEvent *e) {
 	click = ClkRootWin;
 	if((c = wintoclient(ev->window))) {
 		click = ClkClientWin;
+		XSendEvent(dpy, c->win, False, ButtonReleaseMask, e);
 	}
 	if (selmon && (c = selmon->sel) && c->win && c->remap) {
 		for(i = 0; c->remap[i].keysymto; i++)
