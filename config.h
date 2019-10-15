@@ -179,7 +179,8 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
     { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
     { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") },
-	{ ControlMask|Mod1Mask,			XK_l,	   spawn,		   SHCMD("exec slimlock") },
+    { ControlMask|Mod1Mask,         XK_l,      spawn,          SHCMD("exec slimlock") },
+    { MODKEY,                       XK_a,      spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") },
     TAGKEYS(                        XK_1,                      0)
     TAGKEYS(                        XK_2,                      1)
     TAGKEYS(                        XK_3,                      2)
@@ -240,6 +241,7 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button9,        rotateclients,  {.i = -1} },
 	{ ClkWinTitle,          MODKEY,         Button4,        opacitychange,  {.f = -0.05 } },
 	{ ClkWinTitle,          MODKEY,         Button5,        opacitychange,  {.f = +0.05 } },
+	{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") },
 	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
 	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
