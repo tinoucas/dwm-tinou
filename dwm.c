@@ -976,6 +976,7 @@ buttonpress(XEvent *e) {
 	Client *c;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
+	Bool sendevent = False;
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -1003,12 +1004,20 @@ buttonpress(XEvent *e) {
 	else if((c = wintoclient(ev->window))) {
 		focus(c);
 		click = ClkClientWin;
-		XSendEvent(dpy, c->win, False, ButtonPressMask, e);
+        sendevent = True;
 	}
 	for(i = 0; i < LENGTH(buttons); i++)
 		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
 		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
 			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+	if (c && c->remap)
+		for(i = 0; c->remap[i].keysymto; i++)
+			if(click == ClkClientWin
+					&& c->remap[i].mousebuttonfrom
+					&& c->remap[i].mousebuttonfrom == ev->button)
+				sendevent = False;
+	if (sendevent)
+		XSendEvent(dpy, c->win, False, ButtonPressMask, e);
 }
 
 void
@@ -1016,19 +1025,23 @@ buttonrelease(XEvent *e) {
 	unsigned int i, click;
 	Client* c;
 	XButtonReleasedEvent *ev = &e->xbutton;
+	Bool sendevent = False;
 
 	click = ClkRootWin;
 	if((c = wintoclient(ev->window))) {
 		click = ClkClientWin;
-		XSendEvent(dpy, c->win, False, ButtonReleaseMask, e);
+		sendevent = True;
 	}
-	if (selmon && (c = selmon->sel) && c->win && c->remap) {
+	if (c && c->remap)
 		for(i = 0; c->remap[i].keysymto; i++)
 			if(click == ClkClientWin
 					&& c->remap[i].mousebuttonfrom
-					&& c->remap[i].mousebuttonfrom == ev->button)
+					&& c->remap[i].mousebuttonfrom == ev->button) {
 				sendKey(XKeysymToKeycode(dpy, c->remap[i].keysymto), c->remap[i].modifier);
-	}
+				sendevent = False;
+			}
+	if (sendevent)
+		XSendEvent(dpy, c->win, False, ButtonReleaseMask, e);
 }
 
 void
