@@ -1197,7 +1197,6 @@ clientmessage(XEvent *e) {
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(!ISVISIBLE(c)) {
 			monview(c->mon, c->tags);
-			updatecurrentdesktop();
 		}
 		focus(c);
 		arrange(c->mon);
@@ -3612,6 +3611,7 @@ monview(Monitor* m, unsigned int ui) {
 	else
 		newtagset = findtoggletagset(m);
 	viewstackadd(m, newtagset, True);
+	updatecurrentdesktop();
 }
 
 void
@@ -3620,7 +3620,6 @@ view(const Arg *arg) {
 	focus(NULL);
 	restorebar(selmon);
 	arrange(selmon);
-	updatecurrentdesktop();
 }
 
 pid_t
