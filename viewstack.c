@@ -46,6 +46,7 @@ copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
 	for (i = 0; i < 3; ++i)
 		vdst->ltaxis[i] = vsrc->ltaxis[i];
 	vdst->showbar = vsrc->showbar;
+	vdst->showdock = vsrc->showdock;
 }
 
 ViewStack*
@@ -59,6 +60,7 @@ createviewstack (const ViewStack *vref) {
 		v->lt[0] = &layouts[initlayout];
 		v->lt[1] = &layouts[FLOAT];
 		v->showbar = showbar;
+		v->showdock = showdock;
 		v->tagset = 1;
 		v->mfact = mfact;
 		v->msplit = 1;

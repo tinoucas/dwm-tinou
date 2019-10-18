@@ -46,6 +46,7 @@ static const unsigned int systrayspacing = 2;   /* systray spacing */
 static const Bool systraypinningfailfirst = True;   /* True: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
 static const Bool showsystray       = True;     /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
+static const Bool showdock          = False;
 static const Bool topbar            = True;    /* False means bottom bar */
 static const int windowgap			= 36; /* gap between windows */
 static const int focusmonstart		= 0;
@@ -164,7 +165,7 @@ static Key keys[] = {
     { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[FLOAT]} },
     { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[MONOCLE]} },
     { MODKEY,                       XK_s,      setlayout,      {.v = &layouts[SPIRAL]} },
-    { MODKEY,                       XK_d,      setlayout,      {.v = &layouts[DWINDLE]} },
+    { MODKEY,                       XK_d,      toggledock,     {0} },
     { MODKEY,                       XK_BackSpace, rotatemonitor, {.i = 0} },
     { MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
     { MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
@@ -225,7 +226,7 @@ static Key keys[] = {
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
-	{ ClkLtSymbol,          0,              Button1,        setlayout,      {.v = &layouts[FLOAT] } },
+	{ ClkLtSymbol,          0,              Button1,        toggledock,     {0} },
 	{ ClkLtSymbol,          0,              Button2,        setlayout,      {.v = &layouts[TILE] } },
 	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[MONOCLE] } },
 	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },

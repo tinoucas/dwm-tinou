@@ -191,6 +191,7 @@ struct ViewStack {
 	unsigned int tagset;
 	const Layout *lt[2];
 	Bool showbar;
+	Bool showdock;
 	int curlt;
 	float mfact;
 	unsigned int msplit;
@@ -361,6 +362,7 @@ static void tagmon(const Arg *arg);
 static int textnw(const char *text, unsigned int len);
 static void tile(Monitor *);
 static void togglebar(const Arg *arg);
+static void toggledock(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
@@ -387,6 +389,7 @@ static void updatewmhints(Client *c);
 static void view(const Arg *arg);
 static void monview(Monitor* m, unsigned int ui);
 static void monshowbar(Monitor* m, Bool show);
+static void monshowdock(Monitor* m, Bool show);
 static void window_opacity_set(Window win, double opacity);
 static Client *wintoclient(Window w);
 static Monitor *wintomon(Window w);
@@ -2989,8 +2992,19 @@ monshowbar(Monitor* m, Bool show) {
 }
 
 void
+monshowdock(Monitor *m, Bool show) {
+	m->vs->showdock = show;
+	arrangemon(m);
+}
+
+void
 togglebar(const Arg *arg) {
 	monshowbar(selmon, !selmon->vs->showbar);
+}
+
+void
+toggledock(const Arg *arg) {
+	monshowdock(selmon, !selmon->vs->showdock);
 }
 
 void
@@ -3127,8 +3141,8 @@ updateborderswidth(Monitor* m) {
 	if (changed)
 		XSync(dpy, False);
 	if (m == mons) {
-		if (nc > 1 && m->vs->lt[m->vs->curlt] != &layouts[MONOCLE] && m->vs->showbar)
-			m->mh = m->mho - m->mho * 4 / 100;
+		if (m->vs->showdock)
+			m->mh = m->mho - m->mho * 45 / 1000;
 		else
 			m->mh = m->mho;
 		updatebarpos(m);
