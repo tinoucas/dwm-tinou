@@ -1584,8 +1584,6 @@ focus(Client *c) {
 	if(selmon->sel && selmon->sel != c)
 		unfocus(selmon->sel, False);
 	if(c) {
-		if(c->mon != selmon)
-			setmonitorfocus(c->mon);
 		if(c->isurgent)
 			clearurgent(c);
 		detachstack(c);
@@ -1599,12 +1597,12 @@ focus(Client *c) {
 		grabbuttons(c, True);
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		setfocus(c);
+		c->mon->sel = c;
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
 	}
-	selmon->sel = c;
 	drawbars();
 	XSync(dpy, False);
 }
@@ -1994,7 +1992,8 @@ manage(Window w, XWindowAttributes *wa) {
 	arrange(c->mon);
 	grabremap(c, True);
 	if (!c->nofocus && c->tags != TAGMASK) {
-		focus(c);
+		if (!c->mon->sel && c->mon == selmon)
+			focus(c);
 		if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 			XRaiseWindow(dpy, c->win);
 	}
