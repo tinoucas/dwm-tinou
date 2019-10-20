@@ -1992,7 +1992,7 @@ manage(Window w, XWindowAttributes *wa) {
 	arrange(c->mon);
 	grabremap(c, True);
 	if (!c->nofocus && c->tags != TAGMASK) {
-		if (!c->mon->sel && c->mon == selmon)
+		if (c->mon == selmon)
 			focus(c);
 		if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 			XRaiseWindow(dpy, c->win);
