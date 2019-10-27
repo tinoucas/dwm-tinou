@@ -2548,7 +2548,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->bw = 0;
 		c->isfloating = True;
 		c->tags = vtag;
-		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mho);
 		XRaiseWindow(dpy, c->win);
 		monview(c->mon, vtag);
 	}
