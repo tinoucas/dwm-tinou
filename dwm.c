@@ -336,7 +336,6 @@ static Bool sendevent(Window w, Atom proto, int m, long d0, long d1, long d2, lo
 static void sendmon(Client *c, Monitor *m);
 static void selectmon(Monitor* m);
 static void setclientstate(Client *c, long state);
-static void setcurrentdesktop(void);
 static void setdesktopnames(void);
 static void setclientopacity(Client *c);
 static void setfocus(Client *c);
@@ -2466,12 +2465,6 @@ setclientstate(Client *c, long state) {
 			PropModeReplace, (unsigned char *)data, 2);
 }
 
-void
-setcurrentdesktop(void) {
-	long data[] = { 0 };
-	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
-}
-
 void setdesktopnames(void) {
 	XTextProperty text;
 	Xutf8TextListToTextProperty(dpy, tags, TAGSLENGTH, XUTF8StringStyle, &text);
@@ -2791,7 +2784,6 @@ setup(void) {
 	XChangeProperty(dpy, root, netatom[NetSupported], XA_ATOM, 32,
 			PropModeReplace, (unsigned char *) netatom, NetLast);
 	setnumdesktops();
-	setcurrentdesktop();
 	setdesktopnames();
 	setviewport();
 	setgeometry();
