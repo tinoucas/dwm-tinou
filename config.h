@@ -24,6 +24,13 @@ static const unsigned int alltags = ~0;
 /* appearance */
 static const char fallbackfont[]	= "DejaVu Sans Mono Book 12";
 static char* font = NULL;
+typedef enum {
+	Bottom,
+	Top,
+	Left,
+	Right
+} ScreenSide;
+static ScreenSide dockposition = Bottom;
 static char* terminal[2] = { NULL, NULL };
 static char* userscript = NULL;
 static const char* defaultterminal[] = { "kitty", NULL };

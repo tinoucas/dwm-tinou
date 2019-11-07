@@ -204,7 +204,7 @@ struct Monitor {
 	int by;				  /* bar geometry */
 	int mx, my, mw, mh;   /* screen size */
 	int wx, wy, ww, wh;   /* window area  */
-	int mho;
+	int wxo, wyo, who, wwo;
 	Bool topbar;
 	Client *clients;
 	Client *sel;
@@ -377,6 +377,7 @@ static void updategeom(void);
 static void updatebarpos(Monitor *m);
 static void updatebars(void);
 static void updateclientlist(void);
+static void updatedockpos(Monitor *m);
 static void updatenumlockmask(void);
 static void updatesizehints(Client *c);
 static void updatestatus(void);
@@ -1403,7 +1404,7 @@ drawbar(Monitor *m) {
 
 	resizebarwin(m);
 	if(showsystray && m == systraytomon(m)) {
-		m->ww -= getsystraywidth();
+		m->wwo -= getsystraywidth();
 	}
 	for(c = m->clients; c; c = c->next) {
 		if(c->tags != TAGMASK && !c->nofocus && c->tags != TAGMASK)
@@ -1434,20 +1435,20 @@ drawbar(Monitor *m) {
 	if(m == selmon || statusallmonitor) { /* status is only drawn on selected monitor */
 		if (m != selmon)
 		{
-			dc.x = m->ww - (int)getsystraywidth();
+			dc.x = m->wwo - (int)getsystraywidth();
 			dc.w = (int)getsystraywidth();
 			drawtext(ooftraysbl, dc.norm, False);
 		}
 		dc.w = TEXTW(stext);
-		dc.x = m->ww - dc.w - (m == selmon ? 0 : getsystraywidth());
+		dc.x = m->wwo - dc.w - (m == selmon ? 0 : getsystraywidth());
 		if(dc.x < x) {
 			dc.x = x;
-			dc.w = m->ww - x;
+			dc.w = m->wwo - x;
 		}
 		drawtext(stext, dc.norm, False);
 	}
 	else
-		dc.x = m->ww;
+		dc.x = m->wwo;
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
@@ -1460,9 +1461,9 @@ drawbar(Monitor *m) {
 		}
 	}
 	if(showsystray && m == systraytomon(m)) {
-		m->ww += getsystraywidth();
+		m->wwo += getsystraywidth();
 	}
-	XCopyArea(dpy, dc.drawable, m->barwin, dc.gc, 0, 0, m->ww, bh, 0, 0);
+	XCopyArea(dpy, dc.drawable, m->barwin, dc.gc, 0, 0, m->wwo, bh, 0, 0);
 	XSync(dpy, False);
 }
 
@@ -2269,10 +2270,10 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 
 void
 resizebarwin(Monitor *m) {
-	unsigned int w = m->ww;
+	unsigned int w = m->wwo;
 	if(showsystray && m == systraytomon(m))
 		w -= getsystraywidth();
-	XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, w, bh);
+	XMoveResizeWindow(dpy, m->barwin, m->wxo, m->by, w, bh);
 }
 
 void
@@ -3129,7 +3130,7 @@ updateborderswidth(Monitor* m) {
 	for(c = m->clients; c; c = c->next)
 		if (ISVISIBLE(c) && !c->nofocus && !c->isfullscreen) {
 			bw = 0;
-			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange) && !c->noborder)
+			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange || m->vs->showdock) && !c->noborder)
 				bw = m->vs->lt[m->vs->curlt]->borderpx;
 			if (c->bw != bw) {
 				c->bw = bw;
@@ -3140,10 +3141,6 @@ updateborderswidth(Monitor* m) {
 	if (changed)
 		XSync(dpy, False);
 	if (m == mons) {
-		if (m->vs->showdock)
-			m->mh = m->mho - m->mho * 45 / 1000;
-		else
-			m->mh = m->mho;
 		updatebarpos(m);
 	}
 }
@@ -3188,6 +3185,9 @@ updatebarpos(Monitor *m) {
 	}
 	else
 		m->by = -bh;
+	m->wyo = m->wy;
+	m->who = m->wh;
+	updatedockpos(m);
 }
 
 void
@@ -3226,6 +3226,31 @@ updatecurrentdesktop(void) {
 	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 }
  
+void
+updatedockpos(Monitor *m) {
+	if (m->vs->showdock) {
+		switch (dockposition)
+		{
+		case Top:
+			m->wy = m->wyo + m->who * 45 / 1000;
+		case Bottom:
+			m->wh = m->who - m->who * 45 / 1000;
+			break;
+		case Left:
+			m->wx = m->wxo + m->wwo * 25 / 1000;
+		case Right:
+			m->ww = m->wwo - m->wwo * 25 / 1000;
+			break;
+		}
+	}
+	else {
+		m->wx = m->wxo;
+		m->wy = m->wyo;
+		m->ww = m->wwo;
+		m->wh = m->who;
+	}
+}
+
 void
 killclocks(void) {
 	Monitor *m;
@@ -3280,10 +3305,10 @@ updategeom(void) {
 		}
 		for(i = 0, m = mons; i < n && m; m = m->next, i++) {
 			m->num = i;
-			m->mx = m->wx = unique[i].x_org;
-			m->my = m->wy = unique[i].y_org;
-			m->mw = m->ww = unique[i].width;
-			m->mho = m->mh = m->wh = unique[i].height;
+			m->wxo = m->mx = m->wx = unique[i].x_org;
+			m->wyo = m->my = m->wy = unique[i].y_org;
+			m->wwo = m->mw = m->ww = unique[i].width;
+			m->who = m->mh = m->wh = unique[i].height;
 			updatebarpos(m);
 		}
 		free(unique);
@@ -3322,7 +3347,7 @@ updategeom(void) {
 			mons = createmon();
 		if(mons->mw != sw || mons->mh != sh) {
 			mons->mw = mons->ww = sw;
-			mons->mho = mons->mh = mons->wh = sh;
+			mons->mh = mons->wh = sh;
 			updatebarpos(mons);
 		}
 	}
