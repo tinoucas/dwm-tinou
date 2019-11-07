@@ -113,8 +113,24 @@ static void readterminal (const struct nx_json *js) {
 }
 
 static void readstartupscript (const struct nx_json *js) {
-	userscript  = calloc(strlen(js->text_value) + 1, sizeof(char));
+	userscript = calloc(strlen(js->text_value) + 1, sizeof(char));
 	strcpy(userscript, js->text_value);
+}
+
+static void readdockposition (const struct nx_json *js) {
+	const struct {
+		const char* name;
+		ScreenSide side;
+	} sides[] = {
+		{ "bottom", Bottom },
+		{ "top",    Top    },
+		{ "left",   Left   },
+		{ "right",  Right  },
+	};
+
+	for (int i = 0; i < LENGTH(sides); ++i)
+		if (!strcmp(js->text_value, sides[i].name))
+			dockposition = sides[i].side;
 }
 
 static void readconfig () {
@@ -144,6 +160,8 @@ static void readconfig () {
 				readterminal(js);
 			else if (!strcmp(js->key, "startupscript"))
 				readstartupscript(js);
+			else if (!strcmp(js->key, "dockposition"))
+				readdockposition(js);
 		}
 		nx_json_free(json);
 		free(content);
