@@ -182,6 +182,7 @@ typedef struct {
 	void (*arrange)(Monitor *);
 	const char *name;
 	int borderpx;
+	Bool showdock;
 } Layout;
 
 struct ViewStack;
@@ -2594,6 +2595,7 @@ monsetlayout(Monitor *m, const void* v) {
 		}
 		m->vs->curlt ^= 1;
 		m->vs->lt[m->vs->curlt] = (Layout *)v;
+		m->vs->showdock = ((Layout *)v)->showdock;
 		strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 	}
 }

@@ -53,7 +53,7 @@ static const unsigned int systrayspacing = 2;   /* systray spacing */
 static const Bool systraypinningfailfirst = True;   /* True: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
 static const Bool showsystray       = True;     /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
-static const Bool showdock          = False;
+static const Bool showdock          = True;
 static const Bool topbar            = True;    /* False means bottom bar */
 static const int windowgap			= 36; /* gap between windows */
 static const int focusmonstart		= 0;
@@ -92,12 +92,12 @@ static double barOpacity = CLEAR;
 #define LT(a) a, #a
 
 static const Layout layouts[] = {
-	/* symbol     arrange function   window border width */
-	{ "[]=",      LT(tile),              DEFAULT_BORDER_PX },
-	{ "[]@",      LT(spiral),            DEFAULT_BORDER_PX },
-	{ "[]G",      LT(dwindle),           DEFAULT_BORDER_PX },
-	{ "><>",      NULL, "",              DEFAULT_BORDER_PX },
-	{ "[M]",      LT(monocle),           0 },
+	/* symbol     arrange function       win border width   showdock */
+	{ "[]=",      LT(tile),              DEFAULT_BORDER_PX, True  },
+	{ "[]@",      LT(spiral),            DEFAULT_BORDER_PX, True  },
+	{ "[]G",      LT(dwindle),           DEFAULT_BORDER_PX, True  },
+	{ "><>",      NULL, "",              DEFAULT_BORDER_PX, True  },
+	{ "[M]",      LT(monocle),           0,                 False },
 };
 
 enum layout {

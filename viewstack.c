@@ -133,6 +133,7 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 	if (v->lt[v->curlt] != lt)
 		v->curlt ^= 1;
 	v->lt[v->curlt] = lt;
+	v->showdock = lt->showdock;
 }
 
 void
