@@ -1,3 +1,26 @@
+Main Modifications:
+ * json configuration for window rules, views, font, terminal, dock position
+ * rules can have window opacity (kind of useless since compton.conf can handle it)
+ * rules can have prefered layout to switch to for a window
+ * all colors read from a separate config file (using updateDwmColor.sh with colorart to extract colors from wallpaper)
+ * gaps between tiled windows
+ * systray (might get removed because of a possible incompatibility with latte-dock)
+ * shortcut to toggle space for a dock (can be positioned on any side of the screen)
+ * enough EWMH compliance to have dock able to auto hide (dodge windows), and switch to view with an open program
+ * compatible with rofi
+ * launches an instance of oclock on each monitor a startup
+ * win-tab shortcut tries to never toggle to an empty view (as long as there are windows), in a most recently viewed order
+ * special "v" layout for fullscreen windows (gets priority for win-tab view toggle)
+ * mapping to send window to other monitor, or swap entire view
+ * possible to remap any mouse button to a shortcut in a per-window-rule basis
+
+
+For latte-dock, you need to have started /usr/lib/kactivitymanagerd to track opened programs
+And you need to tweak its icon size to fit to space provided (or change the space size).
+
+
+Original dwm README (from time of fork):
+
 dwm - dynamic window manager
 ============================
 dwm is an extremely fast, small, and dynamic window manager for X.
