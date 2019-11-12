@@ -10,7 +10,7 @@ Main Modifications:
  * compatible with rofi
  * launches an instance of oclock on each monitor a startup
  * win-tab shortcut tries to never toggle to an empty view (as long as there are windows), in a most recently viewed order
- * special "v" layout for fullscreen windows (gets priority for win-tab view toggle)
+ * special "v" view for fullscreen windows (gets priority for win-tab view toggle)
  * mapping to send window to other monitor, or swap entire view
  * possible to remap any mouse button to a shortcut in a per-window-rule basis
 
