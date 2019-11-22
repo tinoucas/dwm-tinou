@@ -91,7 +91,7 @@ enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
 enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
-	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetWMWindowType,
+	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
 	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
@@ -310,6 +310,7 @@ static void grabremap(Client *c, Bool focused);
 static void initfont(const char *fontstr);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
+static void killclientimpl (Client *c);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
@@ -1205,6 +1206,9 @@ clientmessage(XEvent *e) {
 		focus(c);
 		arrange(c->mon);
 	}
+	else if (cme->message_type == netatom[NetCloseWindow]) {
+		killclientimpl(c);
+	}
 }
 
 void
@@ -1906,11 +1910,16 @@ killclient(const Arg *arg) {
 
 	if(!selmon->sel)
 		return;
-	if(!sendevent(selmon->sel->win, wmatom[WMDelete], NoEventMask, wmatom[WMDelete], CurrentTime, 0 , 0, 0)) {
+	killclientimpl(selmon->sel);
+}
+
+void
+killclientimpl(Client *c) {
+	if(c != selmon->sel || !sendevent(c->win, wmatom[WMDelete], NoEventMask, wmatom[WMDelete], CurrentTime, 0 , 0, 0)) {
 		XGrabServer(dpy);
 		XSetErrorHandler(xerrordummy);
 		XSetCloseDownMode(dpy, DestroyAll);
-		XKillClient(dpy, selmon->sel->win);
+		XKillClient(dpy, c->win);
 		XSync(dpy, False);
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
@@ -2739,6 +2748,7 @@ setup(void) {
 	wmatom[WMState] = XInternAtom(dpy, "WM_STATE", False);
 	wmatom[WMTakeFocus] = XInternAtom(dpy, "WM_TAKE_FOCUS", False);
 	netatom[NetActiveWindow] = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+	netatom[NetCloseWindow] = XInternAtom(dpy, "_NET_CLOSE_WINDOW", False);
 	netatom[NetSupported] = XInternAtom(dpy, "_NET_SUPPORTED", False);
 	netatom[NetSystemTray] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_S0", False);
 	netatom[NetSystemTrayOP] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_OPCODE", False);
