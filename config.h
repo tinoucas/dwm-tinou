@@ -51,7 +51,7 @@ static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
 static const unsigned int systrayspacing = 2;   /* systray spacing */
 static const Bool systraypinningfailfirst = True;   /* True: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
-static const Bool showsystray       = True;     /* False means no systray */
+static const Bool showsystray       = False;    /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool showdock          = True;
 static const Bool topbar            = True;    /* False means bottom bar */
@@ -217,6 +217,8 @@ static Key keys[] = {
     { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
     { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
     { MODKEY,                       XK_u,      toggleswallow,    {0} },
+    {      0,         XF86XK_KbdBrightnessUp,   spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh up") },
+    {      0,         XF86XK_KbdBrightnessDown, spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh down") },
     {      0,         XF86XK_MonBrightnessUp,   spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh up") },
     {      0,         XF86XK_MonBrightnessDown, spawn, SHCMD("/opt/scripts/thinkpad-backlight.sh down") },
     {      0,         XF86XK_AudioRaiseVolume,  spawn, SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
