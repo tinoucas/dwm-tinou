@@ -57,7 +57,7 @@ static Rule *getNextRule (const struct nx_json* json, Rule* rule) {
 	return rule;
 }
 
-static void readjsonrules (const struct nx_json *jsonRules) {
+static void readrules (const struct nx_json *jsonRules) {
 	if (jsonRules) {
 		rules = callocrule();
 		Rule *rule = rules;
@@ -133,12 +133,34 @@ static void readdockposition (const struct nx_json *js) {
 			dockposition = sides[i].side;
 }
 
+static void readdockmonitor (const struct nx_json *js) {
+    dockmonitor = js->int_value;
+}
+
+#define ATTRIBUTE(a) { #a, &read##a }
+
 static void readconfig () {
 	const char* homedir = getenv("HOME");
 	const char* relconfig = ".config/dwm/config.json";
 	char* rulesFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
 	char* content;
 	const nx_json *json, *js;
+    int att;
+	const struct
+	{
+		const char* tagname;
+		void (*read)(const struct nx_json *js);
+	}
+	readattributes[] = {
+        ATTRIBUTE(rules),
+		ATTRIBUTE(tags),
+		ATTRIBUTE(font),
+		ATTRIBUTE(terminal),
+		ATTRIBUTE(startupscript),
+		ATTRIBUTE(dockposition),
+		ATTRIBUTE(dockmonitor),
+	};
+
 
 	strcpy(rulesFile, homedir);
 	strcat(rulesFile, "/");
@@ -150,18 +172,9 @@ static void readconfig () {
 		json = nx_json_parse_utf8(content);
 
 		for (js = json->child; js; js = js->next) {
-			if (!strcmp(js->key, "rules"))
-				readjsonrules(js);
-			else if (!strcmp(js->key, "tags"))
-				readtags(js);
-			else if (!strcmp(js->key, "font"))
-				readfont(js);
-			else if (!strcmp(js->key, "terminal"))
-				readterminal(js);
-			else if (!strcmp(js->key, "startupscript"))
-				readstartupscript(js);
-			else if (!strcmp(js->key, "dockposition"))
-				readdockposition(js);
+            for (att = 0; att < LENGTH(readattributes); ++att)
+                if (!strcmp(js->key, readattributes[att].tagname))
+                    (*readattributes[att].read)(js);
 		}
 		nx_json_free(json);
 		free(content);
