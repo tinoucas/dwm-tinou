@@ -3210,25 +3210,29 @@ updateclientlist() {
 
 void
 updateclientdesktop(Client* c) {
-	long rawdata[] = { c->tags };
-	int i=0;
-
-	while(*rawdata >> i+1) {
-		i++;
+	if (c->mon->num == dockmonitor) {
+		long rawdata[] = { c->tags };
+		int i=0;
+	
+		while(*rawdata >> i+1) {
+			i++;
+		}
+		long data[] = { i };
+		XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
 	}
-	long data[] = { i };
-	XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
 }
 
 void
 updatecurrentdesktop(void) {
-	long rawdata[] = { selmon->vs->tagset };
-	int i=0;
-	while(*rawdata >> i+1){
-		i++;
+	if (selmon->num == dockmonitor) {
+		long rawdata[] = { selmon->vs->tagset };
+		int i=0;
+		while(*rawdata >> i+1){
+			i++;
+		}
+		long data[] = { i };
+		XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 	}
-	long data[] = { i };
-	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 }
  
 void
