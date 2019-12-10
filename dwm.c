@@ -3008,7 +3008,8 @@ togglebar(const Arg *arg) {
 
 void
 toggledock(const Arg *arg) {
-	monshowdock(selmon, !selmon->vs->showdock);
+	if (selmon->num == dockmonitor)
+		monshowdock(selmon, !selmon->vs->showdock);
 }
 
 void
@@ -3134,7 +3135,7 @@ updateborderswidth(Monitor* m) {
 	for(c = m->clients; c; c = c->next)
 		if (ISVISIBLE(c) && !c->nofocus && !c->isfullscreen) {
 			bw = 0;
-			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange || m->vs->showdock) && !c->noborder)
+			if ((nc > 1 || c->isfloating || !m->vs->lt[m->vs->curlt]->arrange || m->vs->showdock && m->num == dockmonitor) && !c->noborder)
 				bw = m->vs->lt[m->vs->curlt]->borderpx;
 			if (c->bw != bw) {
 				c->bw = bw;
@@ -3232,7 +3233,7 @@ updatecurrentdesktop(void) {
  
 void
 updatedockpos(Monitor *m) {
-	if (m->vs->showdock) {
+	if (m->vs->showdock && m->num == dockmonitor) {
 		switch (dockposition)
 		{
 		case Top:
