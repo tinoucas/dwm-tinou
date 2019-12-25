@@ -3655,6 +3655,7 @@ monview(Monitor* m, unsigned int ui) {
 		newtagset = findtoggletagset(m);
 	viewstackadd(m, newtagset, True);
 	updatecurrentdesktop();
+	selmon->sel = NULL;
 }
 
 void
