@@ -1436,9 +1436,8 @@ drawbar(Monitor *m) {
 	drawtext(m->ltsymbol, dc.norm, False);
 	dc.x += dc.w;
 	x = dc.x;
-	if(m == selmon || statusallmonitor) { /* status is only drawn on selected monitor */
-		if (m != selmon)
-		{
+	if(m == selmon || statusallmonitor) {
+		if (m != selmon) {
 			dc.x = m->wwo - (int)getsystraywidth();
 			dc.w = (int)getsystraywidth();
 			drawtext(ooftraysbl, dc.norm, False);
@@ -1456,7 +1455,7 @@ drawbar(Monitor *m) {
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
-		if(m->sel) {
+		if(m->sel && m->sel->tags != TAGMASK) {
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
@@ -1652,17 +1651,14 @@ focusstack(const Arg *arg) {
 		return;
 	if(arg->i > 0) {
 		c = selmon->sel->next;
-		while (c)
-		{
+		while (c) {
 			if (ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK)
 				break;
 			c = c->next;
 		}
-		if(!c)
-		{
+		if(!c) {
 			c = selmon->clients;
-			while (c != selmon->sel)
-			{
+			while (c != selmon->sel) {
 				if (ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK)
 					break;
 				c = c->next;
@@ -1907,8 +1903,7 @@ keypress(XEvent *e) {
 
 void
 killclient(const Arg *arg) {
-
-	if(!selmon->sel)
+	if(!selmon->sel || selmon->sel->tags == TAGMASK)
 		return;
 	killclientimpl(selmon->sel);
 }
