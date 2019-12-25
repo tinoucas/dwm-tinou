@@ -24,7 +24,7 @@ movetomon (const unsigned int views, Monitor *msrc, Monitor *mdst) {
 	ClientListItem* item = NULL;
 
 	for(c = msrc->stack; c; c = c->snext)
-		if (c->tags & views) {
+		if (c->tags & views && !c->isdock) {
 			item = (ClientListItem*)calloc(1, sizeof(ClientListItem));
 			item->c = c;
 			item->next = nextitem;
