@@ -2449,8 +2449,11 @@ sendmon(Client *c, Monitor *m) {
 	unfocus(c, True);
 	detach(c);
 	detachstack(c);
-	if (!hasclientson(m, c->tags))
+	if (!hasclientson(m, c->tags)) {
 		settagsetlayout(m, c->tags, c->mon->vs->lt[c->mon->vs->curlt]);
+		m->vs->showdock = c->mon->vs->showdock;
+		m->vs->showbar = c->mon->vs->showbar;
+	}
 	c->mon = m;
 	attach(c);
 	attachstack(c);
@@ -3224,12 +3227,15 @@ updateclientdesktop(Client* c) {
 
 void
 updatecurrentdesktop(void) {
-	if (selmon->num == dockmonitor) {
-		long rawdata[] = { selmon->vs->tagset };
+	Monitor *m = mons;
+
+	while (m && m->num != dockmonitor)
+		m = m->next;
+	if (m) {
+		long rawdata[] = { m->vs->tagset };
 		int i=0;
-		while(*rawdata >> i+1){
+		while(*rawdata >> i+1)
 			i++;
-		}
 		long data[] = { i };
 		XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 	}
