@@ -1436,9 +1436,8 @@ drawbar(Monitor *m) {
 	drawtext(m->ltsymbol, dc.norm, False);
 	dc.x += dc.w;
 	x = dc.x;
-	if(m == selmon || statusallmonitor) { /* status is only drawn on selected monitor */
-		if (m != selmon)
-		{
+	if(m == selmon || statusallmonitor) {
+		if (m != selmon) {
 			dc.x = m->wwo - (int)getsystraywidth();
 			dc.w = (int)getsystraywidth();
 			drawtext(ooftraysbl, dc.norm, False);
@@ -1456,7 +1455,7 @@ drawbar(Monitor *m) {
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
-		if(m->sel) {
+		if(m->sel && m->sel->tags != TAGMASK) {
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
@@ -1652,17 +1651,14 @@ focusstack(const Arg *arg) {
 		return;
 	if(arg->i > 0) {
 		c = selmon->sel->next;
-		while (c)
-		{
+		while (c) {
 			if (ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK)
 				break;
 			c = c->next;
 		}
-		if(!c)
-		{
+		if(!c) {
 			c = selmon->clients;
-			while (c != selmon->sel)
-			{
+			while (c != selmon->sel) {
 				if (ISVISIBLE(c) && !c->nofocus && c->tags != TAGMASK)
 					break;
 				c = c->next;
@@ -1907,8 +1903,7 @@ keypress(XEvent *e) {
 
 void
 killclient(const Arg *arg) {
-
-	if(!selmon->sel)
+	if(!selmon->sel || selmon->sel->tags == TAGMASK)
 		return;
 	killclientimpl(selmon->sel);
 }
@@ -2449,8 +2444,11 @@ sendmon(Client *c, Monitor *m) {
 	unfocus(c, True);
 	detach(c);
 	detachstack(c);
-	if (!hasclientson(m, c->tags))
+	if (!hasclientson(m, c->tags)) {
 		settagsetlayout(m, c->tags, c->mon->vs->lt[c->mon->vs->curlt]);
+		m->vs->showdock = c->mon->vs->showdock;
+		m->vs->showbar = c->mon->vs->showbar;
+	}
 	c->mon = m;
 	attach(c);
 	attachstack(c);
@@ -3210,25 +3208,32 @@ updateclientlist() {
 
 void
 updateclientdesktop(Client* c) {
-	long rawdata[] = { c->tags };
-	int i=0;
-
-	while(*rawdata >> i+1) {
-		i++;
+	if (c->mon->num == dockmonitor) {
+		long rawdata[] = { c->tags };
+		int i=0;
+	
+		while(*rawdata >> i+1) {
+			i++;
+		}
+		long data[] = { i };
+		XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
 	}
-	long data[] = { i };
-	XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
 }
 
 void
 updatecurrentdesktop(void) {
-	long rawdata[] = { selmon->vs->tagset };
-	int i=0;
-	while(*rawdata >> i+1){
-		i++;
+	Monitor *m = mons;
+
+	while (m && m->num != dockmonitor)
+		m = m->next;
+	if (m) {
+		long rawdata[] = { m->vs->tagset };
+		int i=0;
+		while(*rawdata >> i+1)
+			i++;
+		long data[] = { i };
+		XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 	}
-	long data[] = { i };
-	XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
 }
  
 void

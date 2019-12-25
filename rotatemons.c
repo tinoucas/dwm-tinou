@@ -91,6 +91,7 @@ rotatemonitor(const Arg* arg) {
 		arrange(m);
 		lastm = m;
 	}
+	updatecurrentdesktop();
 	rotatingMons = False;
 }
 
