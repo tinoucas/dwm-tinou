@@ -110,8 +110,8 @@ enum layout {
 };
 
 static const Rule defaultrule = 
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname, next */
-    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , NULL    , NULL };
+	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isdock, procname, next */
+    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , False , NULL    , NULL };
 
 static Rule* rules = NULL;
 
@@ -148,8 +148,8 @@ static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/script
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const char *rofiwindowcmd[] = { "rofi", "-modi", "combi", "-show", "combi", "-combi-modi", "window,drun" , NULL };
 static const Rule clockrule =
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , procname */
-    {  NULL            , "oclock"            , NULL        , alltags   , True  , False , True  , SPCTR , True  , True  , True  ,-1   , NULL   , NULL      , False   , NULL };
+	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isdock, procname */
+    {  NULL            , "oclock"            , NULL        , alltags   , True  , False , True  , SPCTR , True  , True  , True  ,-1   , NULL   , NULL      , False   , False , NULL };
 
 static Key keys[] = {
     /* modifier                     key        function        argument */

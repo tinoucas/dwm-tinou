@@ -146,6 +146,7 @@ struct Client {
 	double opacity;
 	Bool rh;
 	const Remap* remap;
+	Bool isdock;
 };
 
 typedef struct {
@@ -234,6 +235,7 @@ struct Rule {
 	const Remap* remap;
 	const Layout* preflayout;
 	Bool istransient;
+	Bool isdock;
 	char* procname;
 	Rule *next;
 };
@@ -508,6 +510,8 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->isfixed = True;
 	if (r->noswallow)
 		c->noswallow = True;
+	if (r->isdock)
+		c->isdock = True;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
 	if(m)
 		c->mon = m;
@@ -581,8 +585,8 @@ applyrules(Client *c) {
 			{
 				applyclientrule(c, r, istransient);
 				lastr = r;
-				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d'\n",
-						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1);
+				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d', isdock == '%s'\n",
+						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1, c->isdock ? "true" : "false");
 				found = True;
 			}
 			++i;
@@ -1456,7 +1460,7 @@ drawbar(Monitor *m) {
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
-		if(m->sel && m->sel->tags != TAGMASK) {
+		if(m->sel && !m->sel->isdock) {
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
@@ -1904,7 +1908,7 @@ keypress(XEvent *e) {
 
 void
 killclient(const Arg *arg) {
-	if(!selmon->sel || selmon->sel->tags == TAGMASK)
+	if(!selmon->sel || selmon->sel->isdock)
 		return;
 	killclientimpl(selmon->sel);
 }
