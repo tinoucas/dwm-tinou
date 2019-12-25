@@ -360,6 +360,7 @@ static void swap(Client *c1, Client *c2);
 static void swapclientscontent(Client *c1, Client *c2);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
+static long tagsettonum (unsigned int tagset);
 static int textnw(const char *text, unsigned int len);
 static void tile(Monitor *);
 static void togglebar(const Arg *arg);
@@ -2965,6 +2966,15 @@ tagmon(const Arg *arg) {
 	sendmon(selmon->sel, dirtomon(arg->i));
 }
 
+long
+tagsettonum (unsigned int tagset) {
+	long i=0;
+
+	while(tagset >> i+1)
+		i++;
+	return i;
+}
+
 int
 textnw(const char *text, unsigned int len) {
 	PangoRectangle r;
@@ -3208,31 +3218,29 @@ updateclientlist() {
 
 void
 updateclientdesktop(Client* c) {
+	long data;
+
 	if (c->mon->num == dockmonitor) {
-		long rawdata[] = { c->tags };
-		int i=0;
-	
-		while(*rawdata >> i+1) {
-			i++;
-		}
-		long data[] = { i };
-		XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)data, 1);
+		data = tagsettonum(ISVISIBLE(c) ? c->mon->vs->tagset : c->tags);
+
+		XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&data, 1);
 	}
 }
 
 void
 updatecurrentdesktop(void) {
 	Monitor *m = mons;
+	Client *c;
+	long data;
 
 	while (m && m->num != dockmonitor)
 		m = m->next;
 	if (m) {
-		long rawdata[] = { m->vs->tagset };
-		int i=0;
-		while(*rawdata >> i+1)
-			i++;
-		long data[] = { i };
-		XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 1);
+		data = tagsettonum(m->vs->tagset);
+
+		XChangeProperty(dpy, root, netatom[NetCurrentDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&data, 1);
+		for(c = m->clients; c; c = c->next)
+			updateclientdesktop(c);
 	}
 }
  
