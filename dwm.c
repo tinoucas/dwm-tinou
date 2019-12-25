@@ -2257,14 +2257,15 @@ updatedpi() {
 
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
-	int halfgap = windowgap / 2;
-	unsigned int nc = 0;
+	Bool isfloating = (c->isfloating || !c->mon->vs->lt[c->mon->vs->curlt]->arrange);
+	Bool ismonocle = c->mon->vs->lt[c->mon->vs->curlt]->arrange == &monocle;
+	unsigned int nc;
 
-	if (!c->isfloating) {
+	if (!isfloating && !ismonocle) {
 		nc = counttiledclients(c->mon);
-		if(nc > 1 && c->mon->vs->lt[c->mon->vs->curlt]->arrange && c->mon->vs->lt[c->mon->vs->curlt]->arrange != &monocle) {
-			x += halfgap;
-			y += halfgap;
+		if(nc > 1) {
+			x += windowgap / 2;
+			y += windowgap / 2;
 			w -= windowgap;
 			h -= windowgap;
 		}
