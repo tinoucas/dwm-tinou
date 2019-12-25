@@ -3017,8 +3017,11 @@ togglebar(const Arg *arg) {
 
 void
 toggledock(const Arg *arg) {
-	if (selmon->num == dockmonitor)
-		monshowdock(selmon, !selmon->vs->showdock);
+	Monitor *m;
+
+	for (m = mons; m && m->num != dockmonitor; m = m->next);
+	if (m)
+		monshowdock(m, !m->vs->showdock);
 }
 
 void
