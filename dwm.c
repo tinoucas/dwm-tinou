@@ -236,6 +236,7 @@ struct Rule {
 	const Layout* preflayout;
 	Bool istransient;
 	Bool isdock;
+	Bool isfullscreen;
 	char* procname;
 	Rule *next;
 };
@@ -452,6 +453,7 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
+static Window backwin = 0;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -512,6 +514,8 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->noswallow = True;
 	if (r->isdock)
 		c->isdock = True;
+	if (r->isfullscreen)
+		c->isfullscreen = 1;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
 	if(m)
 		c->mon = m;
@@ -1983,8 +1987,11 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	}
-	if (c->nofocus)
+	if(c->nofocus) {
 		XLowerWindow(dpy, c->win);
+		if (backwin != 0)
+			XLowerWindow(dpy, backwin);
+	}
 	else if(c->isfloating)
 		XRaiseWindow(dpy, c->win);
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
@@ -2009,6 +2016,12 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
+	if (c->isfullscreen) {
+		backwin = c->win;
+		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+        if (c->nofocus)
+            XLowerWindow(dpy, c->win);
+    }
 	if (c->nofocus)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)

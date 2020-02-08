@@ -30,6 +30,7 @@ static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 		PARSE_ATTRIBUTE(istransient),
 		PARSE_ATTRIBUTE(procname),
 		PARSE_ATTRIBUTE(isdock),
+		PARSE_ATTRIBUTE(isfullscreen),
 	};
 
 	for (i = 0; i < LENGTH(parsers); ++i)

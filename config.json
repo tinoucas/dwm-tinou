@@ -1,13 +1,13 @@
 {
 	"font": "Monospace Regular 14",
-	"tags": [ "main", "chat", "files", "text", "edit", "dl", "trrnt", "music", "misc", "@", "v" ],
+	"tags": [ "term", "chat", "files", "text", "5", "music", "7", "vm", "9", "@", "v" ],
 	"terminal": "urxvt",
-	"startupscript": "/home/tinou/hacks/scripts/startPlank.sh",
+	"dockposition": "left",
 	"rules": [
 		{
 			"class": "keepassxc",
 			"instance": "keepassxc",
-			"tag": "misc"
+			"tag": "7"
 		},
 		{
 			"class": "veromix",
@@ -22,35 +22,13 @@
 		{
 			"class": "kitty",
 			"instance": "kitty",
-			"isterminal": 1,
 			"istransparent": 1.0
 		},
 		{
-			"class": "kitty",
-			"instance": "kitty",
-			"title": "mon0",
-			"isterminal": 1,
-			"istransparent": 1.0,
-			"monitor":   0
-		},
-		{
-			"class": "kitty",
-			"instance": "kitty",
-			"title": "mon1",
-			"isterminal": 1,
-			"istransparent": 1.0,
-			"monitor":   1
-		},
-		{
 			"class": "URxvt",
-			"tag": "main",
-			"istransparent": 0.75
-		},
-		{
-			"class": "URxvt",
-			"instance": "screen",
-			"tag": "main",
-			"istransparent": 0.75
+			"tag": "term",
+			"istransparent": 1.0,
+			"rh":   0
 		},
 		{
 			"instance": "ghost_terminal",
@@ -58,12 +36,19 @@
 			"nofocus": 1
 		},
 		{
+			"class": "URxvt",
+			"instance": "build_gradle",
+			"isfloating": 1,
+			"nofocus": 1,
+			"tag": 0
+		},
+		{
 			"instance": "xterm",
 			"istransparent": 0.75
 		},
 		{
 			"class": "Gimp",
-			"tag": "edit",
+			"tag": "5",
 			"istransparent": 1.0,
 			"rh":   0
 		},
@@ -163,8 +148,14 @@
 		},
 		{
 			"instance": "screen",
-			"tag": "main",
+			"tag": "term",
 			"istransparent": 0.75
+		},
+		{
+			"class": "qimgv",
+			"isfloating": 1,
+			"istransparent": 1.0,
+			"rh":   1
 		},
 		{
 			"class": "feh",
@@ -301,7 +292,7 @@
 		{
 			"class": "qtwebflix",
 			"instance": "qtwebflix",
-			"tag": "v",
+			"tag": "9",
 			"noswallow": 1,
 			"istransparent": 1.0,
 			"remap": "mpv",
@@ -376,13 +367,14 @@
 			"istransparent": 1.0
 		},
 		{
-			"instance": "gvim",
+			"class": "nvim-qt",
+			"instance": "nvim-qt",
 			"tag": "text",
 			"istransparent": 0.75,
 			"rh":   0
 		},
 		{
-			"instance": "vim",
+			"instance": "gvim",
 			"tag": "text",
 			"istransparent": 0.75,
 			"rh":   0
@@ -400,23 +392,23 @@
 		},
 		{
 			"instance": "MixVibes Cross",
-			"tag": "misc",
+			"tag": "7",
 			"istransparent": 1.0
 		},
 		{
 			"instance": "Cross Preferences",
-			"tag": "misc",
+			"tag": "7",
 			"isfloating": 1,
 			"istransparent": 1.0
 		},
 		{
 			"class": "Evince",
-			"tag": "edit",
+			"tag": "5",
 			"istransparent": 1.0
 		},
 		{
 			"class": "FBReader",
-			"tag": "edit",
+			"tag": "5",
 			"istransparent": 0.75
 		},
 		{
@@ -428,22 +420,24 @@
 			"noborder": 1
 		},
 		{
-			"class": "Display",
-			"tag": "main",
-			"isfloating": 1,
-			"istransparent": 1.0,
-			"nofocus": 1,
-			"noborder": 1
-		},
-		{
 			"class": "broken",
 			"title": "Renoise",
-			"tag": "edit",
+			"tag": "5",
 			"istransparent": 1.0
 		},
 		{
+			"tag": "vm",
+			"isfloating": 1,
+			"procname": "qemu-system-x86_64" 
+		},
+		{
+			"tag": "vm",
+			"isfloating": 1,
+			"procname": "qemu-system-x86"
+		},
+		{
 			"class": "emulator64-arm",
-			"tag": "misc",
+			"tag": "vm",
 			"isfloating": 1,
 			"istransparent": 1.0
 		},
@@ -454,21 +448,21 @@
 			"istransparent": 0.75
 		},
 		{
-			"instance": "Telegram",
+			"instance": "telegram-desktop",
 			"tag": "chat",
 			"istransparent": 0.75
 		},
 		{
 			"class": "Steam",
 			"instance": "Steam",
-			"tag": "misc",
+			"tag": "7",
 			"istransparent": 1.0,
 			"preflayout": "monocle"
 		},
 		{
 			"class": "Steam.exe",
 			"instance": "Steam.exe",
-			"tag": "misc",
+			"tag": "7",
 			"istransparent": 1.0,
 			"noborder": 1,
 			"rh":   0
@@ -476,7 +470,7 @@
 		{
 			"class": "VPN Unlimited",
 			"instance": "vpn-unlimited",
-			"tag": "misc",
+			"tag": "7",
 			"isfloating": 1,
 			"istransparent": 1.0,
 			"monitor":  1
@@ -484,12 +478,13 @@
 		{
 			"class": "qBittorrent",
 			"instance": "qbittorrent",
-			"tag": "trrnt",
+			"tag": "7",
 			"istransparent": 1.0
 		},
 		{
-			"class": "JDownloader",
-			"tag": "dl",
+			"class": "Vmware",
+			"instance": "vmware",
+			"tag": "vm",
 			"istransparent": 1.0
 		},
 		{
@@ -510,7 +505,7 @@
 		{
 			"class": "Pavucontrol",
 			"instance": "pavucontrol",
-			"tag": "music",
+			"tag": "7",
 			"istransparent": 0.92,
 			"monitor":  1
 		},
@@ -519,6 +514,22 @@
 			"instance": "plank",
 			"noborder": 1,
 			"nofocus": 1
+		},
+		{
+			"class": "lattedock",
+			"instance": "latte-dock",
+			"noborder": 1,
+			"tag": 0,
+			"rh": 1,
+			"isfloating": 1,
+			"isdock": 1
+		},
+		{
+			"class": "plasmashell",
+			"instance": "plasmashell",
+			"nofocus": 1,
+			"noborder": 1,
+			"isfullscreen": 1
 		}
 	]
 }

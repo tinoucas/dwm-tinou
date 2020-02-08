@@ -110,3 +110,7 @@ static void procnameparser (const struct nx_json *js, Rule *rule) {
 static void isdockparser (const struct nx_json *js, Rule *rule) {
 	rule->isdock = (js->int_value != 0);
 }
+
+static void isfullscreenparser (const struct nx_json *js, Rule *rule) {
+	rule->isfullscreen = (js->int_value != 0);
+}
