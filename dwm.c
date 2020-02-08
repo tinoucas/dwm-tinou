@@ -215,6 +215,7 @@ struct Monitor {
 	Window barwin;
 	Bool hasclock;
 	ViewStack *vs;
+	Window backwin;
 };
 
 
@@ -453,7 +454,6 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
-static Window backwin = 0;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -1933,6 +1933,7 @@ killclientimpl(Client *c) {
 void
 manage(Window w, XWindowAttributes *wa) {
 	Client *c, *t = NULL, *term = NULL;
+	Monitor *m;
 	Window trans = None;
 	XWindowChanges wc;
 	int bpx = 0;
@@ -1989,8 +1990,8 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if(c->nofocus) {
 		XLowerWindow(dpy, c->win);
-		if (backwin != 0)
-			XLowerWindow(dpy, backwin);
+		if (c->mon->backwin != 0)
+			XLowerWindow(dpy, c->mon->backwin);
 	}
 	else if(c->isfloating)
 		XRaiseWindow(dpy, c->win);
@@ -2016,11 +2017,17 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
-	if (c->isfullscreen) {
-		backwin = c->win;
-		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
-        if (c->nofocus)
-            XLowerWindow(dpy, c->win);
+	if (c->isfullscreen && c->nofocus) {
+		c->nofocus = 0;
+		for (m = mons; m; m = m->next) {
+			if (m->backwin == 0) {
+				m->backwin = c->win;
+				resizeclient(c, m->mx, m->my, m->mw, m->mh);
+				XLowerWindow(dpy, c->win);
+				c->nofocus = 1;
+				break;
+			}
+		}
     }
 	if (c->nofocus)
 		unmanage(c, False);
