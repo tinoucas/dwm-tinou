@@ -2557,14 +2557,45 @@ setfocus(Client *c) {
 	sendevent(c->win, wmatom[WMTakeFocus], NoEventMask, wmatom[WMTakeFocus], CurrentTime, 0, 0, 0);
 }
 
+Client*
+monhasfullscreenclient(Monitor *m) {
+	Client *c;
+
+	for(c = m->clients; c; c = c->next)
+		if(c->isfullscreen && c->tags == vtag)
+			return c;
+	return NULL;
+}
+
 void
 setfullscreen(Client *c, Bool fullscreen) {
-	Client *cother;
+	Monitor *m;
+	Bool fullscreendenied = False;
+	Bool attached;
+	Client *fullc;
 
 	if(fullscreen) {
-		for(cother = c->mon->clients; cother; cother = cother->next)
-			if (cother != c && cother->isfullscreen)
-				return ;
+		fullc = monhasfullscreenclient(c->mon);
+		if(fullc && fullc != c) {
+			fullscreendenied = True;
+			for(m = mons; m; m = m->next)
+				if(m != c->mon && !monhasfullscreenclient(m)) {
+					attached = (c->snext != NULL && c->next != NULL);
+					if(attached) {
+						detach(c);
+						detachstack(c);
+					}
+					c->mon = m;
+					if(attached) {
+						attach(c);
+						attachstack(c);
+					}
+					fullscreendenied = False;
+					break;
+				}
+		}
+		if(fullscreendenied)
+			return ;
 		window_opacity_set(c->win, 1.);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
@@ -3858,7 +3889,8 @@ xerror(Display *dpy, XErrorEvent *ee) {
 	|| (ee->request_code == X_GrabButton && ee->error_code == BadAccess)
 	|| (ee->request_code == X_GrabKey && ee->error_code == BadAccess)
 	|| (ee->request_code == X_CopyArea && ee->error_code == BadDrawable)
-	|| (ee->request_code == 139 && ee->error_code == BadLength))
+	|| (ee->request_code == 139 && ee->error_code == BadLength)
+	|| (ee->request_code == X_CreateWindow && ee->error_code == BadValue))
 		return 0;
 	fprintf(stderr, "dwm: fatal error: request code=%d, error code=%d\n",
 			ee->request_code, ee->error_code);
