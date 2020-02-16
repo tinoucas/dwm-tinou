@@ -139,6 +139,10 @@ static void readdockmonitor (const struct nx_json *js) {
     dockmonitor = js->int_value;
 }
 
+static void readpicomfreezeworkaround (const struct nx_json *js) {
+	picomfreezeworkaround = (js->int_value != 0);
+}
+
 #define ATTRIBUTE(a) { #a, &read##a }
 
 static void readconfig () {
@@ -161,6 +165,7 @@ static void readconfig () {
 		ATTRIBUTE(startupscript),
 		ATTRIBUTE(dockposition),
 		ATTRIBUTE(dockmonitor),
+		ATTRIBUTE(picomfreezeworkaround),
 	};
 
 

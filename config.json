@@ -3,6 +3,7 @@
 	"tags": [ "term", "chat", "files", "text", "5", "music", "7", "vm", "9", "@", "v" ],
 	"terminal": "urxvt",
 	"dockposition": "left",
+	"picomfreezeworkaround": 1,
 	"rules": [
 		{
 			"class": "keepassxc",

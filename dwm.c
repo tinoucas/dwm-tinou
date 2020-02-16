@@ -329,6 +329,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
+static void resetallsizes(Monitor *m);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -763,6 +764,8 @@ arrange(Monitor *m) {
 		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
+	if (picomfreezeworkaround)
+		resetallsizes(m);
 }
 
 void
@@ -2277,6 +2280,16 @@ updatedpi() {
 	const Arg arg = {.v = updatedpicmd };
 
 	spawn(&arg);
+}
+
+void
+resetallsizes(Monitor *m) {
+	Client *c;
+	for(c = m->clients; c; c = c->next)
+		if (ISVISIBLE(c)) {
+			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
+			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+		}
 }
 
 void
