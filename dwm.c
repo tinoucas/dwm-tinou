@@ -764,13 +764,14 @@ arrange(Monitor *m) {
 		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
-	if (picomfreezeworkaround)
+	if (picomfreezeworkaround && m)
 		resetallsizes(m);
 }
 
 void
 arrangemon(Monitor *m) {
 	Client *c;
+
 	updateborderswidth(m);
 	for (c = m->clients; c; c = c->next) {
 		updateclientdesktop(c);
@@ -2285,6 +2286,7 @@ updatedpi() {
 void
 resetallsizes(Monitor *m) {
 	Client *c;
+
 	for(c = m->clients; c; c = c->next)
 		if (ISVISIBLE(c)) {
 			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
