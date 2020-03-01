@@ -92,7 +92,7 @@ enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
+	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
@@ -236,7 +236,6 @@ struct Rule {
 	const Remap* remap;
 	const Layout* preflayout;
 	Bool istransient;
-	Bool isdock;
 	Bool isfullscreen;
 	char* procname;
 	Rule *next;
@@ -514,8 +513,6 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->isfixed = True;
 	if (r->noswallow)
 		c->noswallow = True;
-	if (r->isdock)
-		c->isdock = True;
 	if (r->isfullscreen)
 		c->isfullscreen = 1;
 	for(m = mons; m && m->num != r->monitor; m = m->next);
@@ -591,8 +588,8 @@ applyrules(Client *c) {
 			{
 				applyclientrule(c, r, istransient);
 				lastr = r;
-				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d', isdock == '%s'\n",
-						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1, c->isdock ? "true" : "false");
+				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d'\n",
+						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1);
 				found = True;
 			}
 			++i;
@@ -1965,8 +1962,8 @@ manage(Window w, XWindowAttributes *wa) {
 			term = termforwin(c);
 	}
 	/* geometry */
-	c->x = c->oldx = wa->x + c->mon->wx;
-	c->y = c->oldy = wa->y + c->mon->wy;
+	c->x = c->oldx = wa->x + c->mon->wxo;
+	c->y = c->oldy = wa->y + c->mon->wyo;
 	c->w = c->oldw = wa->width;
 	c->h = c->oldh = wa->height;
 	c->oldbw = wa->border_width;
@@ -2859,6 +2856,7 @@ setup(void) {
 	netatom[NetWMMaximized] = XInternAtom(dpy, "_NET_WM_STATE_MAXIMIZED_VERT", False);
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
+	netatom[NetWMWindowTypeDock] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
 	netatom[NetWMDesktop] = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
@@ -3745,8 +3743,14 @@ updatewindowtype(Client *c) {
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
 
-	if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
+	if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar])
 		c->isfloating = True;
+	if(wtype == netatom[NetWMWindowTypeDock]) {
+		c->isdock = True;
+		c->nofocus = True;
+		c->isfloating = True;
+		c->tags = ~0;
+		c->noborder = True;
 	}
 }
 

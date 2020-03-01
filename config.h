@@ -111,8 +111,8 @@ enum layout {
 };
 
 static const Rule defaultrule = 
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isdock, isfullscreen, procname, next */
-    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , False , False, NULL    , NULL };
+	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isfullscreen, procname, next */
+    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , False, NULL    , NULL };
 
 static Rule* rules = NULL;
 
