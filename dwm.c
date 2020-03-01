@@ -1994,7 +1994,7 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	}
-	if(c->nofocus) {
+	if(c->nofocus && !c->isdock) {
 		XLowerWindow(dpy, c->win);
 		if (c->mon->backwin)
 			XLowerWindow(dpy, c->mon->backwin);
@@ -2085,14 +2085,18 @@ intersecttags(Client *c, Monitor *m) {
 void
 updatemonocleopacities(Monitor *m) {
 	Client *c;
-	Bool ismonocleopaq = (m->vs->lt[m->vs->curlt]->arrange == &monocle && m->sel && !m->sel->isfloating);
+	Bool ismonocle = (m->vs->lt[m->vs->curlt]->arrange == &monocle);
+	Client *sel = m->sel;
 
-	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-		if (c == m->sel || !ismonocleopaq)
-			setclientopacity(c);
-		else
-			window_opacity_set(c->win, 0.);
-	}
+	if (!sel || sel->isfloating)
+		sel = nexttiled(m->clients);
+	if (sel)
+		for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+			if (c == sel || !ismonocle)
+				setclientopacity(c);
+			else if (!c->isfloating)
+				window_opacity_set(c->win, 0.);
+		}
 }
 
 void
@@ -2436,7 +2440,7 @@ restack(Monitor *m) {
 	}
 	if(!m->sel)
 		return;
-	if(m->sel->nofocus) {
+	if(m->sel->nofocus && !m->sel->isdock) {
 		XLowerWindow(dpy, m->sel->win);
 		if (m->backwin)
 			XLowerWindow(dpy, m->backwin);
