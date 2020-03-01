@@ -31,7 +31,7 @@ typedef enum {
 	Right
 } ScreenSide;
 static ScreenSide dockposition = Bottom;
-static Bool picomfreezeworkaround = False;
+static Bool picomfreezeworkaround = True;
 static int dockmonitor = 0;
 static char* terminal[2] = { NULL, NULL };
 static char* userscript = NULL;
