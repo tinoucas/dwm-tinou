@@ -350,6 +350,7 @@ static void setfullscreen(Client *c, Bool fullscreen);
 static void monsetlayout(Monitor *m, const void* v);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
+static void updatemonocleopacities(Monitor *m);
 static void setnumdesktops(void);
 static void setup(void);
 static void setviewport(void);
@@ -1381,9 +1382,10 @@ detachstack(Client *c) {
 	*tc = c->snext;
 
 	if(c == c->mon->sel) {
-		for(t = c->mon->stack; t && !ISVISIBLE(t); t = t->snext);
+		for(t = c->mon->stack; t && (!ISVISIBLE(t) || t->nofocus); t = t->snext);
 		c->mon->sel = t;
 	}
+	updatemonocleopacities(c->mon);
 }
 
 void
@@ -1577,10 +1579,11 @@ expose(XEvent *e) {
 
 void
 window_opacity_set(Window win, double opacity) {
-	if(opacity >= 0. && opacity <= 1.)
-	{
-		unsigned int copacity = (unsigned int)(opacity * OPAQUE);
-		XChangeProperty(dpy, win, XInternAtom(dpy, OPACITY, False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &copacity, 1L);
+	unsigned int opacitybyte;
+
+	if(opacity >= 0. && opacity <= 1.) {
+		opacitybyte = (unsigned int)(opacity * OPAQUE);
+		XChangeProperty(dpy, win, XInternAtom(dpy, OPACITY, False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacitybyte, 1L);
   XSync(dpy, False);
 	}
 	XSync(dpy, False);
@@ -1608,13 +1611,14 @@ focus(Client *c) {
 	}
 	while (!inc && c && c->nofocus)
 		c = c->next;
-	if (c && !ISVISIBLE(c))
+	if (c && (!ISVISIBLE(c) || c->nofocus))
 		c = NULL;
 	if (c) {
 		grabbuttons(c, True);
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		setfocus(c);
 		c->mon->sel = c;
+		updatemonocleopacities(c->mon);
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
@@ -1946,6 +1950,7 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->win = w;
+	c->opacity = 1.;
 	c->pid = winpid(w);
 	updatetitle(c);
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
@@ -1994,10 +1999,10 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if(c->nofocus) {
 		XLowerWindow(dpy, c->win);
-		if (c->mon->backwin != 0)
+		if (c->mon->backwin)
 			XLowerWindow(dpy, c->mon->backwin);
 	}
-	else if(c->isfloating)
+	else
 		XRaiseWindow(dpy, c->win);
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
@@ -2024,10 +2029,11 @@ manage(Window w, XWindowAttributes *wa) {
 	if (c->isfullscreen && c->nofocus) {
 		c->nofocus = 0;
 		for (m = mons; m; m = m->next) {
-			if (m->backwin == 0) {
+			if (!m->backwin) {
 				m->backwin = c->win;
 				resizeclient(c, m->mx, m->my, m->mw, m->mh);
-				XLowerWindow(dpy, c->win);
+				XLowerWindow(dpy, m->backwin);
+				window_opacity_set(m->backwin, 0.);
 				c->nofocus = 1;
 				break;
 			}
@@ -2078,6 +2084,20 @@ intersecttags(Client *c, Monitor *m) {
 				intertags &= ~(cother->tags & intertags);
 	return c->tags == TAGMASK ? 0 : intertags;
 }
+
+void
+updatemonocleopacities(Monitor *m) {
+	Client *c;
+	Bool ismonocleopaq = (m->vs->lt[m->vs->curlt]->arrange == &monocle && m->sel && !m->sel->isfloating);
+
+	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+		if (c == m->sel || !ismonocleopaq)
+			setclientopacity(c);
+		else
+			window_opacity_set(c->win, 0.);
+	}
+}
+
 void
 monocle(Monitor *m) {
 	unsigned int n = 0;
@@ -2090,6 +2110,7 @@ monocle(Monitor *m) {
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n - 1);
 	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
 		resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, False);
+	updatemonocleopacities(m);
 }
 
 void
@@ -2105,7 +2126,6 @@ motionnotify(XEvent *e) {
 		selectmon(m);
 		focus(NULL);
 	}
-
 	mon = m;
 }
 
@@ -2419,10 +2439,18 @@ restack(Monitor *m) {
 	}
 	if(!m->sel)
 		return;
-	if(m->sel->nofocus)
+	if(m->sel->nofocus) {
 		XLowerWindow(dpy, m->sel->win);
-	else if(m->sel->isfloating || !m->vs->lt[m->vs->curlt]->arrange)
+		if (m->backwin)
+			XLowerWindow(dpy, m->backwin);
+	}
+
+	for(c = m->stack; c; c = c->snext)
+		if (ISVISIBLE(c) && c != m->sel && !c->nofocus)
+			XRaiseWindow(dpy, c->win);
+	if (ISVISIBLE(m->sel))
 		XRaiseWindow(dpy, m->sel->win);
+
 	if(m->vs->lt[m->vs->curlt]->arrange) {
 		wc.stack_mode = Below;
 		wc.sibling = m->barwin;
@@ -2641,6 +2669,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		resizeclient(c, c->x, c->y, c->w, c->h);
 		if (c->mon->vs->tagset == vtag && !hasclientson(c->mon, vtag)){
 			monview(c->mon, c->tags);
+			focus(c);
 		}
 	}
 	restorebar(c->mon);
@@ -2898,14 +2927,25 @@ showhide(Client *c) {
 	if(!c)
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
-		XMoveWindow(dpy, c->win, c->x, c->y);
+		setclientstate(c, NormalState);
+		setclientopacity(c);
+		if (!c->mon->backwin)
+			XMoveWindow(dpy, c->win, c->x, c->y);
+		else if (!c->nofocus)
+			XRaiseWindow(dpy, c->win);
 		if((!c->mon->vs->lt[c->mon->vs->curlt]->arrange || c->isfloating) && (!c->isfullscreen || rotatingMons))
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
 	else { /* hide clients bottom up */
+		if (c->mon->backwin) {
+			XLowerWindow(dpy, c->win);
+			window_opacity_set(c->win, 0.);
+		}
 		showhide(c->snext);
-		XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
+		setclientstate(c, WithdrawnState);
+		if (!c->mon->backwin)
+			XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
 	}
 }
 
@@ -2963,6 +3003,7 @@ systrayaddwindow (Window win) {
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->mon = selmon;
 	c->win = win;
+	c->opacity = 1.;
 	c->next = systray->icons;
 	systray->icons = c;
 	XGetWindowAttributes(dpy, c->win, &wa);
@@ -3873,7 +3914,7 @@ wintomon(Window w) {
 		return m;
 	}
 	for(m = mons; m; m = m->next)
-		if(w == m->barwin)
+		if(w == m->barwin || m->backwin && w == m->backwin)
 			return m;
 	if((c = wintoclient(w)))
 		return c->mon;
