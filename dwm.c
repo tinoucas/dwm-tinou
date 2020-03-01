@@ -2308,7 +2308,7 @@ resetallsizes(Monitor *m) {
 	Client *c;
 
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c)) {
+		if (ISVISIBLE(c) && !c->isdock) {
 			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
 			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 		}
