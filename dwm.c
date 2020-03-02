@@ -328,6 +328,8 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
+static void raisedock();
+static void raisewindow();
 static void resetallsizes(Monitor *m);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
@@ -2001,7 +2003,7 @@ manage(Window w, XWindowAttributes *wa) {
 			XLowerWindow(dpy, c->mon->backwin);
 	}
 	else
-		XRaiseWindow(dpy, c->win);
+		raisewindow(c->win);
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
 	else
@@ -2020,7 +2022,7 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 		if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
-			XRaiseWindow(dpy, c->win);
+			raisewindow(c->win);
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
@@ -2303,6 +2305,23 @@ updatedpi() {
 }
 
 void
+raisedock() {
+	Client *c;
+	Monitor *m;
+
+	for(m = mons; m; m = m->next)
+		for(c = m->clients; c; c = c->next)
+			if (c->isdock)
+				XRaiseWindow(dpy, c->win);
+}
+
+void
+raisewindow(Window w) {
+	XRaiseWindow(dpy, w);
+	raisedock();
+}
+
+void
 resetallsizes(Monitor *m) {
 	Client *c;
 
@@ -2448,7 +2467,7 @@ restack(Monitor *m) {
 		if (ISVISIBLE(c) && c != m->sel && !c->nofocus)
 			XRaiseWindow(dpy, c->win);
 	if (ISVISIBLE(m->sel))
-		XRaiseWindow(dpy, m->sel->win);
+		raisewindow(m->sel->win);
 
 	if(m->vs->lt[m->vs->curlt]->arrange) {
 		wc.stack_mode = Below;
@@ -2650,7 +2669,7 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->isfloating = True;
 		c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
-		XRaiseWindow(dpy, c->win);
+		raisewindow(c->win);
 		monview(c->mon, vtag);
 	}
 	else {
@@ -2949,6 +2968,7 @@ showhide(Client *c) {
 		if (!c->mon->backwin)
 			XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
 	}
+	raisedock();
 }
 
 void
