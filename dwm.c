@@ -1384,7 +1384,6 @@ detachstack(Client *c) {
 		for(t = c->mon->stack; t && (!ISVISIBLE(t) || t->nofocus); t = t->snext);
 		c->mon->sel = t;
 	}
-	updatemonocleopacities(c->mon);
 }
 
 void
