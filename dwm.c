@@ -1211,11 +1211,13 @@ clientmessage(XEvent *e) {
 						  || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
-		if(!ISVISIBLE(c)) {
-			monview(c->mon, c->tags);
+		if(c != c->mon->sel) {
+			if(!ISVISIBLE(c)) {
+				monview(c->mon, c->tags);
+			}
+			focus(c);
+			arrange(c->mon);
 		}
-		focus(c);
-		arrange(c->mon);
 	}
 	else if (cme->message_type == netatom[NetCloseWindow]) {
 		killclientimpl(c);
