@@ -92,7 +92,7 @@ enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
+	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeKDEOSD, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
@@ -135,7 +135,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
@@ -2036,7 +2036,7 @@ manage(Window w, XWindowAttributes *wa) {
 			}
 		}
     }
-	if (c->nofocus)
+	if (c->nofocus || c->isosd)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2861,6 +2861,8 @@ setup(void) {
 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMWindowTypeDock] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
+	netatom[NetWMWindowTypeDesktop] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+	netatom[NetWMWindowTypeKDEOSD] = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_ON_SCREEN_DISPLAY", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
 	netatom[NetWMDesktop] = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
@@ -3743,18 +3745,40 @@ void
 updatewindowtype(Client *c) {
 	Atom state = getatomprop(c, netatom[NetWMState]);
 	Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
+	int bw = c->bw;
+	XWindowChanges wc;
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
 
-	if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar])
-		c->isfloating = True;
 	if(wtype == netatom[NetWMWindowTypeDock]) {
 		c->isdock = True;
 		c->nofocus = True;
 		c->isfloating = True;
 		c->tags = ~0;
-		c->noborder = True;
+		c->bw = 0;
+	}
+	else if(wtype == netatom[NetWMWindowTypeDesktop]) {
+		c->isfloating = True;
+		c->tags = ~0;
+		c->bw = 0;
+		c->nofocus = True;
+		c->isfullscreen = True;
+	}
+	else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
+		c->isfloating = True;
+		c->bw = 0;
+		c->tags = ~0;
+		c->isosd = True;
+		c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
+		c->y = c->mon->my + bh + c->mon->mh / 40;
+	}
+	else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
+		c->isfloating = True;
+	}
+	if(bw != c->bw) {
+		wc.border_width = c->bw;
+		XConfigureWindow(dpy, c->win, CWBorderWidth, &wc);
 	}
 }
 
