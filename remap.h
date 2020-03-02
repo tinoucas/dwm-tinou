@@ -2,9 +2,10 @@ static const Remap mpv[] = {
 	/*{ Button1, 0,  XK_space, 0 },*/
 	{ Button2, 0,  XK_q,     0 },
 	/*{ Button3, 0,  XK_f,     0 },*/
-	{ Button11, 0,  XK_e,     0 },
-	{ Button10, 0,  XK_w,     0 },
-	{ Button9, 0, XK_a,     ShiftMask },
+	{ Button11, 0,  XK_k, 0},
+	{ Button10, 0,  XK_j, 0},
+	{ Button8, 0, XK_k, 0},
+	{ Button9, 0, XK_j, 0},
 	{ 0 },
 };
 
