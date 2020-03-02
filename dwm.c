@@ -480,14 +480,6 @@ Window getWindowParent (Window winId) {
 
 Bool
 clientmatchesrule (Client *c, const char* class, const char* instance, Bool istransient, const char* wincmdline, const Rule *r) {
-	if (strstr(class, "broken") && r->procname)
-	{
-		fprintf(stderr, "cmdline:'%s', class:'%s', instance:'%s', trans:'%s'\n",
-				wincmdline ? wincmdline : "NULL",
-				class ? class : "NULL",
-				instance ? instance : "NULL",
-				istransient ? "True" : "False");
-	}
 	return (!r->title || strstr(c->name, r->title))
 		&& (!r->class || strstr(class, r->class))
 		&& (!r->instance || strstr(instance, r->instance))
@@ -590,8 +582,6 @@ applyrules(Client *c) {
 			{
 				applyclientrule(c, r, istransient);
 				lastr = r;
-				fprintf(stderr, "Applying rule %d: name == '%s', class == '%s', instance == '%s', tag == '%d', mon == '%d'\n",
-						i, c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL", c->tags, c->mon ? c->mon->num : -1);
 				found = True;
 			}
 			++i;
@@ -604,9 +594,6 @@ applyrules(Client *c) {
 				c->mon = m;
 			}
 		}
-		if (!found)
-			fprintf(stderr, "No rule applied for: name == '%s', class == '%s', instance == '%s'\n",
-					c->name ? c->name : "NULL", class ? class : "NULL", instance ? instance : "NULL");
 		if(ch.res_class)
 			XFree(ch.res_class);
 		if(ch.res_name)
@@ -625,13 +612,10 @@ applyrules(Client *c) {
 					c->mon = m;
 				found = True;
 				lastr = r;
-				fprintf(stderr, "Applying rule %d ('%s'): name == '%s'\n",
-						i, r->title ? r->title : "NULL", c->name ? c->name : "NULL");
 			}
 			++i;
 		}
 		if(!found) {
-			fprintf(stderr, "No rule applied for: name == '%s'\n", c->name ? c->name : "NULL");
 			r = &defaultrule;
 			applyclientrule(c, r, False);
 			for(m = mons; m && m->num != r->monitor; m = m->next);
@@ -1946,7 +1930,6 @@ manage(Window w, XWindowAttributes *wa) {
 	XWindowChanges wc;
 	int bpx = 0;
 
-	fprintf(stderr, "Creating client\n");
 	if(!(c = calloc(1, sizeof(Client))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Client));
 	c->win = w;
