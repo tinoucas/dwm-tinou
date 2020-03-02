@@ -52,10 +52,9 @@ static Rule *getNextRule (const struct nx_json* json, Rule* rule) {
 	const struct nx_json *js;
 
 	rule->next = callocrule();
-	rule = rule->next;
 	for (js = json->child; js; js = js->next)
-		readRuleAttribute(js, rule);
-	return rule;
+		readRuleAttribute(js, rule->next);
+	return rule->next;
 }
 
 static void readrules (const struct nx_json *jsonRules) {
