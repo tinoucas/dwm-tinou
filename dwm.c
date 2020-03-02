@@ -2088,15 +2088,12 @@ updatemonocleopacities(Monitor *m) {
 	Bool ismonocle = (m->vs->lt[m->vs->curlt]->arrange == &monocle);
 	Client *sel = m->sel;
 
-	if (!sel || sel->isfloating)
-		sel = nexttiled(m->clients);
-	if (sel)
-		for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-			if (c == sel || !ismonocle)
-				setclientopacity(c);
-			else if (!c->isfloating)
-				window_opacity_set(c->win, 0.);
-		}
+	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
+		if (c == sel || !ismonocle || sel && sel->isfloating)
+			setclientopacity(c);
+		else if (!c->isfloating)
+			window_opacity_set(c->win, 0.);
+	}
 }
 
 void
