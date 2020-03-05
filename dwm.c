@@ -55,6 +55,7 @@
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
 #define ISVISIBLE(C)			((C->tags & C->mon->vs->tagset))
+#define ISFLOATING(C)           ((!C->mon->vs->lt[selmon->vs->curlt]->arrange || C->isfloating))
 #define LENGTH(X)				(sizeof X / sizeof X[0])
 #ifndef MAX
 #define MAX(A, B)				((A) > (B) ? (A) : (B))
@@ -146,7 +147,6 @@ struct Client {
 	double opacity;
 	Bool rh;
 	const Remap* remap;
-	Bool isdock;
 };
 
 typedef struct {
@@ -328,8 +328,6 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-static void raisedock();
-static void raisewindow();
 static void resetallsizes(Monitor *m);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
@@ -351,7 +349,7 @@ static void setfullscreen(Client *c, Bool fullscreen);
 static void monsetlayout(Monitor *m, const void* v);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
-static void updatemonocleopacities(Monitor *m);
+static void updateopacities(Monitor *m);
 static void setnumdesktops(void);
 static void setup(void);
 static void setviewport(void);
@@ -452,6 +450,7 @@ static Display *dpy;
 static DC dc;
 static Monitor *mons = NULL, *selmon = NULL;
 static Window root;
+static Window dockwin = 0;
 static xcb_connection_t *xcon;
 static Client* lastclient = NULL;
 static Bool startup = True;
@@ -750,6 +749,8 @@ arrange(Monitor *m) {
 		arrangemon(m);
 	if (picomfreezeworkaround && m)
 		resetallsizes(m);
+	if (m)
+		updateopacities(m);
 }
 
 void
@@ -1454,7 +1455,7 @@ drawbar(Monitor *m) {
 	if((dc.w = dc.x - x) > bh) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
-		if(m->sel && !m->sel->isdock) {
+		if(m->sel) {
 			drawtext(m->sel->name, col, False);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
@@ -1590,8 +1591,10 @@ focus(Client *c) {
 	if(c) {
 		if(c->isurgent)
 			clearurgent(c);
-		detachstack(c);
-		attachstack(c);
+		if(!ISFLOATING(c)) {
+			detachstack(c);
+			attachstack(c);
+		}
 	}
 	while (!inc && c && c->nofocus)
 		c = c->next;
@@ -1602,7 +1605,9 @@ focus(Client *c) {
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		setfocus(c);
 		c->mon->sel = c;
-		updatemonocleopacities(c->mon);
+		updateopacities(c->mon);
+		if(ISFLOATING(c))
+			restack(c->mon);
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
@@ -1904,7 +1909,7 @@ keypress(XEvent *e) {
 
 void
 killclient(const Arg *arg) {
-	if(!selmon->sel || selmon->sel->isdock)
+	if(!selmon->sel)
 		return;
 	killclientimpl(selmon->sel);
 }
@@ -1980,13 +1985,11 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	}
-	if(c->nofocus && !c->isdock) {
+	if(c->nofocus) {
 		XLowerWindow(dpy, c->win);
 		if (c->mon->backwin)
 			XLowerWindow(dpy, c->mon->backwin);
 	}
-	else
-		raisewindow(c->win);
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
 	else
@@ -2004,8 +2007,6 @@ manage(Window w, XWindowAttributes *wa) {
 	if (!c->nofocus && c->tags != TAGMASK) {
 		if (c->mon == selmon)
 			focus(c);
-		if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
-			raisewindow(c->win);
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
@@ -2069,15 +2070,19 @@ intersecttags(Client *c, Monitor *m) {
 }
 
 void
-updatemonocleopacities(Monitor *m) {
+updateopacities(Monitor *m) {
 	Client *c;
 	Bool ismonocle = (m->vs->lt[m->vs->curlt]->arrange == &monocle);
-	Client *sel = m->sel;
+	Client *tiledsel = NULL;
 
-	for(c = nexttiled(m->clients); c; c = nexttiled(c->next)) {
-		if (c == sel || !ismonocle || sel && sel->isfloating)
+	for(c = m->stack; c && !tiledsel; c = c->snext)
+		if(ISVISIBLE(c) && !ISFLOATING(c))
+			tiledsel = c;
+
+	for(c = m->clients; c; c = c->next) {
+		if(ISVISIBLE(c) && (c == tiledsel || !ismonocle || c->isfloating))
 			setclientopacity(c);
-		else if (!c->isfloating)
+		else
 			window_opacity_set(c->win, 0.);
 	}
 }
@@ -2094,7 +2099,6 @@ monocle(Monitor *m) {
 		snprintf(m->ltsymbol, sizeof m->ltsymbol, "[%d]", n - 1);
 	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
 		resize(c, m->wx - c->bw, m->wy - c->bw, m->ww, m->wh, False);
-	updatemonocleopacities(m);
 }
 
 void
@@ -2125,6 +2129,10 @@ movemouse(const Arg *arg) {
 		return;
 	if(c->isfullscreen) /* no support moving fullscreen windows by mouse */
 		return;
+	if(ISFLOATING(c)) {
+		detachstack(c);
+		attachstack(c);
+	}
 	restack(selmon);
 	ocx = c->x;
 	ocy = c->y;
@@ -2288,28 +2296,11 @@ updatedpi() {
 }
 
 void
-raisedock() {
-	Client *c;
-	Monitor *m;
-
-	for(m = mons; m; m = m->next)
-		for(c = m->clients; c; c = c->next)
-			if (c->isdock)
-				XRaiseWindow(dpy, c->win);
-}
-
-void
-raisewindow(Window w) {
-	XRaiseWindow(dpy, w);
-	raisedock();
-}
-
-void
 resetallsizes(Monitor *m) {
 	Client *c;
 
 	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c) && !c->isdock) {
+		if (ISVISIBLE(c)) {
 			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
 			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 		}
@@ -2426,7 +2417,9 @@ void
 restack(Monitor *m) {
 	Client *c;
 	XEvent ev;
-	XWindowChanges wc;
+	Window *windows;
+	int nwindows = m->barwin ? 1 : 0;
+	int w = 0;
 
 	drawbar(m);
 	if(!m->sel) {
@@ -2440,26 +2433,44 @@ restack(Monitor *m) {
 	}
 	if(!m->sel)
 		return;
-	if(m->sel->nofocus && !m->sel->isdock) {
-		XLowerWindow(dpy, m->sel->win);
-		if (m->backwin)
-			XLowerWindow(dpy, m->backwin);
-	}
-
-	for(c = m->stack; c; c = c->snext)
-		if (ISVISIBLE(c) && c != m->sel && !c->nofocus)
-			XRaiseWindow(dpy, c->win);
-	if (ISVISIBLE(m->sel))
-		raisewindow(m->sel->win);
-
-	if(m->vs->lt[m->vs->curlt]->arrange) {
-		wc.stack_mode = Below;
-		wc.sibling = m->barwin;
+	if(m->backwin)
+		++nwindows;
+	if(dockwin)
+		++nwindows;
+	for(c = m->stack; c; c = c->snext, ++nwindows);
+	if(nwindows > 1) {
+		windows = (Window *)calloc(nwindows, sizeof(Window));
+		// bar
+		if(m->barwin)
+			windows[w++] = m->barwin;
+		// dock
+		if(dockwin)
+			windows[w++] = dockwin;
+		// visible floating
 		for(c = m->stack; c; c = c->snext)
-			if(!c->isfloating && ISVISIBLE(c)) {
-				XConfigureWindow(dpy, c->win, CWSibling|CWStackMode, &wc);
-				wc.sibling = c->win;
-			}
+			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus)
+				windows[w++] = c->win;
+		// visible tiled sel
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus)
+				windows[w++] = c->win;
+		// visible tiled non-sel
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus)
+				windows[w++] = c->win;
+		// nofocus (FIXME: do those even still exist?)
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && c != m->sel && c->nofocus)
+				windows[w++] = c->win;
+		// desktop window (plasmashell)
+		if(m->backwin)
+			windows[w++] = m->backwin;
+		// non-visible windows (other views)
+		for(c = m->stack; c; c = c->snext)
+			if(!ISVISIBLE(c))
+				windows[w++] = c->win;
+		XRestackWindows(dpy, windows, nwindows);
+		free(windows);
 	}
 	XSync(dpy, False);
 	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
@@ -2652,7 +2663,6 @@ setfullscreen(Client *c, Bool fullscreen) {
 		c->isfloating = True;
 		c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
-		raisewindow(c->win);
 		monview(c->mon, vtag);
 	}
 	else {
@@ -2932,26 +2942,18 @@ showhide(Client *c) {
 		return;
 	if(ISVISIBLE(c)) { /* show clients top down */
 		setclientstate(c, NormalState);
-		setclientopacity(c);
 		if (!c->mon->backwin)
 			XMoveWindow(dpy, c->win, c->x, c->y);
-		else if (!c->nofocus)
-			XRaiseWindow(dpy, c->win);
 		if((!c->mon->vs->lt[c->mon->vs->curlt]->arrange || c->isfloating) && (!c->isfullscreen || rotatingMons))
 			resize(c, c->x, c->y, c->w, c->h, False);
 		showhide(c->snext);
 	}
 	else { /* hide clients bottom up */
-		if (c->mon->backwin) {
-			XLowerWindow(dpy, c->win);
-			window_opacity_set(c->win, 0.);
-		}
 		showhide(c->snext);
 		setclientstate(c, WithdrawnState);
 		if (!c->mon->backwin)
 			XMoveWindow(dpy, c->win, WIDTH(c) * -2, c->y);
 	}
-	raisedock();
 }
 
 void
@@ -3175,6 +3177,8 @@ toggleview(const Arg *arg) {
 	if (selmon->vs->tagset != newtagset)
 	{
 		viewstackadd(selmon, newtagset, False);
+		if(selmon->sel && !ISVISIBLE(selmon->sel))
+			focus(NULL);
 		arrange(selmon);
 	}
 	updatecurrentdesktop();
@@ -3753,11 +3757,11 @@ updatewindowtype(Client *c) {
 		setfullscreen(c, True);
 
 	if(wtype == netatom[NetWMWindowTypeDock]) {
-		c->isdock = True;
 		c->nofocus = True;
 		c->isfloating = True;
 		c->tags = ~0;
 		c->bw = 0;
+		dockwin = c->win;
 	}
 	else if(wtype == netatom[NetWMWindowTypeDesktop]) {
 		c->isfloating = True;
