@@ -1929,7 +1929,6 @@ killclientimpl(Client *c) {
 void
 manage(Window w, XWindowAttributes *wa) {
 	Client *c, *t = NULL, *term = NULL;
-	Monitor *m;
 	Window trans = None;
 	XWindowChanges wc;
 	int bpx = 0;
@@ -2009,19 +2008,6 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
-	if (c->isfullscreen && c->nofocus) {
-		c->nofocus = 0;
-		for (m = mons; m; m = m->next) {
-			if (!m->backwin) {
-				m->backwin = c->win;
-				resizeclient(c, m->mx, m->my, m->mw, m->mh);
-				XLowerWindow(dpy, m->backwin);
-				window_opacity_set(m->backwin, 0.);
-				c->nofocus = 1;
-				break;
-			}
-		}
-    }
 	if (c->nofocus || c->isosd)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
@@ -2430,8 +2416,6 @@ restack(Monitor *m) {
 		else
 			m->sel = c;
 	}
-	if(!m->sel)
-		return;
 	if(m->backwin)
 		++nwindows;
 	if(dockwin)
@@ -3755,10 +3739,10 @@ updatewindowtype(Client *c) {
 	Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
 	int bw = c->bw;
 	XWindowChanges wc;
+	Monitor *m;
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
-
 	if(wtype == netatom[NetWMWindowTypeDock]) {
 		c->nofocus = True;
 		c->isfloating = True;
@@ -3772,6 +3756,12 @@ updatewindowtype(Client *c) {
 		c->bw = 0;
 		c->nofocus = True;
 		c->isfullscreen = True;
+		for (m = mons; m; m = m->next)
+			if (!m->backwin) {
+				m->backwin = c->win;
+				resizeclient(c, m->mx, m->my, m->mw, m->mh);
+				window_opacity_set(m->backwin, 0.);
+			}
 	}
 	else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
 		c->isfloating = True;
