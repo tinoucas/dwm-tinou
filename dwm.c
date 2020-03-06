@@ -93,7 +93,7 @@ enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeKDEOSD, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
+	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeNotification, NetWMWindowTypeKDEOSD, NetWMWindowTypeKDEOVERRIDE, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
@@ -1997,17 +1997,19 @@ manage(Window w, XWindowAttributes *wa) {
 			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
 	XMapWindow(dpy, c->win);
-	if (term)
+	if(term)
 		swallow(term, c);
 	setclientstate(c, NormalState);
 	arrange(c->mon);
 	grabremap(c, True);
-	if (!c->nofocus && c->tags != TAGMASK) {
+	if(!c->nofocus && !c->isosd && c->tags != TAGMASK) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if (c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
+	if(c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
+	if(c->isosd)
+		XRaiseWindow(dpy, c->win);
 	if (c->nofocus || c->isosd)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
@@ -2859,7 +2861,9 @@ setup(void) {
 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
 	netatom[NetWMWindowTypeDock] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DOCK", False);
 	netatom[NetWMWindowTypeDesktop] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DESKTOP", False);
+	netatom[NetWMWindowTypeNotification] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
 	netatom[NetWMWindowTypeKDEOSD] = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_ON_SCREEN_DISPLAY", False);
+	netatom[NetWMWindowTypeKDEOVERRIDE] = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_OVERRIDE", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
 	netatom[NetWMDesktop] = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
@@ -3770,6 +3774,15 @@ updatewindowtype(Client *c) {
 		c->isosd = True;
 		c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
 		c->y = c->mon->my + bh + c->mon->mh / 40;
+	}
+	else if(wtype == netatom[NetWMWindowTypeKDEOVERRIDE]) {
+		c->bw = 0;
+		c->isfloating = True;
+	}
+	else if(wtype == netatom[NetWMWindowTypeNotification]) {
+		c->isfloating = True;
+		c->bw = 0;
+		c->isosd = True;
 	}
 	else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
 		c->isfloating = True;
