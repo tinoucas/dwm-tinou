@@ -93,7 +93,7 @@ enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeNotification, NetWMWindowTypeKDEOSD, NetWMWindowTypeKDEOVERRIDE, NetWMStateSkipTaskbar, NetWMDesktop, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
+	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeNotification, NetWMWindowTypeKDEOSD, NetWMWindowTypeKDEOVERRIDE, NetWMStateSkipTaskbar, NetWMDesktop, NetWMOpacity, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
 enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
@@ -1559,16 +1559,14 @@ expose(XEvent *e) {
 	}
 }
 
-#define OPAQUE	0xffffffff
-#define OPACITY	"_NET_WM_WINDOW_OPACITY"
-
 void
 window_opacity_set(Window win, double opacity) {
 	unsigned int opacitybyte;
+	const unsigned int maxopacity = (unsigned int)-1;
 
 	if(opacity >= 0. && opacity <= 1.) {
-		opacitybyte = (unsigned int)(opacity * OPAQUE);
-		XChangeProperty(dpy, win, XInternAtom(dpy, OPACITY, False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacitybyte, 1L);
+		opacitybyte = (unsigned int)(opacity * maxopacity);
+		XChangeProperty(dpy, win, netatom[NetWMOpacity], XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacitybyte, 1L);
   XSync(dpy, False);
 	}
 	XSync(dpy, False);
@@ -2447,10 +2445,6 @@ restack(Monitor *m) {
 		for(c = m->stack; c; c = c->snext)
 			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen)
 				windows[w++] = c->win;
-		// nofocus (FIXME: do those even still exist?)
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isfullscreen)
-				windows[w++] = c->win;
 		// desktop window (plasmashell)
 		if(m->backwin)
 			windows[w++] = m->backwin;
@@ -2866,6 +2860,7 @@ setup(void) {
 	netatom[NetWMWindowTypeKDEOVERRIDE] = XInternAtom(dpy, "_KDE_NET_WM_WINDOW_TYPE_OVERRIDE", False);
 	netatom[NetWMStateSkipTaskbar] = XInternAtom(dpy, "_NET_WM_STATE_SKIP_TASKBAR", False);
 	netatom[NetWMDesktop] = XInternAtom(dpy, "_NET_WM_DESKTOP", False);
+	netatom[NetWMOpacity] = XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", False);
 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
 	netatom[NetDesktopViewport] = XInternAtom(dpy, "_NET_DESKTOP_VIEWPORT", False);
 	netatom[NetDesktopGeometry] = XInternAtom(dpy, "_NET_DESKTOP_GEOMETRY", False);
@@ -3739,6 +3734,7 @@ updatesystray(void) {
 
 void
 updatewindowtype(Client *c) {
+	XWindowAttributes wa;
 	const Atom state = getatomprop(c, netatom[NetWMState]);
 	const Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
 	int bw = c->bw;
@@ -3755,17 +3751,20 @@ updatewindowtype(Client *c) {
 		dockwin = c->win;
 	}
 	else if(wtype == netatom[NetWMWindowTypeDesktop]) {
-		c->isfloating = True;
-		c->tags = ~0;
-		c->bw = 0;
-		c->nofocus = True;
-		c->isfullscreen = True;
-		for (m = mons; m; m = m->next)
-			if (!m->backwin) {
+		if (XGetWindowAttributes(dpy, c->win, &wa)) {
+			m = recttomon(wa.x, wa.y, wa.width, wa.height);
+			if(m && !m->backwin) {
+				c->isfloating = True;
+				c->tags = ~0;
+				c->bw = 0;
+				c->nofocus = True;
+				c->isfullscreen = True;
+				c->opacity = 0.;
 				m->backwin = c->win;
 				resizeclient(c, m->mx, m->my, m->mw, m->mh);
 				window_opacity_set(m->backwin, 0.);
 			}
+		}
 	}
 	else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
 		c->isfloating = True;
