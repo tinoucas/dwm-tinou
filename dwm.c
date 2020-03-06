@@ -1606,8 +1606,7 @@ focus(Client *c) {
 		setfocus(c);
 		c->mon->sel = c;
 		updateopacities(c->mon);
-		if(ISFLOATING(c))
-			restack(c->mon);
+		restack(c->mon);
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
@@ -2440,6 +2439,10 @@ restack(Monitor *m) {
 	for(c = m->stack; c; c = c->snext, ++nwindows);
 	if(nwindows > 1) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
+		// fullscreen window
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && c->isfullscreen)
+				windows[w++] = c->win;
 		// bar
 		if(m->barwin)
 			windows[w++] = m->barwin;
@@ -2448,19 +2451,19 @@ restack(Monitor *m) {
 			windows[w++] = dockwin;
 		// visible floating
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus)
+			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen)
 				windows[w++] = c->win;
 		// visible tiled sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen)
 				windows[w++] = c->win;
 		// visible tiled non-sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen)
 				windows[w++] = c->win;
 		// nofocus (FIXME: do those even still exist?)
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c != m->sel && c->nofocus)
+			if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isfullscreen)
 				windows[w++] = c->win;
 		// desktop window (plasmashell)
 		if(m->backwin)
