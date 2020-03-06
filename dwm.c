@@ -3739,8 +3739,8 @@ updatesystray(void) {
 
 void
 updatewindowtype(Client *c) {
-	Atom state = getatomprop(c, netatom[NetWMState]);
-	Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
+	const Atom state = getatomprop(c, netatom[NetWMState]);
+	const Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
 	int bw = c->bw;
 	XWindowChanges wc;
 	Monitor *m;
