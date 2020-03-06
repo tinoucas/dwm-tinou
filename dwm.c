@@ -1606,8 +1606,7 @@ focus(Client *c) {
 		setfocus(c);
 		c->mon->sel = c;
 		updateopacities(c->mon);
-		if(ISFLOATING(c))
-			restack(c->mon);
+		restack(c->mon);
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
