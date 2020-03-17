@@ -108,6 +108,7 @@ typedef union {
 	unsigned int ui;
 	float f;
 	const void *v;
+	KeySym keysym;
 } Arg;
 
 typedef struct {
@@ -328,7 +329,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-static void resetallsizes(Monitor *m);
+static void resetallsizes();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -350,6 +351,7 @@ static void monsetlayout(Monitor *m, const void* v);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void updateopacities(Monitor *m);
+static void sendselkey(const Arg *arg);
 static void setnumdesktops(void);
 static void setup(void);
 static void setviewport(void);
@@ -363,6 +365,7 @@ static void spawnterm(const Arg *arg);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
 static void swapclientscontent(Client *c1, Client *c2);
+static void tabview(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
 static long tagsettonum (unsigned int tagset);
@@ -747,8 +750,8 @@ arrange(Monitor *m) {
 		restack(m);
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
-	if (picomfreezeworkaround && m)
-		resetallsizes(m);
+	if (picomfreezeworkaround)
+		resetallsizes();
 	if (m)
 		updateopacities(m);
 }
@@ -1981,11 +1984,8 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	}
-	if(c->nofocus) {
+	if(c->nofocus)
 		XLowerWindow(dpy, c->win);
-		if (c->mon->backwin)
-			XLowerWindow(dpy, c->mon->backwin);
-	}
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
 	else
@@ -2070,6 +2070,11 @@ updateopacities(Monitor *m) {
 		else
 			window_opacity_set(c->win, 0.);
 	}
+}
+
+void
+sendselkey(const Arg *arg) {
+	sendKey(XKeysymToKeycode(dpy, arg->keysym), 0);
 }
 
 void
@@ -2281,14 +2286,16 @@ updatedpi() {
 }
 
 void
-resetallsizes(Monitor *m) {
+resetallsizes() {
 	Client *c;
+	Monitor *m;
 
-	for(c = m->clients; c; c = c->next)
-		if (ISVISIBLE(c)) {
-			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
-			XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
-		}
+	for(m = mons; m; m = m->next)
+		for(c = m->clients; c; c = c->next)
+			if (ISVISIBLE(c)) {
+				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
+				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
+			}
 }
 
 void
@@ -2425,7 +2432,7 @@ restack(Monitor *m) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
 		// fullscreen window
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c->isfullscreen)
+			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen)
 				windows[w++] = c->win;
 		// bar
 		if(m->barwin)
@@ -2444,6 +2451,10 @@ restack(Monitor *m) {
 		// visible tiled non-sel
 		for(c = m->stack; c; c = c->snext)
 			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen)
+				windows[w++] = c->win;
+		// nofocus
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && c != m->sel && c->nofocus)
 				windows[w++] = c->win;
 		// desktop window (plasmashell)
 		if(m->backwin)
@@ -3057,6 +3068,17 @@ swap(Client *c1, Client *c2) {
 }
 
 void
+tabview(const Arg *arg) {
+	Arg a;
+
+	if(arg->i == -1 || selmon->vs->tagset == arg->ui)
+		a.ui = 0;
+	else
+		a.ui = arg->ui;
+	view(&a);
+}
+
+void
 tag(const Arg *arg) {
 	if(selmon->sel && arg->ui & TAGMASK) {
 		selmon->sel->tags = arg->ui & TAGMASK;
@@ -3413,7 +3435,7 @@ updategeom(void) {
 		int i, j, n;
 		Client *c;
 		Monitor *oldmons = mons;
-		Monitor *m, *om = oldmons, *nm;
+		Monitor *m, *om = oldmons, *nm, *ocm, *cm;
 		XineramaScreenInfo *info = XineramaQueryScreens(dpy, &n);
 		XineramaScreenInfo *unique = NULL;
 
@@ -3448,7 +3470,11 @@ updategeom(void) {
 				c = m->clients;
 				m->clients = c->next;
 				detachstack(c);
-				c->mon = mons;
+				for(ocm = oldmons, cm = mons; ocm && cm && ocm != c->mon; ocm = ocm->next, cm = cm->next);
+				if(cm)
+					c->mon = cm;
+				else
+					c->mon = mons;
 				attach(c);
 				attachstack(c);
 			}
@@ -3459,6 +3485,8 @@ updategeom(void) {
 				nm = nm->next;
 			}
 		}
+		for(om = oldmons, m = mons; om && m; om = om->next, m = m->next)
+			m->backwin = om->backwin;
 		while (oldmons) {
 			om = oldmons;
 			XUnmapWindow(dpy, om->barwin);
