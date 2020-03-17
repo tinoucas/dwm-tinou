@@ -2430,6 +2430,10 @@ restack(Monitor *m) {
 	for(c = m->stack; c; c = c->snext, ++nwindows);
 	if(nwindows > 1) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
+		// visible floating
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen)
+				windows[w++] = c->win;
 		// fullscreen window
 		for(c = m->stack; c; c = c->snext)
 			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen)
@@ -2440,10 +2444,6 @@ restack(Monitor *m) {
 		// dock
 		if(dockwin)
 			windows[w++] = dockwin;
-		// visible floating
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen)
-				windows[w++] = c->win;
 		// visible tiled sel
 		for(c = m->stack; c; c = c->snext)
 			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen)
