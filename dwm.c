@@ -2432,7 +2432,7 @@ restack(Monitor *m) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
 		// fullscreen window
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen)
+			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin)
 				windows[w++] = c->win;
 		// bar
 		if(m->barwin)
@@ -2463,7 +2463,7 @@ restack(Monitor *m) {
 		for(c = m->stack; c; c = c->snext)
 			if(!ISVISIBLE(c))
 				windows[w++] = c->win;
-		XRestackWindows(dpy, windows, nwindows);
+		XRestackWindows(dpy, windows, w);
 		free(windows);
 	}
 	XSync(dpy, False);
