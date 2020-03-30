@@ -1416,7 +1416,7 @@ drawbar(Monitor *m) {
 	for(c = m->clients; c; c = c->next) {
 		if(c->tags != TAGMASK && !c->nofocus && c->tags != TAGMASK)
 			occ |= c->tags;
-		if(c->isurgent)
+		if(c->isurgent && c->tags != TAGMASK)
 			urg |= c->tags;
 	}
 	if ((occ & vtag) && statuscommutator) {
@@ -2006,9 +2006,7 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if(c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
 		client_opacity_set(c, c->opacity);
-	if(c->isosd)
-		XRaiseWindow(dpy, c->win);
-	if (c->nofocus || c->isosd)
+	if (c->nofocus)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2430,9 +2428,17 @@ restack(Monitor *m) {
 	for(c = m->stack; c; c = c->snext, ++nwindows);
 	if(nwindows > 1) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
+        // notifications
+		for(c = m->stack; c; c = c->snext)
+			if(c->isosd)
+				windows[w++] = c->win;
+		// visible floating
+		for(c = m->stack; c; c = c->snext)
+			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd)
+				windows[w++] = c->win;
 		// fullscreen window
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin)
+			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd)
 				windows[w++] = c->win;
 		// bar
 		if(m->barwin)
@@ -2440,28 +2446,24 @@ restack(Monitor *m) {
 		// dock
 		if(dockwin)
 			windows[w++] = dockwin;
-		// visible floating
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen)
-				windows[w++] = c->win;
 		// visible tiled sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// visible tiled non-sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// nofocus
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c != m->sel && c->nofocus)
+			if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 				windows[w++] = c->win;
 		// desktop window (plasmashell)
 		if(m->backwin)
 			windows[w++] = m->backwin;
 		// non-visible windows (other views)
 		for(c = m->stack; c; c = c->snext)
-			if(!ISVISIBLE(c))
+			if(!ISVISIBLE(c) && !c->isosd)
 				windows[w++] = c->win;
 		XRestackWindows(dpy, windows, w);
 		free(windows);
@@ -3797,7 +3799,7 @@ updatewindowtype(Client *c) {
 	else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
 		c->isfloating = True;
 		c->bw = 0;
-		c->tags = ~0;
+		c->tags = TAGMASK;
 		c->isosd = True;
 		c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
 		c->y = c->mon->my + bh + c->mon->mh / 40;
@@ -3809,6 +3811,7 @@ updatewindowtype(Client *c) {
 	else if(wtype == netatom[NetWMWindowTypeNotification]) {
 		c->isfloating = True;
 		c->bw = 0;
+		c->tags = TAGMASK;
 		c->isosd = True;
 	}
 	else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
