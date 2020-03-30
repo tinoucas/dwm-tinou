@@ -2008,7 +2008,7 @@ manage(Window w, XWindowAttributes *wa) {
 		client_opacity_set(c, c->opacity);
 	if(c->isosd)
 		XRaiseWindow(dpy, c->win);
-	if (c->nofocus || c->isosd)
+	if (c->nofocus)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2430,13 +2430,17 @@ restack(Monitor *m) {
 	for(c = m->stack; c; c = c->snext, ++nwindows);
 	if(nwindows > 1) {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
+        // notifications
+		for(c = m->stack; c; c = c->snext)
+			if(c->isosd)
+				windows[w++] = c->win;
 		// visible floating
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen)
+			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// fullscreen window
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen)
+			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// bar
 		if(m->barwin)
@@ -2446,22 +2450,22 @@ restack(Monitor *m) {
 			windows[w++] = dockwin;
 		// visible tiled sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// visible tiled non-sel
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen)
+			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
 				windows[w++] = c->win;
 		// nofocus
 		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c != m->sel && c->nofocus)
+			if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 				windows[w++] = c->win;
 		// desktop window (plasmashell)
 		if(m->backwin)
 			windows[w++] = m->backwin;
 		// non-visible windows (other views)
 		for(c = m->stack; c; c = c->snext)
-			if(!ISVISIBLE(c))
+			if(!ISVISIBLE(c) && !c->isosd)
 				windows[w++] = c->win;
 		XRestackWindows(dpy, windows, nwindows);
 		free(windows);
