@@ -329,7 +329,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-static void resetallsizes();
+static void nudgewindows();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -751,7 +751,7 @@ arrange(Monitor *m) {
 	} else for(m = mons; m; m = m->next)
 		arrangemon(m);
 	if (picomfreezeworkaround)
-		resetallsizes();
+		nudgewindows();
 	if (m)
 		updateopacities(m);
 }
@@ -2284,14 +2284,14 @@ updatedpi() {
 }
 
 void
-resetallsizes() {
+nudgewindows() {
 	Client *c;
 	Monitor *m;
 
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
-			if (ISVISIBLE(c)) {
-				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w - 1, c->h - 1);
+			if (ISVISIBLE(c) && (!c->isfullscreen || c->mon->backwin == c->win)) {
+				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 			}
 }
@@ -3790,6 +3790,7 @@ updatewindowtype(Client *c) {
 				c->nofocus = True;
 				c->isfullscreen = True;
 				c->opacity = 0.;
+				c->mon = m;
 				m->backwin = c->win;
 				resizeclient(c, m->mx, m->my, m->mw, m->mh);
 				window_opacity_set(m->backwin, 0.);
