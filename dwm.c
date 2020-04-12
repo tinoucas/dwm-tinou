@@ -745,10 +745,9 @@ arrange(Monitor *m) {
 		showhide(m->stack);
 	else for(m = mons; m; m = m->next)
 		showhide(m->stack);
-	if(m) {
+	if(m)
 		arrangemon(m);
-		restack(m);
-	} else for(m = mons; m; m = m->next)
+	else for(m = mons; m; m = m->next)
 		arrangemon(m);
 	if (picomfreezeworkaround)
 		nudgewindows();
@@ -761,9 +760,8 @@ arrangemon(Monitor *m) {
 	Client *c;
 
 	updateborderswidth(m);
-	for (c = m->clients; c; c = c->next) {
+	for (c = m->clients; c; c = c->next)
 		updateclientdesktop(c);
-	}
 	strncpy(m->ltsymbol, m->vs->lt[m->vs->curlt]->symbol, sizeof m->ltsymbol);
 	if(m->vs->lt[m->vs->curlt]->arrange)
 		m->vs->lt[m->vs->curlt]->arrange(m);
@@ -2290,7 +2288,7 @@ nudgewindows() {
 
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
-			if (ISVISIBLE(c)) {
+			if (ISVISIBLE(c) || c->mon->backwin) {
                 if (!c->isfullscreen)
                     XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
