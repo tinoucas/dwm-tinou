@@ -7,10 +7,18 @@ struct ClientListItem {
 
 void
 changemon(Client *c, Monitor *m) {
+	int xo = 0, yo = 0;
+
 	if(c->mon == m)
 		return;
+	if(c->isfloating) {
+		xo = m->mx - c->mon->mx;
+		yo = m->my - c->mon->my;
+	}
 	detach(c);
 	detachstack(c);
+	c->x += xo;
+	c->y += yo;
 	c->mon = m;
 	attach(c);
 	attachstack(c);

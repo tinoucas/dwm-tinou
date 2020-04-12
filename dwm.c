@@ -2403,12 +2403,81 @@ resizerequest(XEvent *e) {
 }
 
 void
-restack(Monitor *m) {
+restackwindows() {
+	Monitor *m;
 	Client *c;
 	XEvent ev;
 	Window *windows;
-	int nwindows = m->barwin ? 1 : 0;
+	int nwindows = 0;
 	int w = 0;
+
+	for(m = mons; m; m = m->next) {
+		if(m->barwin)
+			++nwindows;
+		if(m->backwin)
+			++nwindows;
+		for(c = m->stack; c; c = c->snext, ++nwindows);
+	}
+	if(dockwin)
+		++nwindows;
+	if(nwindows > 1) {
+		windows = (Window *)calloc(nwindows, sizeof(Window));
+		// notifications
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(c->isosd)
+					windows[w++] = c->win;
+		// visible floating
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd)
+					windows[w++] = c->win;
+		// fullscreen window
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd)
+					windows[w++] = c->win;
+		// bar
+		for(m = mons; m; m = m->next)
+			if(m->barwin)
+				windows[w++] = m->barwin;
+		// dock
+		if(dockwin)
+			windows[w++] = dockwin;
+		// visible tiled sel
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
+					windows[w++] = c->win;
+		// visible tiled non-sel
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
+					windows[w++] = c->win;
+		// nofocus
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
+					windows[w++] = c->win;
+		// desktop window (plasmashell)
+		for(m = mons; m; m = m->next)
+			if(m->backwin)
+				windows[w++] = m->backwin;
+		// non-visible windows (other views)
+		for(m = mons; m; m = m->next)
+			for(c = m->stack; c; c = c->snext)
+				if(!ISVISIBLE(c) && !c->isosd)
+					windows[w++] = c->win;
+		XRestackWindows(dpy, windows, w);
+		free(windows);
+	}
+	XSync(dpy, False);
+	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+}
+
+void
+restack(Monitor *m) {
+	Client *c;
 
 	drawbar(m);
 	if(!m->sel) {
@@ -2420,55 +2489,7 @@ restack(Monitor *m) {
 		else
 			m->sel = c;
 	}
-	if(m->backwin)
-		++nwindows;
-	if(dockwin)
-		++nwindows;
-	for(c = m->stack; c; c = c->snext, ++nwindows);
-	if(nwindows > 1) {
-		windows = (Window *)calloc(nwindows, sizeof(Window));
-        // notifications
-		for(c = m->stack; c; c = c->snext)
-			if(c->isosd)
-				windows[w++] = c->win;
-		// visible floating
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd)
-				windows[w++] = c->win;
-		// fullscreen window
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd)
-				windows[w++] = c->win;
-		// bar
-		if(m->barwin)
-			windows[w++] = m->barwin;
-		// dock
-		if(dockwin)
-			windows[w++] = dockwin;
-		// visible tiled sel
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
-				windows[w++] = c->win;
-		// visible tiled non-sel
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
-				windows[w++] = c->win;
-		// nofocus
-		for(c = m->stack; c; c = c->snext)
-			if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
-				windows[w++] = c->win;
-		// desktop window (plasmashell)
-		if(m->backwin)
-			windows[w++] = m->backwin;
-		// non-visible windows (other views)
-		for(c = m->stack; c; c = c->snext)
-			if(!ISVISIBLE(c) && !c->isosd)
-				windows[w++] = c->win;
-		XRestackWindows(dpy, windows, w);
-		free(windows);
-	}
-	XSync(dpy, False);
-	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+	restackwindows();
 }
 
 void
@@ -2515,6 +2536,8 @@ scan(void) {
 
 void
 sendmon(Client *c, Monitor *m) {
+	int xo = 0, yo = 0;
+
 	if(c->mon == m)
 		return;
 	unfocus(c, True);
@@ -2525,7 +2548,13 @@ sendmon(Client *c, Monitor *m) {
 		m->vs->showdock = c->mon->vs->showdock;
 		m->vs->showbar = c->mon->vs->showbar;
 	}
+	if(c->isfloating) {
+		xo = m->mx - c->mon->mx;
+		yo = m->my - c->mon->my;
+	}
 	c->mon = m;
+	c->x += xo;
+	c->y += yo;
 	attach(c);
 	attachstack(c);
 	if (!(m->vs->tagset & c->tags)) {
