@@ -2290,8 +2290,9 @@ nudgewindows() {
 
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
-			if (ISVISIBLE(c) && (!c->isfullscreen || c->mon->backwin == c->win)) {
-				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
+			if (ISVISIBLE(c)) {
+                if (!c->isfullscreen)
+                    XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 			}
 }
@@ -2657,7 +2658,8 @@ setfullscreen(Client *c, Bool fullscreen) {
 		}
 		c->bw = 0;
 		c->isfloating = True;
-		c->tags = vtag;
+        if (!(c->tags & vtag))
+            c->tags = vtag;
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 		monview(c->mon, vtag);
 	}
@@ -3785,7 +3787,7 @@ updatewindowtype(Client *c) {
 			m = recttomon(wa.x, wa.y, wa.width, wa.height);
 			if(m && !m->backwin) {
 				c->isfloating = True;
-				c->tags = ~0;
+                c->tags = TAGMASK;
 				c->bw = 0;
 				c->nofocus = True;
 				c->isfullscreen = True;
