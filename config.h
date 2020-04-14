@@ -116,6 +116,9 @@ static const Rule defaultrule =
 
 static Rule* rules = NULL;
 
+/* helper for spawning shell commands in the pre dwm-5.0 fashion */
+#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+
 #include "remap.c"
 #include "jsonconfig.c"
 #include "viewstack.c"
@@ -132,9 +135,6 @@ static Rule* rules = NULL;
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
 	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
-
-/* helper for spawning shell commands in the pre dwm-5.0 fashion */
-#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 #define WORKSPACE(KEY,TAG) \
 	{ MODKEY,   KEY,      view,     {.ui = TAG} },
@@ -231,20 +231,18 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
 	{ ClkWinTitle,          0,              Button1,        zoom,           {0} },
 	{ ClkWinTitle,          0,              Button3,        tagmon,         {.i = +1 } },
-	{ ClkWinTitle,          0,              Button4,        ttbarclick,     {.f = -0.05 } },
-	{ ClkWinTitle,          0,              Button5,        ttbarclick,     {.f = +0.05 } },
+	{ ClkWinTitle,          0,              Button4,        opacitychange,  {.f = -0.02 } },
+	{ ClkWinTitle,          0,              Button5,        opacitychange,  {.f = +0.02 } },
 	{ ClkWinTitle,          0,              Button6,        shiftmastersplit,  {.i = +1} },
 	{ ClkWinTitle,          0,              Button7,        shiftmastersplit,  {.i = -1} },
 	{ ClkWinTitle,          0,              Button9,        rotateclients,  {.i = +1} },
 	{ ClkWinTitle,          0,              Button8,        rotateclients,  {.i = -1} },
-	{ ClkWinTitle,          MODKEY,         Button4,        opacitychange,  {.f = -0.05 } },
-	{ ClkWinTitle,          MODKEY,         Button5,        opacitychange,  {.f = +0.05 } },
 	{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") },
 	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
-	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh mute") },
+	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"mute\"") },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
-	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh up") },
-	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("/home/tinou/hacks/scripts/Volume.sh down") },
+	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"increase_volume\"") },
+	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"decrease_volume\"") },
 	{ ClkStatusText,        0,              Button9,        sendselkey,     {.keysym = XK_Left} },
 	{ ClkStatusText,        0,              Button8,        sendselkey,     {.keysym = XK_Right} },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
@@ -252,6 +250,8 @@ static Button buttons[] = {
 	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
 	{ ClkTagBar,            0,              Button1,        view,           {0} },
 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
+	{ ClkTagBar,            0,              Button4,        increasebright, {0} },
+	{ ClkTagBar,            0,              Button5,        decreasebright, {0} },
 	{ ClkTagBar,            0,              Button9,        tabview,        {0} },
 	{ ClkTagBar,            0,              Button8,        tabview,        {.i = -1} },
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
