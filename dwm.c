@@ -2289,8 +2289,10 @@ nudgewindows() {
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
 			if (ISVISIBLE(c) || c->mon->backwin) {
-                if (!c->isfullscreen)
-                    XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
+                /*
+                 *if (!c->isfullscreen)
+                 *    XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
+                 */
 				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 			}
 }
