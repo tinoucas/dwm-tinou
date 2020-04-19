@@ -2002,8 +2002,6 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if(c->opacity != 1. && (!c->isfloating || c->nofocus || c->tags == TAGMASK))
-		client_opacity_set(c, c->opacity);
 	if (c->nofocus)
 		unmanage(c, False);
 	else if (c->tags & c->mon->vs->tagset)
