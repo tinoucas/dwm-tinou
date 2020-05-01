@@ -120,7 +120,7 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 }
 
 void
-storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
+storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt, Bool showdock) {
 	ViewStack *v;
 	ViewStack **pv = &m->vs;
 
@@ -133,7 +133,7 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt) {
 	if (v->lt[v->curlt] != lt)
 		v->curlt ^= 1;
 	v->lt[v->curlt] = lt;
-	v->showdock = lt->showdock;
+	v->showdock = showdock;
 }
 
 void

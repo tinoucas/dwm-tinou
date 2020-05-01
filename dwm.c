@@ -238,6 +238,7 @@ struct Rule {
 	const Layout* preflayout;
 	Bool istransient;
 	Bool isfullscreen;
+	int showdock;
 	char* procname;
 	Rule *next;
 };
@@ -643,7 +644,7 @@ applyrules(Client *c) {
 			}
 		}
 		if(lastr && lastr->preflayout) {
-			storestackviewlayout(c->mon, c->tags, lastr->preflayout);
+			storestackviewlayout(c->mon, c->tags, lastr->preflayout, lastr->showdock >= 0 ? lastr->showdock : lastr->preflayout->showdock);
 			if (c->tags == c->mon->vs->tagset)
 				arrange(c->mon);
 		}

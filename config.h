@@ -111,8 +111,8 @@ enum layout {
 };
 
 static const Rule defaultrule = 
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isfullscreen, procname, next */
-    {   NULL           , NULL                , NULL        , anytag    , False , False , False , OPAQU , False , False , True  , -1  , NULL   , NULL      , False   , False, NULL    , NULL };
+	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , next */
+	{   NULL , NULL     , NULL  , anytag    , False , False , False , OPAQU , False , False , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , NULL };
 
 static Rule* rules = NULL;
 
@@ -149,8 +149,8 @@ static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/script
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const char *rofiwindowcmd[] = { "rofi", "-modi", "combi", "-show", "combi", "-combi-modi", "window,drun" , NULL };
 static const Rule clockrule =
-	/* class           , instance            , title       , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh    , mon , remap  , preflt    , istrans , isdock, isfullscreen, procname */
-    {  NULL            , "oclock"            , NULL        , alltags   , True  , False , True  , SPCTR , True  , True  , True  ,-1   , NULL   , NULL      , False   , False , False, NULL };
+	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , next */
+	{  NULL  , "oclock" , NULL  , alltags   , True  , False , True  , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , NULL };
 
 static Key keys[] = {
     /* modifier                     key        function        argument */
@@ -237,7 +237,7 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button7,        shiftmastersplit,  {.i = -1} },
 	{ ClkWinTitle,          0,              Button9,        focusstack,  {.i = +1} },
 	{ ClkWinTitle,          0,              Button8,        focusstack,  {.i = -1} },
-	{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") },
+	{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("urxvt -name ghost_terminal -e /home/tinou/hacks/scripts/network_status.sh") },
 	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
 	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"mute\"") },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
