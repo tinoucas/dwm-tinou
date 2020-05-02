@@ -100,6 +100,8 @@ static void readtags (const struct nx_json *jsontags) {
 	for (i = 0, js = jsontags->child; js; js = js->next, ++i) {
 		tags[i] = calloc(strlen(js->text_value) + 1, sizeof(char));
 		strcpy(tags[i], js->text_value);
+		if(!strcmp(tags[i], "v"))
+			vtag = 1 << i;
 	}
 }
 

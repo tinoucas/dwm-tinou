@@ -15,7 +15,7 @@ static const unsigned int trrnttag = 1 << 6;
 static const unsigned int musictag = 1 << 7;
 static const unsigned int misctag = 1 << 8;
 static const unsigned int webtag = 1 << 9;
-static const unsigned int vtag = 1 << 10;
+static unsigned int vtag = 1 << 10;
 
 static const unsigned int anytag = 0;
 static const unsigned int alltags = ~0;
@@ -57,6 +57,8 @@ static const Bool showsystray       = False;    /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool showdock          = True;
 static const Bool topbar            = True;    /* False means bottom bar */
+static Bool foldtags                = True;
+static Bool showtagshortcuts        = False;
 static const int windowgap			= 36; /* gap between windows */
 static const int focusmonstart		= 0;
 static const Bool statusallmonitor  = True;
@@ -130,6 +132,8 @@ static Rule* rules = NULL;
 
 /* key definitions */
 #define MODKEY Mod4Mask
+static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
+
 #define TAGKEYS(KEY,TAG) \
 	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
 	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
@@ -175,6 +179,7 @@ static Key keys[] = {
     { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[MONOCLE]} },
     { MODKEY,                       XK_s,      setlayout,      {.v = &layouts[SPIRAL]} },
     { MODKEY,                       XK_d,      toggledock,     {0} },
+	{ MODKEY,                       XK_z,      togglefoldtags, {0} },
     { MODKEY,                       XK_BackSpace, rotatemonitor, {.i = 0} },
     { MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
     { MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
@@ -199,15 +204,8 @@ static Key keys[] = {
     TAGKEYS(                        XK_8,                      7)
     TAGKEYS(                        XK_9,                      8)
     TAGKEYS(                        XK_0,                      9)
-    TAGKEYS(                        XK_ampersand,              0)
-    TAGKEYS(                        XK_eacute,                 1)
-    TAGKEYS(                        XK_quotedbl,               2)
-    TAGKEYS(                        XK_apostrophe,             3)
-    TAGKEYS(                        XK_parenleft,              4)
-    TAGKEYS(                        XK_minus,                  5)
-    TAGKEYS(                        XK_egrave,                 6)
-    TAGKEYS(                        XK_underscore,             7)
-    TAGKEYS(                        XK_ccedilla,               8)
+    TAGKEYS(                        XK_minus,                  10)
+    TAGKEYS(                        XK_equal,                  11)
     { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
     { MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
     { MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
@@ -252,7 +250,7 @@ static Button buttons[] = {
 	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
 	{ ClkTagBar,            0,              Button4,        increasebright, {0} },
 	{ ClkTagBar,            0,              Button5,        decreasebright, {0} },
-	{ ClkTagBar,            0,              Button9,        tabview,        {0} },
+	{ ClkTagBar,            0,              Button9,        togglefoldtags, {0} },
 	{ ClkTagBar,            0,              Button8,        tabview,        {.i = -1} },
 	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
 	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },

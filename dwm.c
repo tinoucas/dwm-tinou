@@ -314,8 +314,10 @@ static void grabkeys(Window window);
 static void grabremap(Client *c, Bool focused);
 static void initfont(const char *fontstr);
 static void keypress(XEvent *e);
+static void keyrelease(XEvent *e);
 static void killclient(const Arg *arg);
 static void killclientimpl (Client *c);
+static void maketagtext (char* text, int maxlength, int i);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
@@ -377,6 +379,7 @@ static void toggledock(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void toggleview(const Arg *arg);
+static void togglefoldtags(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
@@ -416,6 +419,7 @@ static Client *swallowingclient(Window w);
 static void swallow(Client *p, Client *c);
 static void swallowdetach(Client *c);
 static void unswallowattach(Client *c);
+static void updatetagshortcuts();
 static void toggleswallow(const Arg* arg);
 static Client *termforwin(const Client *c);
 static pid_t winpid(Window w);
@@ -440,6 +444,7 @@ static void (*handler[LASTEvent]) (XEvent *) = {
 	[Expose] = expose,
 	[FocusIn] = focusin,
 	[KeyPress] = keypress,
+	[KeyRelease] = keyrelease,
 	[MappingNotify] = mappingnotify,
 	[MapRequest] = maprequest,
 	[MotionNotify] = motionnotify,
@@ -982,6 +987,8 @@ buttonpress(XEvent *e) {
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
 	Bool sendevent = False;
+	unsigned int occ = 0;
+	char text[32];
 
 	click = ClkRootWin;
 	/* focus monitor if necessary */
@@ -992,8 +999,14 @@ buttonpress(XEvent *e) {
 	}
 	if(ev->window == selmon->barwin) {
 		i = x = 0;
+		for(c = m->clients; c; c = c->next)
+			if(c->tags != TAGMASK && !c->nofocus && c->tags != TAGMASK)
+				occ |= c->tags;
 		do
-			x += TEXTW(tags[i]);
+			if(!foldtags || occ & 1 << i || m->vs->tagset & 1 << i) {
+				maketagtext(text, 31, i);
+				x += TEXTW(text);
+			}
 		while(ev->x >= x && ++i < numtags);
 		if(i < numtags) {
 			click = ClkTagBar;
@@ -1407,6 +1420,7 @@ drawbar(Monitor *m) {
 	unsigned long *col;
 	Client *c;
 	Bool hasfullscreenv = False;
+	char text[32];
 
 	resizebarwin(m);
 	if(showsystray && m == systraytomon(m)) {
@@ -1427,12 +1441,16 @@ drawbar(Monitor *m) {
 	}
 	dc.x = 0;
 	for(i = 0; i < numtags; i++) {
-		dc.w = TEXTW(tags[i]);
-		col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
-		drawtext(tags[i], col, urg & 1 << i);
-		drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags != TAGMASK && selmon->sel->tags & 1 << i || (1 << i) == vtag && hasfullscreenv,
-				   occ & 1 << i, urg & 1 << i, col);
-		dc.x += dc.w;
+		if(!foldtags || occ & 1 << i || m->vs->tagset & 1 << i) {
+			col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
+			maketagtext(text, 31, i);
+			dc.w = TEXTW(text);
+			drawtext(text, col, urg & 1 << i);
+			if(!foldtags)
+				drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags != TAGMASK && selmon->sel->tags & 1 << i || (1 << i) == vtag && hasfullscreenv,
+						occ & 1 << i, urg & 1 << i, col);
+			dc.x += dc.w;
+		}
 	}
 	dc.w = blw = TEXTW(m->ltsymbol);
 	drawtext(m->ltsymbol, dc.norm, False);
@@ -1853,6 +1871,10 @@ grabkeys(Window window) {
 			for(j = 0; j < LENGTH(modifiers); j++)
 				XGrabKey(dpy, code, keys[i].mod | modifiers[j], window,
 						True, GrabModeAsync, GrabModeAsync);
+	for(i = 0; i < LENGTH(modkeysyms); ++i)
+		if((code = XKeysymToKeycode(dpy, modkeysyms[i])))
+			XGrabKey(dpy, code, AnyModifier, window,
+				True, GrabModeAsync, GrabModeAsync);
 }
 
 void
@@ -1891,6 +1913,7 @@ keypress(XEvent *e) {
 	KeySym keysym;
 	XKeyEvent *ev;
 
+	updatetagshortcuts();
 	ev = &e->xkey;
 	keysym = XkbKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0, 0);
 	for(i = 0; i < LENGTH(keys); i++)
@@ -1904,6 +1927,11 @@ keypress(XEvent *e) {
 			if (selmon->sel->remap[i].keysymfrom && selmon->sel->remap[i].keysymfrom == keysym)
 				sendKey(XKeysymToKeycode(dpy, selmon->sel->remap[i].keysymto), selmon->sel->remap[i].modifier);
 	}
+}
+
+void
+keyrelease(XEvent *e) {
+	updatetagshortcuts();
 }
 
 void
@@ -1924,6 +1952,20 @@ killclientimpl(Client *c) {
 		XSetErrorHandler(xerror);
 		XUngrabServer(dpy);
 	}
+}
+
+void
+maketagtext(char* text, int maxlength, int i) {
+	const char* extrashortcuts[] = { "0", "-", "=" };
+
+	if(showtagshortcuts) {
+		if(i < 9)
+			snprintf(text, maxlength, "%d:%s", i + 1, tags[i]);
+		else if(i - 9 < LENGTH(extrashortcuts))
+			snprintf(text, maxlength, "%s:%s", extrashortcuts[i - 9], tags[i]);
+	}
+	else
+		snprintf(text, maxlength, "%s", tags[i]);
 }
 
 void
@@ -2186,6 +2228,19 @@ pop(Client *c) {
 	attach(c);
 	focus(c);
 	arrange(c->mon);
+}
+
+void
+updatetagshortcuts() {
+	Bool modkeyPressed = False;
+	XkbStateRec r;
+
+	XkbGetState(dpy, XkbUseCoreKbd, &r);
+	modkeyPressed = r.mods & MODKEY;
+	if(modkeyPressed != showtagshortcuts) {
+		showtagshortcuts = modkeyPressed;
+		drawbars();
+	}
 }
 
 void
@@ -3222,6 +3277,12 @@ toggleview(const Arg *arg) {
 		arrange(selmon);
 	}
 	updatecurrentdesktop();
+}
+
+void
+togglefoldtags(const Arg *arg) {
+	foldtags = !foldtags;
+	drawbars();
 }
 
 void
