@@ -137,7 +137,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd, isoverride;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
@@ -303,6 +303,7 @@ static void focusmon(const Arg *arg);
 static void setmonitorfocus(Monitor *m);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
+static Atom* getatomprops(Client *c, Atom prop, int* numatoms);
 static unsigned long getcolor(const char *colstr, XftColor *color);
 static Client *getclientunderpt(int x, int y);
 static Bool getrootptr(int *x, int *y);
@@ -1569,7 +1570,7 @@ enternotify(XEvent *e) {
 		unfocus(selmon->sel, True);
 		selectmon(m);
 	}
-	else if(c == selmon->sel || c == NULL)
+	else if(c == selmon->sel || c == NULL || selmon->sel && selmon->sel->isoverride)
 		return;
 	focus(c);
 }
@@ -1740,6 +1741,26 @@ getatomprop(Client *c, Atom prop) {
 		XFree(p);
 	}
 	return atom;
+}
+
+Atom*
+getatomprops(Client *c, Atom prop, int* numatoms) {
+	int di;
+	unsigned long dl, ni;
+	unsigned char *p = NULL;
+	Atom da, *atoms = NULL;
+	/* FIXME getatomprop should return the number of items and a pointer to
+	 * the stored data instead of this workaround */
+	Atom req = XA_ATOM;
+
+	if(XGetWindowProperty(dpy, c->win, prop, 0L, sizeof(Atom), False, req,
+						  &da, &di, &ni, &dl, &p) == Success && p) {
+		atoms = (Atom*)p;
+		*numatoms = ni;
+	}
+	else
+		*numatoms = 0;
+	return atoms;
 }
 
 unsigned long
@@ -3863,59 +3884,66 @@ updatesystray(void) {
 void
 updatewindowtype(Client *c) {
 	XWindowAttributes wa;
+	int i, numtypes, bw = c->bw;
 	const Atom state = getatomprop(c, netatom[NetWMState]);
-	const Atom wtype = getatomprop(c, netatom[NetWMWindowType]);
-	int bw = c->bw;
+	Atom* wtypes = getatomprops(c, netatom[NetWMWindowType], &numtypes);
+	Atom wtype;
 	XWindowChanges wc;
 	Monitor *m;
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
-	if(wtype == netatom[NetWMWindowTypeDock]) {
-		c->nofocus = True;
-		c->isfloating = True;
-		c->tags = ~0;
-		c->bw = 0;
-		dockwin = c->win;
-	}
-	else if(wtype == netatom[NetWMWindowTypeDesktop]) {
-		if (XGetWindowAttributes(dpy, c->win, &wa)) {
-			m = recttomon(wa.x, wa.y, wa.width, wa.height);
-			if(m && !m->backwin) {
-				c->isfloating = True;
-                c->tags = TAGMASK;
-				c->bw = 0;
-				c->nofocus = True;
-				c->isfullscreen = True;
-				c->opacity = 0.;
-				c->mon = m;
-				m->backwin = c->win;
-				resizeclient(c, m->mx, m->my, m->mw, m->mh);
-				window_opacity_set(m->backwin, 0.);
+	for(i = 0; i < numtypes; ++i) {
+		wtype = wtypes[i];
+		if(wtype == netatom[NetWMWindowTypeDock]) {
+			c->nofocus = True;
+			c->isfloating = True;
+			c->tags = ~0;
+			c->bw = 0;
+			dockwin = c->win;
+		}
+		else if(wtype == netatom[NetWMWindowTypeDesktop]) {
+			if (XGetWindowAttributes(dpy, c->win, &wa)) {
+				m = recttomon(wa.x, wa.y, wa.width, wa.height);
+				if(m && !m->backwin) {
+					c->isfloating = True;
+					c->tags = TAGMASK;
+					c->bw = 0;
+					c->nofocus = True;
+					c->isfullscreen = True;
+					c->opacity = 0.;
+					c->mon = m;
+					m->backwin = c->win;
+					resizeclient(c, m->mx, m->my, m->mw, m->mh);
+					window_opacity_set(m->backwin, 0.);
+				}
 			}
 		}
+		else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
+			c->isfloating = True;
+			c->bw = 0;
+			c->tags = TAGMASK;
+			c->isosd = True;
+			c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
+			c->y = c->mon->my + bh + c->mon->mh / 40;
+		}
+		else if(wtype == netatom[NetWMWindowTypeKDEOVERRIDE]) {
+			c->bw = 0;
+			c->isfloating = True;
+			c->isoverride = True;
+		}
+		else if(wtype == netatom[NetWMWindowTypeNotification]) {
+			c->isfloating = True;
+			c->bw = 0;
+			c->tags = TAGMASK;
+			c->isosd = True;
+		}
+		else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
+			c->isfloating = True;
+		}
 	}
-	else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
-		c->isfloating = True;
-		c->bw = 0;
-		c->tags = TAGMASK;
-		c->isosd = True;
-		c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
-		c->y = c->mon->my + bh + c->mon->mh / 40;
-	}
-	else if(wtype == netatom[NetWMWindowTypeKDEOVERRIDE]) {
-		c->bw = 0;
-		c->isfloating = True;
-	}
-	else if(wtype == netatom[NetWMWindowTypeNotification]) {
-		c->isfloating = True;
-		c->bw = 0;
-		c->tags = TAGMASK;
-		c->isosd = True;
-	}
-	else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
-		c->isfloating = True;
-	}
+	if(wtypes != NULL)
+		XFree(wtypes);
 	if(bw != c->bw) {
 		wc.border_width = c->bw;
 		XConfigureWindow(dpy, c->win, CWBorderWidth, &wc);
