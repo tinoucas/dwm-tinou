@@ -294,7 +294,7 @@ static Monitor *dirtomon(int dir);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static void drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]);
-static void drawtext(const char *text, unsigned long col[ColLast], Bool invert);
+static void drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre);
 static void enternotify(XEvent *e);
 static void expose(XEvent *e);
 static void focus(Client *c);
@@ -1445,7 +1445,7 @@ drawbar(Monitor *m) {
 			col = m->vs->tagset & 1 << i ? dc.sel : dc.norm;
 			maketagtext(text, 31, i);
 			dc.w = TEXTW(text);
-			drawtext(text, col, urg & 1 << i);
+			drawtext(text, col, urg & 1 << i, False);
 			if(!foldtags)
 				drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags != TAGMASK && selmon->sel->tags & 1 << i || (1 << i) == vtag && hasfullscreenv,
 						occ & 1 << i, urg & 1 << i, col);
@@ -1453,14 +1453,14 @@ drawbar(Monitor *m) {
 		}
 	}
 	dc.w = blw = TEXTW(m->ltsymbol);
-	drawtext(m->ltsymbol, dc.norm, False);
+	drawtext(m->ltsymbol, dc.norm, False, False);
 	dc.x += dc.w;
 	x = dc.x;
 	if(m == selmon || statusallmonitor) {
 		if (m != selmon) {
 			dc.x = m->wwo - (int)getsystraywidth();
 			dc.w = (int)getsystraywidth();
-			drawtext(ooftraysbl, dc.norm, False);
+			drawtext(ooftraysbl, dc.norm, False, False);
 		}
 		dc.w = TEXTW(stext);
 		dc.x = m->wwo - dc.w - (m == selmon ? 0 : getsystraywidth());
@@ -1468,7 +1468,7 @@ drawbar(Monitor *m) {
 			dc.x = x;
 			dc.w = m->wwo - x;
 		}
-		drawtext(stext, dc.norm, False);
+		drawtext(stext, dc.norm, False, False);
 	}
 	else
 		dc.x = m->wwo;
@@ -1476,11 +1476,11 @@ drawbar(Monitor *m) {
 		dc.x = x;
 		col = m == selmon ? dc.sel : dc.norm;
 		if(m->sel) {
-			drawtext(m->sel->name, col, False);
+			drawtext(m->sel->name, col, False, centretitle);
 			drawsquare(m->sel->isfixed, m->sel->isfloating, False, col);
 		}
 		else {
-			drawtext(NULL, col, False);
+			drawtext(NULL, col, False, False);
 		}
 	}
 	if(showsystray && m == systraytomon(m)) {
@@ -1521,10 +1521,11 @@ drawsquare(Bool filled, Bool empty, Bool invert, unsigned long col[ColLast]) {
 }
 
 void
-drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
+drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre) {
 	char buf[256];
-	int i, x, y, h, len, olen;
+	int i, x, y, w, h, len, olen;
 	XRectangle r = { dc.x, dc.y, dc.w, dc.h };
+	PangoRectangle pr;
 
 	XSetForeground(dpy, dc.gc, col[invert ? ColFG : ColBG]);
 	XFillRectangles(dpy, dc.drawable, dc.gc, &r, 1);
@@ -1546,6 +1547,12 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert) {
 	if(!len)
 		return;
 	pango_layout_set_text(dc.plo, buf, len);
+	if(centre) {
+		pango_layout_get_extents(dc.plo, 0, &pr);
+		w = pr.width / PANGO_SCALE;
+		if(w < dc.w)
+			x += (dc.w - w) / 2;
+	}
 	pango_xft_render_layout(dc.xftdrawable, (col==dc.norm?dc.xftnorm:dc.xftsel)+(invert?ColBG:ColFG), dc.plo, x * PANGO_SCALE, y * PANGO_SCALE);
 }
 

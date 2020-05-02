@@ -57,6 +57,7 @@ static const Bool showsystray       = False;    /* False means no systray */
 static const Bool showbar           = True;     /* False means no bar */
 static const Bool showdock          = True;
 static const Bool topbar            = True;    /* False means bottom bar */
+static const Bool centretitle       = True;
 static Bool foldtags                = True;
 static Bool showtagshortcuts        = False;
 static const int windowgap			= 36; /* gap between windows */
