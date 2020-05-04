@@ -1433,7 +1433,7 @@ drawbar(Monitor *m) {
 		if(c->isurgent && c->tags != TAGMASK)
 			urg |= c->tags;
 	}
-	if ((occ & vtag) && statuscommutator) {
+	if ((occ & vtag) && statuscommutator && !foldtags) {
 		for(c = m->clients; !hasfullscreenv && c; c = c->next)
 			if (c->tags & vtag && c->isfullscreen)
 				hasfullscreenv = True;
@@ -1450,6 +1450,8 @@ drawbar(Monitor *m) {
 			if(!foldtags)
 				drawsquare(m == selmon && selmon->sel && !selmon->sel->nofocus && selmon->sel->tags != TAGMASK && selmon->sel->tags & 1 << i || (1 << i) == vtag && hasfullscreenv,
 						occ & 1 << i, urg & 1 << i, col);
+			else if (vtag & 1 << i && occ & 1 << i)
+				drawsquare(statuscommutator, 1, 0, col);
 			dc.x += dc.w;
 		}
 	}
