@@ -760,6 +760,8 @@ arrange(Monitor *m) {
 		nudgewindows();
 	if (m)
 		updateopacities(m);
+	else for(m = mons; m; m = m->next)
+		updateopacities(m);
 }
 
 void
