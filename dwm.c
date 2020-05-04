@@ -1991,6 +1991,8 @@ maketagtext(char* text, int maxlength, int i) {
 			snprintf(text, maxlength, "%d:%s", i + 1, tags[i]);
 		else if(i - 9 < LENGTH(extrashortcuts))
 			snprintf(text, maxlength, "%s:%s", extrashortcuts[i - 9], tags[i]);
+		else
+			snprintf(text, maxlength, "%s", tags[i]);
 	}
 	else
 		snprintf(text, maxlength, "%s", tags[i]);
