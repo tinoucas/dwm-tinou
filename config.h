@@ -146,8 +146,8 @@ static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
 
 /* commands */
 static const char *dclipcmd[] = { "dclip", "paste", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
-static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-//static const char *dmenucmd[] = { "dmenu_run", "-fn", font, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+//static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
+static const char *albertcmd[] = { "/usr/bin/albert", "show", NULL };
 static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
@@ -161,8 +161,7 @@ static Key keys[] = {
     /* modifier                     key        function        argument */
     { MODKEY|ControlMask|ShiftMask, XK_l,      spawn,             SHCMD("touch $HOME/.lockX") },
     { MODKEY,                       XK_Menu,   focuslast,      {0} },
-    { MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
-    /*{ MODKEY,                       XK_r,      spawn,          {.v = dmenucmd } },*/
+    { MODKEY,                       XK_p,      spawn,          {.v = albertcmd } },
     { MODKEY|ShiftMask,             XK_Return, spawnterm,      {0} },
     { MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } },
     { MODKEY,                       XK_b,      togglebar,      {0} },
