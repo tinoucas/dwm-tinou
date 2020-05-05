@@ -333,7 +333,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-static void nudgewindows();
+static void forcewindowsrepaint();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -757,7 +757,7 @@ arrange(Monitor *m) {
 	else for(m = mons; m; m = m->next)
 		arrangemon(m);
 	if (picomfreezeworkaround)
-		nudgewindows();
+		forcewindowsrepaint();
 	if (m)
 		updateopacities(m);
 	else for(m = mons; m; m = m->next)
@@ -2068,7 +2068,7 @@ manage(Window w, XWindowAttributes *wa) {
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
 			(unsigned char *) &(c->win), 1);
-	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+	XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 	XMapWindow(dpy, c->win);
 	if(term)
 		swallow(term, c);
@@ -2370,19 +2370,14 @@ updatedpi() {
 }
 
 void
-nudgewindows() {
+forcewindowsrepaint() {
 	Client *c;
 	Monitor *m;
 
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
-			if (ISVISIBLE(c) || c->mon->backwin) {
-                /*
-                 *if (!c->isfullscreen)
-                 *    XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w + 1, c->h);
-                 */
-				XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
-			}
+			if ((ISVISIBLE(c)))
+				XClearWindow(dpy, c->win);
 }
 
 void
@@ -2400,8 +2395,8 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 			h -= windowgap;
 		}
 	}
-	if(applysizehints(c, &x, &y, &w, &h, interact))
-		resizeclient(c, x, y, w, h);
+	applysizehints(c, &x, &y, &w, &h, interact);
+	resizeclient(c, x, y, w, h);
 }
 
 void
@@ -3911,6 +3906,10 @@ updatewindowtype(Client *c) {
 		else if(wtype == netatom[NetWMWindowTypeDesktop]) {
 			if (XGetWindowAttributes(dpy, c->win, &wa)) {
 				m = recttomon(wa.x, wa.y, wa.width, wa.height);
+				if(!m || m->backwin)
+					for(m = mons; m; m = m->next)
+						if(!m->backwin)
+							break;
 				if(m && !m->backwin) {
 					c->isfloating = True;
 					c->tags = TAGMASK;
