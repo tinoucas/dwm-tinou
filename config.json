@@ -5,150 +5,51 @@
 	"dockposition": "left",
 	"picomfreezeworkaround": 0,
 	"keys": [
-		{
-			"key": "Return", "modifiers": [ "mod4", "shift" ],
-			"action": { "function": "spawnterm", "arg": 0 }
-		},
-		{
-			"key": "Return", "modifiers": [ "mod4" ],
-			"action": { "function": "zoom", "arg": 0 }
-		},
-		{
-			"key": "t", "modifiers": [ "mod4" ],
-			"action": { "function": "setlayout", "arg": "tile" }
-		},
-		{
-			"key": "f", "modifiers": [ "mod4" ],
-			"action": { "function": "setlayout", "arg": "float" }
-		},
-		{
-			"key": "m", "modifiers": [ "mod4" ],
-			"action": { "function": "setlayout", "arg": "monocle" }
-		},
-		{
-			"key": "s", "modifiers": [ "mod4" ],
-			"action": { "function": "setlayout", "arg": "spiral" }
-		},
-        {
-            "key": "p", "modifiers": [ "mod4" ],
-            "action": { "function": "spawn", "arg": "albert show" }
-        },
-        {
-            "key": "Tab", "modifiers": [ "mod1" ],
-            "action": { "function": "spawn", "arg": "rofi -modi window -show window -hide-scrollbar -padding 50 -line-padding 4 -auto-select -kb-cancel \"Alt+Escape,Escape\" -kb-accept-entry \"!Alt-Tab,!Alt+Alt_L,Return,Alt_L,Alt_R\" -kb-row-down \"Alt+Tab,Alt+Down\" -kb-row-up \"Alt+ISO_Left_Tab,Alt+Up\"" }
-        },
-        {
-            "key": "b", "modifiers": [ "mod4" ],
-            "action": { "function": "togglebar" }
-        },
-        {
-            "key": "j", "modifiers": [ "mod4" ],
-            "action": { "function": "focusstack", "arg": 1 }
-        },
-        {
-            "key": "k", "modifiers": [ "mod4" ],
-            "action": { "function": "focusstack", "arg": -1 }
-        },
-        {
-            "key": "h", "modifiers": [ "mod4" ],
-            "action": { "function": "setmfact", "arg": -0.05 }
-        },
-        {
-            "key": "l", "modifiers": [ "mod4" ],
-            "action": { "function": "setmfact", "arg": 0.05 }
-        },
-        {
-            "key": "Tab", "modifiers": [ "mod4" ],
-            "action": { "function": "view" }
-        },
-        {
-            "key": "c", "modifiers": [ "mod4", "shift" ],
-            "action": { "function": "killclient" }
-        },
-        {
-            "key": "d", "modifiers": [ "mod4" ],
-            "action": { "function": "toggledock" }
-        },
-        {
-            "key": "z", "modifiers": [ "mod4" ],
-            "action": { "function": "togglefoldtags" }
-        },
-        {
-            "key": "BackSpace", "modifiers": [ "mod4" ],
-            "action": { "function": "rotatemonitor" }
-        },
-        {
-            "key": "space", "modifiers": [ "mod4", "shift" ],
-            "action": { "function": "togglefloating" }
-        },
-        {
-            "key": "comma", "modifiers": [ "mod4" ],
-            "action": { "function": "focusmon", "arg": -1 }
-        },
-        {
-            "key": "period", "modifiers": [ "mod4" ],
-            "action": { "function": "focusmon", "arg": 1 }
-        },
-        {
-            "key": "comma", "modifiers": [ "mod4", "shift" ],
-            "action": { "function": "tagmon", "arg": -1 }
-        },
-        {
-            "key": "period", "modifiers": [ "mod4", "shift" ],
-            "action": { "function": "tagmon", "arg": 1 }
-        },
-        {
-            "key": "j", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "pushdown" }
-        },
-        {
-            "key": "k", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "pushup" }
-        },
-        {
-            "key": "q", "modifiers": [ "mod4", "shift" ],
-            "action": { "function": "quit" }
-        },
-        {
-            "key": "t", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "rotatelayoutaxis", "arg": 0 }
-        },
-        {
-            "key": "m", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "rotatelayoutaxis", "arg": 1 }
-        },
-        {
-            "key": "s", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "rotatelayoutaxis", "arg": 2 }
-        },
-        {
-            "key": "Return", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "mirrorlayout" }
-        },
-        {
-            "key": "l", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "shiftmastersplit", "arg": -1 }
-        },
-        {
-            "key": "h", "modifiers": [ "mod4", "control" ],
-            "action": { "function": "shiftmastersplit", "arg": 1 }
-        },
-        {
-            "key": "u", "modifiers": [ "mod4" ],
-            "action": { "function": "toggleswallow" }
-        },
-        { "key": "1",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 0 } },
-        { "key": "2",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 1 } },
-        { "key": "3",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 2 } },
-        { "key": "4",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 3 } },
-        { "key": "5",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 4 } },
-        { "key": "6",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 5 } },
-        { "key": "7",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 6 } },
-        { "key": "8",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 7 } },
-        { "key": "9",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 8 } },
-        { "key": "0",     "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 9 } },
-        { "key": "minus", "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 10 } },
-        { "key": "equal", "modifiers": [ "mod4" ], "action": { "function": "tagkeys", "arg": 11 } }
+		 { "key": "Return",    "modifiers": [ "mod4", "shift" ],   "action": { "function": "spawnterm", "arg": 0 } },
+		 { "key": "Return",    "modifiers": [ "mod4" ],            "action": { "function": "zoom", "arg": 0 } },
+		 { "key": "t",         "modifiers": [ "mod4" ],            "action": { "function": "setlayout", "arg": "tile" } },
+		 { "key": "f",         "modifiers": [ "mod4" ],            "action": { "function": "setlayout", "arg": "float" } },
+		 { "key": "m",         "modifiers": [ "mod4" ],            "action": { "function": "setlayout", "arg": "monocle" } },
+		 { "key": "s",         "modifiers": [ "mod4" ],            "action": { "function": "setlayout", "arg": "spiral" } },
+		 { "key": "p",         "modifiers": [ "mod4" ],            "action": { "function": "spawn", "arg": "albert show" } },
+		 { "key": "Tab",       "modifiers": [ "mod1" ],            "action": { "function": "spawn", "arg": "rofi -modi window -show window -hide-scrollbar -padding 50 -line-padding 4 -auto-select -kb-cancel \"Alt+Escape,Escape\" -kb-accept-entry \"!Alt-Tab,!Alt+Alt_L,Return,Alt_L,Alt_R\" -kb-row-down \"Alt+Tab,Alt+Down\" -kb-row-up \"Alt+ISO_Left_Tab,Alt+Up\"" } },
+		 { "key": "b",         "modifiers": [ "mod4" ],            "action": { "function": "togglebar" } },
+		 { "key": "j",         "modifiers": [ "mod4" ],            "action": { "function": "focusstack", "arg": 1 } },
+		 { "key": "k",         "modifiers": [ "mod4" ],            "action": { "function": "focusstack", "arg": -1 } },
+		 { "key": "h",         "modifiers": [ "mod4" ],            "action": { "function": "setmfact", "arg": -0.05 } },
+		 { "key": "l",         "modifiers": [ "mod4" ],            "action": { "function": "setmfact", "arg": 0.05 } },
+		 { "key": "Tab",       "modifiers": [ "mod4" ],            "action": { "function": "view" } },
+		 { "key": "c",         "modifiers": [ "mod4", "shift" ],   "action": { "function": "killclient" } },
+		 { "key": "d",         "modifiers": [ "mod4" ],            "action": { "function": "toggledock" } },
+		 { "key": "z",         "modifiers": [ "mod4" ],            "action": { "function": "togglefoldtags" } },
+		 { "key": "BackSpace", "modifiers": [ "mod4" ],            "action": { "function": "rotatemonitor" } },
+		 { "key": "space",     "modifiers": [ "mod4", "shift" ],   "action": { "function": "togglefloating" } },
+		 { "key": "comma",     "modifiers": [ "mod4" ],            "action": { "function": "focusmon", "arg": -1 } },
+		 { "key": "period",    "modifiers": [ "mod4" ],            "action": { "function": "focusmon", "arg": 1 } },
+		 { "key": "comma",     "modifiers": [ "mod4", "shift" ],   "action": { "function": "tagmon", "arg": -1 } },
+		 { "key": "period",    "modifiers": [ "mod4", "shift" ],   "action": { "function": "tagmon", "arg": 1 } },
+		 { "key": "j",         "modifiers": [ "mod4", "control" ], "action": { "function": "pushdown" } },
+		 { "key": "k",         "modifiers": [ "mod4", "control" ], "action": { "function": "pushup" } },
+		 { "key": "q",         "modifiers": [ "mod4", "shift" ],   "action": { "function": "quit" } },
+		 { "key": "t",         "modifiers": [ "mod4", "control" ], "action": { "function": "rotatelayoutaxis", "arg": 0 } },
+		 { "key": "m",         "modifiers": [ "mod4", "control" ], "action": { "function": "rotatelayoutaxis", "arg": 1 } },
+		 { "key": "s",         "modifiers": [ "mod4", "control" ], "action": { "function": "rotatelayoutaxis", "arg": 2 } },
+		 { "key": "Return",    "modifiers": [ "mod4", "control" ], "action": { "function": "mirrorlayout" } },
+		 { "key": "l",         "modifiers": [ "mod4", "control" ], "action": { "function": "shiftmastersplit", "arg": -1 } },
+		 { "key": "h",         "modifiers": [ "mod4", "control" ], "action": { "function": "shiftmastersplit", "arg": 1 } },
+		 { "key": "u",         "modifiers": [ "mod4" ],            "action": { "function": "toggleswallow" } },
+		 { "key": "1",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 0 } },
+		 { "key": "2",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 1 } },
+		 { "key": "3",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 2 } },
+		 { "key": "4",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 3 } },
+		 { "key": "5",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 4 } },
+		 { "key": "6",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 5 } },
+		 { "key": "7",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 6 } },
+		 { "key": "8",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 7 } },
+		 { "key": "9",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 8 } },
+		 { "key": "0",         "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 9 } },
+		 { "key": "minus",     "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 10 } },
+		 { "key": "equal",     "modifiers": [ "mod4" ],            "action": { "function": "tagkeys", "arg": 11 } }
 	],
 	"buttons": [
 		{ "click": "ltsymbol", "button": 1, "action": { "function": "toggledock" } },
