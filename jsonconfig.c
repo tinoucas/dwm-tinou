@@ -147,6 +147,53 @@ static void readpicomfreezeworkaround (const struct nx_json *js) {
 	picomfreezeworkaround = (js->int_value != 0);
 }
 
+static void maketagkeys(Key *key, int tagnum) {
+	const Key tagkeymappings[] =
+	{
+		{ key->mod,                       key->keysym, view,       {.ui = 1 << tagnum } , NULL },
+		{ key->mod|ControlMask,           key->keysym, toggleview, {.ui = 1 << tagnum } , NULL },
+		{ key->mod|ShiftMask,             key->keysym, tag,        {.ui = 1 << tagnum } , NULL },
+		{ key->mod|ControlMask|ShiftMask, key->keysym, toggletag,  {.ui = 1 << tagnum } , NULL },
+	};
+
+	Key *n = key;
+	Key *m = key->next;
+
+	tagkeys[tagnum] = (char*)calloc(2, sizeof(char));
+	tagkeys[tagnum][0] = (char)key->keysym;
+	tagkeysmod = key->mod;
+	for(int i = 0; i < LENGTH(tagkeymappings); ++i) {
+		memcpy(n, &tagkeymappings[i], sizeof(struct Key));
+		if(i < LENGTH(tagkeymappings) - 1) {
+			n->next = callockey();
+			n = n->next;
+		}
+	}
+	n->next = m;
+}
+
+static void populatetagkeys() {
+	Key *key = keys;
+	int i;
+	char *tagname;
+
+	while(key) {
+		if(key->pending && !strcmp(key->pending, pendingtagkeys)) {
+			free(key->pending);
+			key->pending = NULL;
+			tagname = key->arg.shcmd;
+			for(i = 0; i < numtags; ++i) {
+				if (!strcmp(tagname, tags[i])){
+					maketagkeys(key, i);
+					free(tagname);
+					break;
+				}
+			}
+		}
+		key = key->next;
+	}
+}
+
 #define ATTRIBUTE(a) { #a, &read##a }
 
 static void readconfig () {
@@ -155,7 +202,7 @@ static void readconfig () {
 	char* rulesFile = calloc(strlen(homedir) + strlen(relconfig) + 2, sizeof(char));
 	char* content;
 	const nx_json *json, *js;
-    int att;
+    int att, i;
 	const struct
 	{
 		const char* tagname;
@@ -174,7 +221,8 @@ static void readconfig () {
 		ATTRIBUTE(buttons),
 	};
 
-
+	for(i = 0; i < LENGTH(tagkeys); ++i)
+		tagkeys[i] = NULL;
 	strcpy(rulesFile, homedir);
 	strcat(rulesFile, "/");
 	strcat(rulesFile, relconfig);
@@ -196,4 +244,5 @@ static void readconfig () {
 		font = calloc(strlen(fallbackfont) + 1, sizeof(char));
 		strcpy(font, fallbackfont);
 	}
+	populatetagkeys();
 }

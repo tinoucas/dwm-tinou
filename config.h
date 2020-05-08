@@ -3,6 +3,8 @@
 #ifdef CONFIG_HEAD
 /* tagging */
 static char **tags;
+static char *tagkeys[32];
+static unsigned int tagkeysmod = 0;
 static int numtags;
 
 static const unsigned int maintag = 1 << 0;

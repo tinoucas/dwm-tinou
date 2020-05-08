@@ -1149,12 +1149,17 @@ cleantags(void) {
 
 void
 cleanupconfig() {
+	int i;
+
 	cleanrules();
 	cleankeys();
 	cleanbuttons();
 	cleantags();
 	free(font);
 	free(terminal[0]);
+	for(i = 0; i < LENGTH(tagkeys); ++i)
+		if(tagkeys[i])
+			free(tagkeys[i]);
 }
 
 void
@@ -2041,13 +2046,9 @@ killclientimpl(Client *c) {
 
 void
 maketagtext(char* text, int maxlength, int i) {
-	const char* extrashortcuts[] = { "0", "-", "=" };
-
 	if(showtagshortcuts) {
-		if(i < 9)
-			snprintf(text, maxlength, "%d:%s", i + 1, tags[i]);
-		else if(i - 9 < LENGTH(extrashortcuts))
-			snprintf(text, maxlength, "%s:%s", extrashortcuts[i - 9], tags[i]);
+		if(tagkeys[i])
+			snprintf(text, maxlength, "%s:%s", tagkeys[i], tags[i]);
 		else
 			snprintf(text, maxlength, "%s", tags[i]);
 	}
@@ -2317,16 +2318,13 @@ pop(Client *c) {
 	arrange(c->mon);
 }
 
-// FIXME: remove this
-#define MODKEY Mod4Mask
-
 void
 updatetagshortcuts() {
 	Bool modkeyPressed = False;
 	XkbStateRec r;
 
 	XkbGetState(dpy, XkbUseCoreKbd, &r);
-	modkeyPressed = r.mods & MODKEY;
+	modkeyPressed = r.mods & tagkeysmod;
 	if(modkeyPressed != showtagshortcuts) {
 		showtagshortcuts = modkeyPressed;
 		drawbars();

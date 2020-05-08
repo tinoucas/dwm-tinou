@@ -83,39 +83,6 @@ static Key *getNextKey (const struct nx_json *json) {
 	return key;
 }
 
-static void maketagkeys(Key *key) {
-	const Key tagkeys[] =
-	{
-		{ key->mod,                       key->keysym, view,       {.ui = 1 << key->arg.ui} , NULL },
-		{ key->mod|ControlMask,           key->keysym, toggleview, {.ui = 1 << key->arg.ui} , NULL },
-		{ key->mod|ShiftMask,             key->keysym, tag,        {.ui = 1 << key->arg.ui} , NULL },
-		{ key->mod|ControlMask|ShiftMask, key->keysym, toggletag,  {.ui = 1 << key->arg.ui} , NULL },
-	};
-
-	Key *n = key;
-	Key *m = key->next;
-
-	for(int i = 0; i < LENGTH(tagkeys); ++i) {
-		memcpy(n, &tagkeys[i], sizeof(struct Key));
-		if(i < LENGTH(tagkeys) - 1) {
-			n->next = callockey();
-			n = n->next;
-		}
-	}
-	n->next = m;
-}
-
-static void populatetagkeys() {
-	Key *key = keys;
-
-	while(key) {
-		if(key->pending && !strcmp(key->pending, pendingtagkeys)) {
-			maketagkeys(key);
-		}
-		key = key->next;
-	}
-}
-
 static void readkeys (const struct nx_json *jsonKeys) {
 	if (jsonKeys) {
 		const struct nx_json *js = jsonKeys;
@@ -126,6 +93,5 @@ static void readkeys (const struct nx_json *jsonKeys) {
 			key->next = keys;
 			keys = key;
 		}
-		populatetagkeys();
 	}
 }
