@@ -62,7 +62,7 @@
             "action": { "function": "view" }
         },
         {
-            "key": "c", "modifiers": [ "mod4" ],
+            "key": "c", "modifiers": [ "mod4", "shift" ],
             "action": { "function": "killclient" }
         },
         {
