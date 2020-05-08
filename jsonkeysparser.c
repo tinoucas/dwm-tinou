@@ -187,10 +187,10 @@ static Key *getNextKey (const struct nx_json *json) {
 static void maketagkeys(Key *key) {
 	const Key tagkeys[] =
 	{
-		{ MODKEY,                       key->keysym, view,       {.ui = 1 << key->arg.ui} , NULL },
-		{ MODKEY|ControlMask,           key->keysym, toggleview, {.ui = 1 << key->arg.ui} , NULL },
-		{ MODKEY|ShiftMask,             key->keysym, tag,        {.ui = 1 << key->arg.ui} , NULL },
-		{ MODKEY|ControlMask|ShiftMask, key->keysym, toggletag,  {.ui = 1 << key->arg.ui} , NULL },
+		{ key->mod,                       key->keysym, view,       {.ui = 1 << key->arg.ui} , NULL },
+		{ key->mod|ControlMask,           key->keysym, toggleview, {.ui = 1 << key->arg.ui} , NULL },
+		{ key->mod|ShiftMask,             key->keysym, tag,        {.ui = 1 << key->arg.ui} , NULL },
+		{ key->mod|ControlMask|ShiftMask, key->keysym, toggletag,  {.ui = 1 << key->arg.ui} , NULL },
 	};
 
 	Key *n = key;
