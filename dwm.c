@@ -2915,7 +2915,7 @@ updatecolors(const Arg *arg) {
 	Monitor *m;
 	Client *icons, *c, *next;
 
-	spawnimpl(arg, True, False);
+	spawnimpl(arg, True, True);
 	readcolors();
 
 	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
@@ -3782,7 +3782,7 @@ checkconfigtimes() {
 
 	if (configmodtime != 0 && bgmodtime != 0 && bgmodtime > configmodtime)
 	{
-		const Arg arg = SHCMD("exec ~/hacks/scripts/updateDwmColor.sh");
+		const Arg arg = {.shcmd = "exec ~/hacks/scripts/updateDwmColor.sh"};
 
 		updatecolors(&arg);
 	}

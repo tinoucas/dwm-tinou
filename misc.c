@@ -107,14 +107,14 @@ centerMouseInMonitorIndex(int monitor) {
 
 void
 increasebright(const Arg *arg) {
-	const Arg acmd = SHCMD("qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Increase Screen Brightness\"");
+	const Arg acmd = {.shcmd = "qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Increase Screen Brightness\""};
 
-	spawnimpl(&acmd, True, False);
+	spawnimpl(&acmd, True, True);
 }
 
 void
 decreasebright(const Arg *arg) {
-	const Arg acmd = SHCMD("qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Decrease Screen Brightness\"");
+	const Arg acmd = {.shcmd = "qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Decrease Screen Brightness\""};
 
-	spawnimpl(&acmd, True, False);
+	spawnimpl(&acmd, True, True);
 }
