@@ -121,101 +121,53 @@ static Rule* rules = NULL;
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+#define MODKEY Mod4Mask
+static Key* keys = NULL;
 
 #include "remap.c"
-#include "jsonconfig.c"
 #include "viewstack.c"
 #include "push.c"
 #include "rotatemons.c"
 #include "misc.c"
+#include "jsonconfig.c"
 
 #include <X11/XF86keysym.h>
 
 /* key definitions */
-#define MODKEY Mod4Mask
 static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
 
 #define TAGKEYS(KEY,TAG) \
-	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} }, \
-	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
+	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} , NULL }, \
+	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} , NULL }, \
+	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} , NULL }, \
+	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} , NULL },
 
 #define WORKSPACE(KEY,TAG) \
 	{ MODKEY,   KEY,      view,     {.ui = TAG} },
 
 /* commands */
-static const char *dclipcmd[] = { "dclip", "paste", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor , "-sf", selfgcolor, NULL };
-//static const char *dmenucmd[] = { "./bin/dmenu_run", "-fn", fallbackfont, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbgcolor, "-sf", selfgcolor, NULL };
-static const char *albertcmd[] = { "/usr/bin/albert", "show", NULL };
-static const char *screencmd[]  = { "urxvt", "-e", "screen", "-xRR", NULL };
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
-static const char *rofiwindowcmd[] = { "rofi", "-modi", "combi", "-show", "combi", "-combi-modi", "window,drun" , NULL };
 static const Rule clockrule =
 	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , next */
 	{  NULL  , "oclock" , NULL  , alltags   , True  , False , True  , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , NULL };
 
-static Key keys[] = {
-    /* modifier                     key        function        argument */
-    { MODKEY|ControlMask|ShiftMask, XK_l,      spawn,             SHCMD("touch $HOME/.lockX") },
-    { MODKEY,                       XK_Menu,   focuslast,      {0} },
-    { MODKEY,                       XK_p,      spawn,          {.v = albertcmd } },
-    { MODKEY|ShiftMask,             XK_Return, spawnterm,      {0} },
-    { MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } },
-    { MODKEY,                       XK_b,      togglebar,      {0} },
-    { MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
-    { MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-    { MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
-    { MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },
-    { MODKEY,                       XK_Return, zoom,           {0} },
-    { MODKEY,                       XK_Tab,    view,           {0} },
-    { MODKEY,                       XK_space,  setlayout,      {.v = 0 } },
-    { Mod1Mask,                     XK_Tab,    spawn,          {.v = rofiwindowcmd } },
-    { MODKEY|ShiftMask,             XK_c,      killclient,     {0} },
-    { MODKEY,                       XK_t,      setlayout,      {.v = &layouts[TILE]} },
-    { MODKEY,                       XK_f,      setlayout,      {.v = &layouts[FLOAT]} },
-    { MODKEY,                       XK_m,      setlayout,      {.v = &layouts[MONOCLE]} },
-    { MODKEY,                       XK_s,      setlayout,      {.v = &layouts[SPIRAL]} },
-    { MODKEY,                       XK_d,      toggledock,     {0} },
-	{ MODKEY,                       XK_z,      togglefoldtags, {0} },
-    { MODKEY,                       XK_BackSpace, rotatemonitor, {.i = 0} },
-    { MODKEY|ShiftMask,             XK_space,  togglefloating, {0} },
-    { MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} },
-    { MODKEY,                       XK_comma,  focusmon,       {.i = -1 } },
-    { MODKEY,                       XK_period, focusmon,       {.i = +1 } },
-    { MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
-    { MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-    { MODKEY|ControlMask,           XK_j,      pushdown,       {0} },
-    { MODKEY|ControlMask,           XK_k,      pushup,         {0} },
-    { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") },
-    { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } },
-    { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") },
-    { ControlMask|Mod1Mask,         XK_l,      spawn,          SHCMD("exec slimlock") },
-    { MODKEY,                       XK_a,      spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") },
-    TAGKEYS(                        XK_1,                      0)
-    TAGKEYS(                        XK_2,                      1)
-    TAGKEYS(                        XK_3,                      2)
-    TAGKEYS(                        XK_4,                      3)
-    TAGKEYS(                        XK_5,                      4)
-    TAGKEYS(                        XK_6,                      5)
-    TAGKEYS(                        XK_7,                      6)
-    TAGKEYS(                        XK_8,                      7)
-    TAGKEYS(                        XK_9,                      8)
-    TAGKEYS(                        XK_0,                      9)
-    TAGKEYS(                        XK_minus,                  10)
-    TAGKEYS(                        XK_equal,                  11)
-    { MODKEY|ShiftMask,             XK_q,      quit,           {0} },
-    { MODKEY|ControlMask,           XK_t,      rotatelayoutaxis, {.i = 0} },    /* 0 = layout axis */
-    { MODKEY|ControlMask,           XK_m,      rotatelayoutaxis, {.i = 1} },    /* 1 = master axis */
-    { MODKEY|ControlMask,           XK_s,      rotatelayoutaxis, {.i = 2} },    /* 2 = stack axis */
-    { MODKEY|ControlMask,           XK_Return, mirrorlayout,     {0} },
-    { MODKEY|ControlMask,           XK_l,      shiftmastersplit, {.i = -1} },   /* reduce the number of tiled clients in the master area */
-    { MODKEY|ControlMask,           XK_h,      shiftmastersplit, {.i = +1} },   /* increase the number of tiled clients in the master area */
-    { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} },
-    { MODKEY,                       XK_u,      toggleswallow,    {0} },
-};
+//    [> modifier                     key        function        argument <]
+//    { MODKEY|ControlMask|ShiftMask, XK_l,      spawn,             SHCMD("touch $HOME/.lockX") , NULL },
+//    { MODKEY,                       XK_Menu,   focuslast,      {0} , NULL },
+//    { MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } , NULL },
+//    { MODKEY,                       XK_space,  setlayout,      {.v = 0 } , NULL },
+//    { MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} , NULL },
+//    { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") , NULL },
+//    { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } , NULL },
+//    { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") , NULL },
+//    { MODKEY,                       XK_a,      spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") , NULL },
+//    { ControlMask|Mod1Mask,         XK_l,      spawn,          SHCMD("exec slimlock") , NULL },
+//    { Mod1Mask,                     XK_Tab,    spawn,          {.v = rofiwindowcmd } , NULL },
+//    { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} , NULL },
+//    { MODKEY,                       XK_u,      toggleswallow,    {0} , NULL },
+//};
 
 /* button definitions */
 /* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */

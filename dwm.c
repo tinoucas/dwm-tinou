@@ -109,6 +109,7 @@ typedef union {
 	float f;
 	const void *v;
 	KeySym keysym;
+	char *shcmd;
 } Arg;
 
 typedef struct {
@@ -172,11 +173,13 @@ typedef struct {
 	} font;
 } DC; /* draw context */
 
-typedef struct {
+typedef struct Key {
 	unsigned int mod;
 	KeySym keysym;
 	void (*func)(const Arg *);
-	const Arg arg;
+	Arg arg;
+	struct Key *next;
+	char* pending;
 } Key;
 
 typedef struct {
@@ -364,7 +367,7 @@ static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
 static void systrayaddwindow (Window win);
-static void spawnimpl(const Arg *arg, Bool waitdeath);
+static void spawnimpl(const Arg *arg, Bool waitdeath, Bool useshcmd);
 static void spawnterm(const Arg *arg);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
@@ -1097,6 +1100,25 @@ cleanrules(void) {
 }
 
 void
+cleankey(Key* key) {
+	if(key->func == &spawn)
+		free(key->arg.shcmd);
+	free(key);
+}
+
+void
+cleankeys(void) {
+	Key *k;
+
+	while (keys) {
+		k = keys;
+		keys = k->next;
+		cleankey(k);
+	}
+	keys = NULL;
+}
+
+void
 cleantags(void) {
 	int i;
 
@@ -1108,6 +1130,7 @@ cleantags(void) {
 void
 cleanupconfig() {
 	cleanrules();
+	cleankeys();
 	cleantags();
 	free(font);
 	free(terminal[0]);
@@ -1895,14 +1918,17 @@ grabkeys(Window window) {
 	unsigned int i, j;
 	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 	KeyCode code;
+	Key *key = keys;
 
 	updatenumlockmask();
 	XUngrabKey(dpy, AnyKey, AnyModifier, window);
-	for(i = 0; i < LENGTH(keys); i++)
-		if((code = XKeysymToKeycode(dpy, keys[i].keysym)))
+	while(key) {
+		if((code = XKeysymToKeycode(dpy, key->keysym)))
 			for(j = 0; j < LENGTH(modifiers); j++)
-				XGrabKey(dpy, code, keys[i].mod | modifiers[j], window,
+				XGrabKey(dpy, code, key->mod | modifiers[j], window,
 						True, GrabModeAsync, GrabModeAsync);
+		key = key->next;
+	}
 	for(i = 0; i < LENGTH(modkeysyms); ++i)
 		if((code = XKeysymToKeycode(dpy, modkeysyms[i])))
 			XGrabKey(dpy, code, AnyModifier, window,
@@ -1944,16 +1970,19 @@ keypress(XEvent *e) {
 	unsigned int i;
 	KeySym keysym;
 	XKeyEvent *ev;
+	Key *key = keys;
 
 	updatetagshortcuts();
 	ev = &e->xkey;
 	keysym = XkbKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0, 0);
-	for(i = 0; i < LENGTH(keys); i++)
-		if(keysym == keys[i].keysym
-		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
-		&& keys[i].func) {
-			keys[i].func(&(keys[i].arg));
+	while(key) {
+		if(keysym == key->keysym
+		&& CLEANMASK(key->mod) == CLEANMASK(ev->state)
+		&& key->func) {
+			key->func(&(key->arg));
 		}
+		key = key->next;
+	}
 	if (selmon->sel && selmon->sel->remap) {
 		for(i = 0; selmon->sel->remap[i].keysymto; ++i)
 			if (selmon->sel->remap[i].keysymfrom && selmon->sel->remap[i].keysymfrom == keysym)
@@ -2366,7 +2395,7 @@ void
 updatedpi() {
 	const Arg arg = {.v = updatedpicmd };
 
-	spawn(&arg);
+	spawnimpl(&arg, False, False);
 }
 
 void
@@ -2886,7 +2915,7 @@ updatecolors(const Arg *arg) {
 	Monitor *m;
 	Client *icons, *c, *next;
 
-	spawnimpl(arg, True);
+	spawnimpl(arg, True, False);
 	readcolors();
 
 	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
@@ -2931,7 +2960,7 @@ startuserscript() {
 		const char* cmd[] = { "/bin/zsh", userscript, NULL };
 		const Arg arg = {.v = cmd };
 	
-		spawn(&arg);
+		spawnimpl(&arg, False, False);
 	}
 }
 
@@ -3077,13 +3106,16 @@ sigchld(int unused) {
 }
 
 void
-spawnimpl(const Arg *arg, Bool waitdeath) {
+spawnimpl(const Arg *arg, Bool waitdeath, Bool useshcmd) {
+	const char *shcmd[] = { "/bin/sh", "-c", arg->shcmd, NULL };
+	const char **cmd = useshcmd ? shcmd : (const char**)arg->v;
 	int childpid = fork();
+
 	if(childpid == 0) {
 		if(dpy)
 			close(ConnectionNumber(dpy));
 		setsid();
-		execvp(((char **)arg->v)[0], (char **)arg->v);
+		execvp(cmd[0], (char **)cmd);
 		fprintf(stderr, "dwm: execvp %s", ((char **)arg->v)[0]);
 		perror(" failed");
 		exit(EXIT_SUCCESS);
@@ -3110,7 +3142,7 @@ spawnterm(const Arg* arg) {
 
 void
 spawn(const Arg *arg) {
-	spawnimpl(arg, False);
+	spawnimpl(arg, False, True);
 }
 
 void
@@ -3527,7 +3559,7 @@ void
 killclocks(void) {
 	Monitor *m;
 	const Arg arg = {.v = killclockscmd };
-	spawnimpl(&arg, True);
+	spawnimpl(&arg, True, False);
 
 	for(m = mons; m; m = m->next)
 		m->hasclock = False;
@@ -3540,7 +3572,7 @@ createclocks(void) {
 	killclocks();
 	for(m = mons; m; m = m->next) {
 		const Arg arg = {.v = clockcmd };
-		spawn(&arg);
+		spawnimpl(&arg, False, False);
 	}
 }
 

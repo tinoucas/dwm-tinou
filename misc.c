@@ -109,12 +109,12 @@ void
 increasebright(const Arg *arg) {
 	const Arg acmd = SHCMD("qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Increase Screen Brightness\"");
 
-	spawnimpl(&acmd, True);
+	spawnimpl(&acmd, True, False);
 }
 
 void
 decreasebright(const Arg *arg) {
 	const Arg acmd = SHCMD("qdbus org.kde.kglobalaccel /component/org_kde_powerdevil invokeShortcut \"Decrease Screen Brightness\"");
 
-	spawnimpl(&acmd, True);
+	spawnimpl(&acmd, True, False);
 }
