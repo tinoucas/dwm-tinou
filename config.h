@@ -120,8 +120,8 @@ static const Rule defaultrule =
 static Rule* rules = NULL;
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
-#define MODKEY Mod4Mask
 static Key* keys = NULL;
+static Button* buttons = NULL;
 
 #include "remap.c"
 #include "viewstack.c"
@@ -135,15 +135,6 @@ static Key* keys = NULL;
 /* key definitions */
 static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
 
-#define TAGKEYS(KEY,TAG) \
-	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} , NULL }, \
-	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} , NULL }, \
-	{ MODKEY|ShiftMask,             KEY,      tag,            {.ui = 1 << TAG} , NULL }, \
-	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} , NULL },
-
-#define WORKSPACE(KEY,TAG) \
-	{ MODKEY,   KEY,      view,     {.ui = TAG} },
-
 /* commands */
 static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
@@ -151,60 +142,5 @@ static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const Rule clockrule =
 	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , next */
 	{  NULL  , "oclock" , NULL  , alltags   , True  , False , True  , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , NULL };
-
-//    [> modifier                     key        function        argument <]
-//    { MODKEY|ControlMask|ShiftMask, XK_l,      spawn,             SHCMD("touch $HOME/.lockX") , NULL },
-//    { MODKEY,                       XK_Menu,   focuslast,      {0} , NULL },
-//    { MODKEY|ShiftMask,             XK_x,      spawn,          {.v = screencmd } , NULL },
-//    { MODKEY,                       XK_space,  setlayout,      {.v = 0 } , NULL },
-//    { MODKEY|ControlMask|ShiftMask, XK_space,  allnonfloat,       {0} , NULL },
-//    { MODKEY|ControlMask,           XK_c,      spawn,          SHCMD("exec dclip copy") , NULL },
-//    { MODKEY|ControlMask,           XK_v,      spawn,          {.v = dclipcmd } , NULL },
-//    { ControlMask,                  XK_F12,    updatecolors,   SHCMD("exec ~/hacks/scripts/updateDwmColor.sh") , NULL },
-//    { MODKEY,                       XK_a,      spawn,          SHCMD("kill -s USR1 $(pidof deadd-notification-center)") , NULL },
-//    { ControlMask|Mod1Mask,         XK_l,      spawn,          SHCMD("exec slimlock") , NULL },
-//    { Mod1Mask,                     XK_Tab,    spawn,          {.v = rofiwindowcmd } , NULL },
-//    { MODKEY|ControlMask,           XK_Right,  rotatemonitor,  {.i = 0} , NULL },
-//    { MODKEY,                       XK_u,      toggleswallow,    {0} , NULL },
-//};
-
-/* button definitions */
-/* click can be ClkLtSymbol, ClkStatusText, ClkWinTitle, ClkClientWin, or ClkRootWin */
-static Button buttons[] = {
-	/* click                event mask      button          function        argument */
-	{ ClkLtSymbol,          0,              Button1,        toggledock,     {0} },
-	{ ClkLtSymbol,          0,              Button2,        setlayout,      {.v = &layouts[TILE] } },
-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[MONOCLE] } },
-	{ ClkLtSymbol,          0,              Button4,        viewscroll,     {.f = -0.05 } },
-	{ ClkLtSymbol,          0,              Button5,        viewscroll,     {.f = +0.05 } },
-	{ ClkWinTitle,          0,              Button2,        killclient,     {0} },
-	{ ClkWinTitle,          0,              Button1,        zoom,           {0} },
-	{ ClkWinTitle,          0,              Button3,        tagmon,         {.i = +1 } },
-	{ ClkWinTitle,          0,              Button4,        opacitychange,  {.f = -0.02 } },
-	{ ClkWinTitle,          0,              Button5,        opacitychange,  {.f = +0.02 } },
-	{ ClkWinTitle,          0,              Button6,        shiftmastersplit,  {.i = +1} },
-	{ ClkWinTitle,          0,              Button7,        shiftmastersplit,  {.i = -1} },
-	{ ClkWinTitle,          0,              Button9,        focusstack,  {.i = +1} },
-	{ ClkWinTitle,          0,              Button8,        focusstack,  {.i = -1} },
-	{ ClkStatusText,        0,              Button1,        spawn,          {.shcmd = "urxvt -name ghost_terminal -e /home/tinou/hacks/scripts/network_status.sh"} },
-	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
-	{ ClkStatusText,        0,              Button2,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"mute\""} },
-	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
-	{ ClkStatusText,        0,              Button4,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"increase_volume\""} },
-	{ ClkStatusText,        0,              Button5,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"decrease_volume\""} },
-	{ ClkStatusText,        0,              Button9,        sendselkey,     {.keysym = XK_Left} },
-	{ ClkStatusText,        0,              Button8,        sendselkey,     {.keysym = XK_Right} },
-	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
-	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
-	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
-	{ ClkTagBar,            0,              Button1,        view,           {0} },
-	{ ClkTagBar,            0,              Button3,        toggleview,     {0} },
-	{ ClkTagBar,            0,              Button4,        increasebright, {0} },
-	{ ClkTagBar,            0,              Button5,        decreasebright, {0} },
-	{ ClkTagBar,            0,              Button9,        togglefoldtags, {0} },
-	{ ClkTagBar,            0,              Button8,        tabview,        {.i = -1} },
-	{ ClkTagBar,            MODKEY,         Button1,        tag,            {0} },
-	{ ClkTagBar,            MODKEY,         Button3,        toggletag,      {0} },
-};
 
 #endif

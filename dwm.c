@@ -112,12 +112,13 @@ typedef union {
 	char *shcmd;
 } Arg;
 
-typedef struct {
+typedef struct Button {
 	unsigned int click;
 	unsigned int mask;
 	unsigned int button;
 	void (*func)(const Arg *arg);
-	const Arg arg;
+	Arg arg;
+	struct Button *next;
 } Button;
 
 typedef struct {
@@ -989,6 +990,7 @@ void
 buttonpress(XEvent *e) {
 	unsigned int i, x, click;
 	Arg arg = {0};
+	Button *button = buttons;
 	Client *c;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
@@ -1030,10 +1032,12 @@ buttonpress(XEvent *e) {
 		click = ClkClientWin;
         sendevent = True;
 	}
-	for(i = 0; i < LENGTH(buttons); i++)
-		if(click == buttons[i].click && buttons[i].func && buttons[i].button == ev->button
-		&& CLEANMASK(buttons[i].mask) == CLEANMASK(ev->state))
-			buttons[i].func(click == ClkTagBar && buttons[i].arg.i == 0 ? &arg : &buttons[i].arg);
+	while(button) {
+		if(click == button->click && button->func && button->button == ev->button
+		&& CLEANMASK(button->mask) == CLEANMASK(ev->state))
+			button->func(click == ClkTagBar && button->arg.i == 0 ? &arg : &button->arg);
+		button = button->next;
+	}
 	if (c && c->remap)
 		for(i = 0; c->remap[i].keysymto; i++)
 			if(click == ClkClientWin
@@ -1096,7 +1100,6 @@ cleanrules(void) {
 		rules = r->next;
 		cleanrule(r);
 	}
-	rules = NULL;
 }
 
 void
@@ -1115,7 +1118,24 @@ cleankeys(void) {
 		keys = k->next;
 		cleankey(k);
 	}
-	keys = NULL;
+}
+
+void
+cleanbutton(Button *button) {
+	if(button->func == &spawn)
+		free(button->arg.shcmd);
+	free(button);
+}
+
+void
+cleanbuttons(void) {
+	Button *b;
+
+	while(buttons) {
+		b = buttons;
+		buttons = b->next;
+		cleanbutton(b);
+	}
 }
 
 void
@@ -1131,6 +1151,7 @@ void
 cleanupconfig() {
 	cleanrules();
 	cleankeys();
+	cleanbuttons();
 	cleantags();
 	free(font);
 	free(terminal[0]);
@@ -1888,17 +1909,20 @@ void
 grabbuttons(Client *c, Bool focused) {
 	unsigned int i, j;
 	unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
+	Button *button = buttons;
 
 	updatenumlockmask();
 	XUngrabButton(dpy, AnyButton, AnyModifier, c->win);
 	if(focused) {
-		for(i = 0; i < LENGTH(buttons); i++)
-			if(buttons[i].click == ClkClientWin)
+		while(button) {
+			if(button->click == ClkClientWin)
 				for(j = 0; j < LENGTH(modifiers); j++)
-					XGrabButton(dpy, buttons[i].button,
-							buttons[i].mask | modifiers[j],
+					XGrabButton(dpy, button->button,
+							button->mask | modifiers[j],
 							c->win, False, BUTTONMASK,
 							GrabModeAsync, GrabModeSync, None, None);
+			button = button->next;
+		}
 		if (c->remap)
 			for(i = 0; c->remap[i].keysymto; i++)
 				for(j = 0; j < LENGTH(modifiers); j++)
@@ -2292,6 +2316,9 @@ pop(Client *c) {
 	focus(c);
 	arrange(c->mon);
 }
+
+// FIXME: remove this
+#define MODKEY Mod4Mask
 
 void
 updatetagshortcuts() {

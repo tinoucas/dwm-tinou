@@ -1,7 +1,9 @@
 #include "nxjson.c"
 
 #include "jsonruleparser.c"
+#include "jsonparser.c"
 #include "jsonkeysparser.c"
+#include "jsonbuttonparser.c"
 
 static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 	int i;
@@ -169,6 +171,7 @@ static void readconfig () {
 		ATTRIBUTE(dockmonitor),
 		ATTRIBUTE(picomfreezeworkaround),
 		ATTRIBUTE(keys),
+		ATTRIBUTE(buttons),
 	};
 
 
