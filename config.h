@@ -120,7 +120,6 @@ static const Rule defaultrule =
 static Rule* rules = NULL;
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
-#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 #define MODKEY Mod4Mask
 static Key* keys = NULL;
 
@@ -187,12 +186,12 @@ static Button buttons[] = {
 	{ ClkWinTitle,          0,              Button7,        shiftmastersplit,  {.i = -1} },
 	{ ClkWinTitle,          0,              Button9,        focusstack,  {.i = +1} },
 	{ ClkWinTitle,          0,              Button8,        focusstack,  {.i = -1} },
-	{ ClkStatusText,        0,              Button1,        spawn,          SHCMD("urxvt -name ghost_terminal -e /home/tinou/hacks/scripts/network_status.sh") },
+	{ ClkStatusText,        0,              Button1,        spawn,          {.shcmd = "urxvt -name ghost_terminal -e /home/tinou/hacks/scripts/network_status.sh"} },
 	{ ClkStatusText,        MODKEY,         Button2,        spawnterm,      {0} },
-	{ ClkStatusText,        0,              Button2,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"mute\"") },
+	{ ClkStatusText,        0,              Button2,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"mute\""} },
 	{ ClkStatusText,        0,              Button3,        rotatemonitor,  {.i = 1} },
-	{ ClkStatusText,        0,              Button4,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"increase_volume\"") },
-	{ ClkStatusText,        0,              Button5,        spawn,          SHCMD("qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"decrease_volume\"") },
+	{ ClkStatusText,        0,              Button4,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"increase_volume\""} },
+	{ ClkStatusText,        0,              Button5,        spawn,          {.shcmd = "qdbus org.kde.kglobalaccel /component/kmix invokeShortcut \"decrease_volume\""} },
 	{ ClkStatusText,        0,              Button9,        sendselkey,     {.keysym = XK_Left} },
 	{ ClkStatusText,        0,              Button8,        sendselkey,     {.keysym = XK_Right} },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
