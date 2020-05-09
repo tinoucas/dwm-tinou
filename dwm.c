@@ -38,12 +38,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
-#include <X11/Xft/Xft.h>
 #include <X11/Xlib-xcb.h>
 #include <xcb/res.h>
+#include <cairo.h>
+#include <cairo-xlib.h>
 #include <pango/pango.h>
-#include <pango/pangoxft.h>
 #include <pango/pango-font.h>
+#include <pango/pangocairo.h>
 #ifdef XINERAMA
 #include <X11/extensions/Xinerama.h>
 #endif /* XINERAMA */
@@ -159,18 +160,24 @@ typedef struct {
 	Drawable drawable;
 	GC gc;
 
-	XftColor  xftnorm[ColLast];
-	XftColor  xftsel[ColLast];
-	XftDraw  *xftdrawable;
+	PangoColor  pangonorm[ColLast];
+	PangoColor  pangosel[ColLast];
 
-	PangoContext *pgc;
-	PangoLayout  *plo;
-	PangoFontDescription *pfd;
+	struct {
+		cairo_t *context;
+		cairo_surface_t *surface;
+		PangoFontMap *fontmap;
+		cairo_font_options_t *font_options;
+		PangoContext *pangocontext;
+		PangoLayout *layout;
+		PangoFontDescription *fontdesc;
+	} cairo;
 
 	struct {
 		int ascent;
 		int descent;
 		int height;
+		int padding;
 	} font;
 } DC; /* draw context */
 
@@ -308,7 +315,7 @@ static void setmonitorfocus(Monitor *m);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static Atom* getatomprops(Client *c, Atom prop, int* numatoms);
-static unsigned long getcolor(const char *colstr, XftColor *color);
+static unsigned long getcolor(const char *colstr, PangoColor *color);
 static Client *getclientunderpt(int x, int y);
 static Bool getrootptr(int *x, int *y);
 static long getstate(Window w);
@@ -1305,12 +1312,15 @@ configurenotify(XEvent *e) {
 	if(ev->window == root) {
 		sw = ev->width;
 		sh = ev->height;
-		if(dc.xftdrawable != 0)
-			XftDrawDestroy(dc.xftdrawable);
+		if(dc.cairo.surface != NULL) {
+			cairo_destroy(dc.cairo.context);
+			cairo_surface_destroy(dc.cairo.surface);
+		}
 		if(dc.drawable != 0)
 			XFreePixmap(dpy, dc.drawable);
 		dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
-		dc.xftdrawable = XftDrawCreate(dpy, dc.drawable, DefaultVisual(dpy,screen), DefaultColormap(dpy,screen));
+		dc.cairo.surface = cairo_xlib_surface_create(dpy, dc.drawable, DefaultVisual(dpy, screen), DisplayWidth(dpy, screen), bh);
+		dc.cairo.context = cairo_create(dc.cairo.surface);
 		updatedpi();
 		updategeom();
 		updatebars();
@@ -1580,6 +1590,7 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre)
 	int i, x, y, w, h, len, olen;
 	XRectangle r = { dc.x, dc.y, dc.w, dc.h };
 	PangoRectangle pr;
+	PangoColor *color = (col == dc.norm ? dc.pangonorm : dc.pangosel) + (invert ? ColBG : ColFG);
 
 	XSetForeground(dpy, dc.gc, col[invert ? ColFG : ColBG]);
 	XFillRectangles(dpy, dc.drawable, dc.gc, &r, 1);
@@ -1587,8 +1598,6 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre)
 		return;
 	olen = strlen(text);
 	h = dc.font.ascent + dc.font.descent;
-	y = dc.y + (dc.h / 2) - (h / 2);
-	x = dc.x + (h / 2);
 	/* shorten text if necessary */
 	len = MIN(olen, sizeof(buf));
 	memcpy(buf, text, len);
@@ -1600,14 +1609,23 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre)
 	}
 	if(!len)
 		return;
-	pango_layout_set_text(dc.plo, buf, len);
+	pango_layout_set_text(dc.cairo.layout, buf, len);
+	pango_layout_get_extents(dc.cairo.layout, 0, &pr);
 	if(centre) {
-		pango_layout_get_extents(dc.plo, 0, &pr);
 		w = pr.width / PANGO_SCALE;
 		if(w < dc.w)
-			x += (dc.w - w) / 2;
+			x = dc.x + (dc.w - w) / 2;
 	}
-	pango_xft_render_layout(dc.xftdrawable, (col==dc.norm?dc.xftnorm:dc.xftsel)+(invert?ColBG:ColFG), dc.plo, x * PANGO_SCALE, y * PANGO_SCALE);
+	else
+		x = dc.x + (h / 2);
+	y = dc.y + (dc.h / 2) - (pr.height / PANGO_SCALE / 2);
+	cairo_set_source_rgba (dc.cairo.context,
+			 color->red / 65535.,
+			 color->green / 65535.,
+			 color->blue / 65535.,
+			 1.);
+	cairo_move_to(dc.cairo.context, x, y);
+	pango_cairo_show_layout(dc.cairo.context, dc.cairo.layout);
 }
 
 void
@@ -1817,13 +1835,16 @@ getatomprops(Client *c, Atom prop, int* numatoms) {
 }
 
 unsigned long
-getcolor(const char *colstr, XftColor *color) {
-	Colormap cmap = DefaultColormap(dpy, screen);
-	Visual *vis = DefaultVisual(dpy, screen);
+getcolor(const char *colstr, PangoColor *pangocolor) {
+  int ret = pango_color_parse(pangocolor, colstr);
+  Colormap cmap = DefaultColormap(dpy, screen);
+  XColor xcolor;
 
-	if(!XftColorAllocName(dpy,vis,cmap,colstr, color))
-		die("error, cannot allocate color '%s'\n", colstr);
-	return color->pixel;
+  if(!ret)
+	  fprintf(stderr, "failed to parse pangocolor %s\n", colstr);
+  if(!XAllocNamedColor(dpy, cmap, colstr, &xcolor, &xcolor))
+	  die("error, cannot allocate xcolor '%s'\n", colstr);
+  return xcolor.pixel;
 }
 
 Bool
@@ -1967,18 +1988,23 @@ grabkeys(Window window) {
 void
 initfont(const char *fontstr) {
 	PangoFontMetrics *metrics;
+	int dpi = (int)((double)DisplayWidth(dpy, screen)) / (((double)DisplayWidthMM(dpy, screen)) / 25.4);
 
-	dc.pgc = pango_xft_get_context(dpy, screen);
-	dc.pfd = pango_font_description_from_string(fontstr);
+	dc.cairo.fontmap = pango_cairo_font_map_new();
+	pango_cairo_font_map_set_resolution(PANGO_CAIRO_FONT_MAP (dc.cairo.fontmap), dpi);
+	dc.cairo.font_options = cairo_font_options_create();
+	dc.cairo.pangocontext = pango_font_map_create_context(dc.cairo.fontmap);
+	dc.cairo.fontdesc = pango_font_description_from_string(fontstr);
 
-	metrics = pango_context_get_metrics(dc.pgc, dc.pfd, pango_language_from_string(setlocale(LC_CTYPE, "")));
+	metrics = pango_context_get_metrics(dc.cairo.pangocontext, dc.cairo.fontdesc, pango_language_from_string(setlocale(LC_CTYPE, "")));
 	dc.font.ascent = pango_font_metrics_get_ascent(metrics) / PANGO_SCALE;
 	dc.font.descent = pango_font_metrics_get_descent(metrics) / PANGO_SCALE;
 
 	pango_font_metrics_unref(metrics);
 
-	dc.plo = pango_layout_new(dc.pgc);
-	pango_layout_set_font_description(dc.plo, dc.pfd);
+	dc.cairo.layout = pango_layout_new(dc.cairo.pangocontext);
+	pango_layout_set_font_description(dc.cairo.layout, dc.cairo.fontdesc);
+	pango_cairo_context_set_font_options(dc.cairo.pangocontext, dc.cairo.font_options);
 
 	dc.font.height = dc.font.ascent + dc.font.descent;
 }
@@ -2643,7 +2669,7 @@ run(void) {
 	/* main event loop */
 	XSync(dpy, False);
 	while(running && !XNextEvent(dpy, &ev))
-		if(handler[ev.type])
+		if(ev.type < LASTEvent && handler[ev.type])
 			handler[ev.type](&ev); /* call handler */
 }
 
@@ -2943,10 +2969,10 @@ updatecolors(const Arg *arg) {
 	spawnimpl(arg, True, True);
 	readcolors();
 
-	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
-	dc.norm[ColFG] = getcolor(normfgcolor, dc.xftnorm+ColFG);
-	dc.sel[ColBG] = getcolor(selbgcolor, dc.xftsel+ColBG);
-	dc.sel[ColFG] = getcolor(selfgcolor, dc.xftsel+ColFG);
+	dc.norm[ColBG] = getcolor(normbgcolor, dc.pangonorm+ColBG);
+	dc.norm[ColFG] = getcolor(normfgcolor, dc.pangonorm+ColFG);
+	dc.sel[ColBG] = getcolor(selbgcolor, dc.pangosel+ColBG);
+	dc.sel[ColFG] = getcolor(selfgcolor, dc.pangosel+ColFG);
 
 	for(m = mons; m; m = m->next)
 		drawbar(m);
@@ -3014,7 +3040,8 @@ setup(void) {
 	initfont(font);
 	sw = DisplayWidth(dpy, screen);
 	sh = DisplayHeight(dpy, screen);
-	bh = dc.h = dc.font.height + 2;
+	dc.font.padding = 2;
+	bh = dc.h = dc.font.height + dc.font.padding;
 	updategeom();
 	/* init atoms */
 	wmatom[WMProtocols] = XInternAtom(dpy, "WM_PROTOCOLS", False);
@@ -3056,18 +3083,18 @@ setup(void) {
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
 	cursor[CurMove] = XCreateFontCursor(dpy, XC_fleur);
 	/* init appearance */
-	dc.norm[ColBorder] = getcolor(normbordercolor, dc.xftnorm+ColBorder);
-	dc.norm[ColBG] = getcolor(normbgcolor, dc.xftnorm+ColBG);
-	dc.norm[ColFG] = getcolor(normfgcolor, dc.xftnorm+ColFG);
-	dc.sel[ColBorder] = getcolor(selbordercolor, dc.xftsel+ColBorder);
-	dc.sel[ColBG] = getcolor(selbgcolor, dc.xftsel+ColBG);
-	dc.sel[ColFG] = getcolor(selfgcolor, dc.xftsel+ColFG);
+	dc.norm[ColBorder] = getcolor(normbordercolor, dc.pangonorm+ColBorder);
+	dc.norm[ColBG] = getcolor(normbgcolor, dc.pangonorm+ColBG);
+	dc.norm[ColFG] = getcolor(normfgcolor, dc.pangonorm+ColFG);
+	dc.sel[ColBorder] = getcolor(selbordercolor, dc.pangosel+ColBorder);
+	dc.sel[ColBG] = getcolor(selbgcolor, dc.pangosel+ColBG);
+	dc.sel[ColFG] = getcolor(selfgcolor, dc.pangosel+ColFG);
 	dc.drawable = XCreatePixmap(dpy, root, DisplayWidth(dpy, screen), bh, DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, NULL);
 	XSetLineAttributes(dpy, dc.gc, 1, LineSolid, CapButt, JoinMiter);
-	dc.xftdrawable = XftDrawCreate(dpy, dc.drawable, DefaultVisual(dpy,screen), DefaultColormap(dpy,screen));
-	if(!dc.xftdrawable)
-		printf("error, cannot create drawable\n");
+
+	dc.cairo.surface = cairo_xlib_surface_create(dpy, dc.drawable, DefaultVisual(dpy, screen), DisplayWidth(dpy, screen), bh);
+	dc.cairo.context = cairo_create(dc.cairo.surface);
 
 	/* init system tray */
 	updatesystray();
@@ -3279,8 +3306,8 @@ int
 textnw(const char *text, unsigned int len) {
 	PangoRectangle r;
 
-	pango_layout_set_text(dc.plo, text, len);
-	pango_layout_get_extents(dc.plo, 0, &r);
+	pango_layout_set_text(dc.cairo.layout, text, len);
+	pango_layout_get_extents(dc.cairo.layout, 0, &r);
 	return r.width / PANGO_SCALE;
 }
 

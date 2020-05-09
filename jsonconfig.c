@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "nxjson.c"
 
 #include "jsonruleparser.c"
