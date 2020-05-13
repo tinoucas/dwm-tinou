@@ -94,8 +94,11 @@ enum { ColBorder, ColFG, ColBG, ColLast };				/* color */
 	   
 enum { NetSupported, NetSystemTray, NetSystemTrayOP, NetSystemTrayOrientation, NetSystemTrayOrientationHorz,
 	   NetWMName, NetWMState, NetWMFullscreen, NetWMMaximized, NetActiveWindow, NetCloseWindow, NetWMWindowType,
-	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeNotification, NetWMWindowTypeKDEOSD, NetWMWindowTypeKDEOVERRIDE, NetWMStateSkipTaskbar, NetWMDesktop, NetWMOpacity, NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, NetCurrentDesktop, NetLast }; /* EWMH atoms */
-enum { Manager, Xembed, XembedInfo, XLast }; /* Xembed atoms */
+	   NetWMWindowTypeDialog, NetWMWindowTypeDock, NetWMWindowTypeDesktop, NetWMWindowTypeNotification,
+	   NetWMWindowTypeKDEOSD, NetWMWindowTypeKDEOVERRIDE, NetWMStateSkipTaskbar, NetWMDesktop, NetWMOpacity,
+	   NetClientList, NetDesktopNames, NetDesktopViewport, NetDesktopGeometry, NetNumberOfDesktops, 
+	   NetCurrentDesktop, NetLast }; /* EWMH atoms */
+enum { Manager, Xembed, XembedInfo, MotifWMHints, XLast }; /* Xembed atoms */
 enum { WMProtocols, WMDelete, WMState, WMTakeFocus, WMLast };		 /* default atoms */
 enum { ClkTagBar, ClkLtSymbol, ClkStatusText, ClkWinTitle,
 	   ClkClientWin, ClkRootWin, ClkLast };				/* clicks */
@@ -3078,6 +3081,7 @@ setup(void) {
 	xatom[Manager] = XInternAtom(dpy, "MANAGER", False);
 	xatom[Xembed] = XInternAtom(dpy, "_XEMBED", False);
 	xatom[XembedInfo] = XInternAtom(dpy, "_XEMBED_INFO", False);
+	xatom[MotifWMHints] = XInternAtom(dpy, "_MOTIF_WM_HINTS", False);
 	/* init cursors */
 	cursor[CurNormal] = XCreateFontCursor(dpy, XC_left_ptr);
 	cursor[CurResize] = XCreateFontCursor(dpy, XC_sizing);
@@ -3966,6 +3970,75 @@ updatesystray(void) {
 	XSync(dpy, False);
 }
 
+// From Xm/MwmUtil.h:
+/* bit definitions for MwmHints.flags */
+#define MWM_HINTS_FUNCTIONS	(1L << 0)
+#define MWM_HINTS_DECORATIONS	(1L << 1)
+#define MWM_HINTS_INPUT_MODE	(1L << 2)
+#define MWM_HINTS_STATUS	(1L << 3)
+
+/* bit definitions for MwmHints.functions */
+#define MWM_FUNC_ALL		(1L << 0)
+#define MWM_FUNC_RESIZE		(1L << 1)
+#define MWM_FUNC_MOVE		(1L << 2)
+#define MWM_FUNC_MINIMIZE	(1L << 3)
+#define MWM_FUNC_MAXIMIZE	(1L << 4)
+#define MWM_FUNC_CLOSE		(1L << 5)
+
+/* bit definitions for MwmHints.decorations */
+#define MWM_DECOR_ALL		(1L << 0)
+#define MWM_DECOR_BORDER	(1L << 1)
+#define MWM_DECOR_RESIZEH	(1L << 2)
+#define MWM_DECOR_TITLE		(1L << 3)
+#define MWM_DECOR_MENU		(1L << 4)
+#define MWM_DECOR_MINIMIZE	(1L << 5)
+#define MWM_DECOR_MAXIMIZE	(1L << 6)
+
+void
+updatemwmtype(Client *c) {
+	XWindowChanges wc;
+	int actual_format;
+	Atom actual_type;
+	unsigned long nitems, bytesafter;
+	unsigned char *p = NULL;
+	Atom* mwmhints;
+	int bw = c->bw;
+	enum {
+		MwmFlags = 0,
+		MwmFunctions,
+		MwmDecorations,
+		MwmInputmode,
+		MwmStatus,
+		MwmNumProps
+	};
+
+	if(XGetWindowProperty(dpy, c->win, xatom[MotifWMHints], 0L, 32L, False,
+				xatom[MotifWMHints], &actual_type, &actual_format, &nitems,
+				&bytesafter,(unsigned char **)&p) == Success && p) {
+
+		mwmhints = (Atom*)p;
+
+		if(nitems == MwmNumProps) {
+			if(mwmhints[MwmFlags] & MWM_HINTS_DECORATIONS) {
+				if(!(mwmhints[MwmDecorations] & MWM_DECOR_BORDER)) {
+					c->bw = 0;
+					c->noborder = True;
+				}
+			}
+			if (mwmhints[MwmFlags] & MWM_HINTS_FUNCTIONS) {
+				if (mwmhints[MwmFunctions] == 0) {
+					c->isoverride = True;
+				}
+			}
+		}
+		XFree(mwmhints);
+	}
+	if(bw != c->bw) {
+		wc.border_width = c->bw;
+		XConfigureWindow(dpy, c->win, CWBorderWidth, &wc);
+	}
+}
+
 void
 updatewindowtype(Client *c) {
 	XWindowAttributes wa;
@@ -3978,6 +4051,7 @@ updatewindowtype(Client *c) {
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
+	updatemwmtype(c);
 	for(i = 0; i < numtypes; ++i) {
 		wtype = wtypes[i];
 		if(wtype == netatom[NetWMWindowTypeDock]) {
@@ -4013,6 +4087,7 @@ updatewindowtype(Client *c) {
 			c->bw = 0;
 			c->tags = TAGMASK;
 			c->isosd = True;
+			c->noborder = True;
 			c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
 			c->y = c->mon->my + bh + c->mon->mh / 40;
 		}
@@ -4026,6 +4101,7 @@ updatewindowtype(Client *c) {
 			c->bw = 0;
 			c->tags = TAGMASK;
 			c->isosd = True;
+			c->noborder = True;
 		}
 		else if(wtype == netatom[NetWMWindowTypeDialog] || state == netatom[NetWMStateSkipTaskbar]) {
 			c->isfloating = True;
