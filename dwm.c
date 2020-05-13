@@ -140,7 +140,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd, isoverride;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd, isoverride, picomfreeze;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
@@ -251,6 +251,7 @@ struct Rule {
 	Bool isfullscreen;
 	int showdock;
 	char* procname;
+	Bool picomfreeze;
 	Rule *next;
 };
 
@@ -517,6 +518,8 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->nofocus = True;
 	if (r->noborder)
 		c->noborder = True;
+	if (r->picomfreeze)
+		c->picomfreeze = True;
 	c->tags |= r->tags;
 	if (r->istransient != 1.)
 		c->opacity = r->istransparent;
@@ -767,8 +770,7 @@ arrange(Monitor *m) {
 		arrangemon(m);
 	else for(m = mons; m; m = m->next)
 		arrangemon(m);
-	if (picomfreezeworkaround)
-		forcewindowsrepaint();
+	forcewindowsrepaint();
 	if (m)
 		updateopacities(m);
 	else for(m = mons; m; m = m->next)
@@ -2456,8 +2458,10 @@ forcewindowsrepaint() {
 
 	for(m = mons; m; m = m->next)
 		for(c = m->clients; c; c = c->next)
-			if ((ISVISIBLE(c)))
+			if (c->picomfreeze || c->isosd) {
+				fprintf(stderr, "Clearing window: %s\n", c->name ? c->name : "NULL");
 				XClearWindow(dpy, c->win);
+			}
 }
 
 void

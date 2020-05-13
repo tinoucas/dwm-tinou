@@ -35,6 +35,7 @@ static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 		PARSE_ATTRIBUTE(procname),
 		PARSE_ATTRIBUTE(isfullscreen),
 		PARSE_ATTRIBUTE(showdock),
+		PARSE_ATTRIBUTE(picomfreeze),
 	};
 
 	for (i = 0; i < LENGTH(parsers); ++i)
@@ -144,10 +145,6 @@ static void readdockmonitor (const struct nx_json *js) {
     dockmonitor = js->int_value;
 }
 
-static void readpicomfreezeworkaround (const struct nx_json *js) {
-	picomfreezeworkaround = (js->int_value != 0);
-}
-
 static void maketagkeys(Key *key, int tagnum) {
 	const Key tagkeymappings[] =
 	{
@@ -217,7 +214,6 @@ static void readconfig () {
 		ATTRIBUTE(startupscript),
 		ATTRIBUTE(dockposition),
 		ATTRIBUTE(dockmonitor),
-		ATTRIBUTE(picomfreezeworkaround),
 		ATTRIBUTE(keys),
 		ATTRIBUTE(buttons),
 	};

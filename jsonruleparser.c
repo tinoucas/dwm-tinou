@@ -114,3 +114,7 @@ static void isfullscreenparser (const struct nx_json *js, Rule *rule) {
 static void showdockparser (const struct nx_json *js, Rule *rule) {
 	rule->showdock = js->int_value;
 }
+
+static void picomfreezeparser (const struct nx_json *js, Rule *rule) {
+	rule->picomfreeze = (js->int_value != 0);
+}
