@@ -4020,7 +4020,7 @@ updatemwmtype(Client *c) {
 
 		if(nitems == MwmNumProps) {
 			if(mwmhints[MwmFlags] & MWM_HINTS_DECORATIONS) {
-				if(!(mwmhints[MwmDecorations] & MWM_DECOR_BORDER)) {
+				if(!(mwmhints[MwmDecorations] & (MWM_DECOR_ALL|MWM_DECOR_BORDER))) {
 					c->bw = 0;
 					c->noborder = True;
 				}
