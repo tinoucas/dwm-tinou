@@ -22,6 +22,7 @@ static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 		PARSE_ATTRIBUTE(title),
 		PARSE_ATTRIBUTE(tag),
 		PARSE_ATTRIBUTE(isfloating),
+		PARSE_ATTRIBUTE(iscenter),
 		PARSE_ATTRIBUTE(isterminal),
 		PARSE_ATTRIBUTE(noswallow),
 		PARSE_ATTRIBUTE(istransparent),

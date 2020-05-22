@@ -241,6 +241,7 @@ struct Rule {
 	char *title;
 	unsigned int tags;
 	Bool isfloating;
+    Bool iscenter;
 	int isterminal;
 	int noswallow;
 	double istransparent;
@@ -535,6 +536,10 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->noswallow = True;
 	if (r->isfullscreen)
 		c->isfullscreen = 1;
+    if (r->iscenter) {
+        c->x = (c->mon->ww - c->w) / 2;
+        c->y = (c->mon->wh - c->h) / 2;
+    }
 	for(m = mons; m && m->num != r->monitor; m = m->next);
 	if(m)
 		c->mon = m;
@@ -2100,6 +2105,9 @@ manage(Window w, XWindowAttributes *wa) {
 	c->opacity = 1.;
 	c->pid = winpid(w);
 	updatetitle(c);
+	/* geometry */
+	c->w = c->oldw = wa->width;
+	c->h = c->oldh = wa->height;
 	if(XGetTransientForHint(dpy, w, &trans) && (t = wintoclient(trans))) {
 		c->mon = t->mon;
 		c->tags = t->tags;
@@ -2111,11 +2119,10 @@ manage(Window w, XWindowAttributes *wa) {
 		if (!c->noswallow)
 			term = termforwin(c);
 	}
-	/* geometry */
-	c->x = c->oldx = wa->x + c->mon->wxo;
-	c->y = c->oldy = wa->y + c->mon->wyo;
-	c->w = c->oldw = wa->width;
-	c->h = c->oldh = wa->height;
+    if (c->x == 0 && c->y == 0) {
+        c->x = c->oldx = wa->x + c->mon->wxo;
+        c->y = c->oldy = wa->y + c->mon->wyo;
+    }
 	c->oldbw = wa->border_width;
 	if(c->x + WIDTH(c) > c->mon->mx + c->mon->mw)
 		c->x = c->mon->mx + c->mon->mw - WIDTH(c);
@@ -4055,7 +4062,7 @@ updatewindowtype(Client *c) {
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
-	updatemwmtype(c);
+    updatemwmtype(c);
 	for(i = 0; i < numtypes; ++i) {
 		wtype = wtypes[i];
 		if(wtype == netatom[NetWMWindowTypeDock]) {

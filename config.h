@@ -115,8 +115,8 @@ enum layout {
 };
 
 static const Rule defaultrule = 
-	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
-	{   NULL , NULL     , NULL  , anytag    , False , False , False , OPAQU , False , False , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     ,       False, NULL };
+	/* class , instance , title , tags mask , float , center, term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
+	{   NULL , NULL     , NULL  , anytag    , False , False , False , False , OPAQU , False , False , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     ,       False, NULL };
 
 static Rule* rules = NULL;
 
@@ -141,7 +141,7 @@ static const char *clockcmd[] = { "oclock", NULL };
 static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const Rule clockrule =
-	/* class , instance , title , tags mask , float , term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
-	{  NULL  , "oclock" , NULL  , alltags   , True  , False , True  , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , False,       NULL };
+	/* class , instance , title , tags mask , float , center, term  , noswl , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
+	{  NULL  , "oclock" , NULL  , alltags   , True  , False , False , True  , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , False,       NULL };
 
 #endif
