@@ -39,7 +39,6 @@ static ArgFunction texttofunction(const char *name) {
 		FUNC(toggledock),
 		FUNC(togglefloating),
 		FUNC(togglefoldtags),
-		FUNC(toggleswallow),
 		FUNC(toggletag),
 		FUNC(toggleview),
 		FUNC(updatecolors),

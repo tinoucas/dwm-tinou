@@ -65,7 +65,6 @@ static void buttonclickparser(const struct nx_json *js, Button *button) {
             button->click = clicktypes[i].click;
             break;
         }
-    fprintf(stderr, "click type not found: %s\n", js->text_value);
 }
 
 static void buttonmodifierparser(const struct nx_json *js, Button *button) {

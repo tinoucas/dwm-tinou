@@ -51,10 +51,6 @@ static void isterminalparser (const struct nx_json *js, Rule *rule) {
 	rule->isterminal = js->int_value;
 }
 
-static void noswallowparser (const struct nx_json *js, Rule *rule) {
-	rule->noswallow = js->int_value;
-}
-
 static void istransparentparser (const struct nx_json *js, Rule *rule) {
 	rule->istransparent = js->dbl_value;
 }

@@ -143,12 +143,10 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, noswallow, isosd, isoverride, picomfreeze;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, isosd, isoverride, picomfreeze;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
-	Client *swallowing;
-	unsigned int swallowxortags;
 	Monitor *mon;
 	Window win;
 	double opacity;
@@ -243,7 +241,6 @@ struct Rule {
 	Bool isfloating;
     Bool iscenter;
 	int isterminal;
-	int noswallow;
 	double istransparent;
 	Bool nofocus;
 	Bool noborder;
@@ -384,7 +381,6 @@ static void spawnimpl(const Arg *arg, Bool waitdeath, Bool useshcmd);
 static void spawnterm(const Arg *arg);
 static Monitor *systraytomon(Monitor *m);
 static void swap(Client *c1, Client *c2);
-static void swapclientscontent(Client *c1, Client *c2);
 static void tabview(const Arg *arg);
 static void tag(const Arg *arg);
 static void tagmon(const Arg *arg);
@@ -430,15 +426,7 @@ static int xerror(Display *dpy, XErrorEvent *ee);
 static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
-static pid_t getparentprocess(pid_t p);
-static int isdescprocess(pid_t p, pid_t c);
-static Client *swallowingclient(Window w);
-static void swallow(Client *p, Client *c);
-static void swallowdetach(Client *c);
-static void unswallowattach(Client *c);
 static void updatetagshortcuts();
-static void toggleswallow(const Arg* arg);
-static Client *termforwin(const Client *c);
 static pid_t winpid(Window w);
 
 /* variables */
@@ -532,8 +520,6 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 		c->remap = r->remap;
 	if (istransient)
 		c->isfixed = True;
-	if (r->noswallow)
-		c->noswallow = True;
 	if (r->isfullscreen)
 		c->isfullscreen = 1;
     if (r->iscenter) {
@@ -821,186 +807,6 @@ void
 attachstack(Client *c) {
 	c->snext = c->mon->stack;
 	c->mon->stack = c;
-}
-
-void
-swapclientscontent(Client *c1, Client *c2) {
-	double opacity = c1->opacity;
-	Bool isfloating = c1->isfloating;
-	Monitor *m = c1->mon;
-	unsigned int tags = c1->tags;
-	Window win = c1->win;
-	int x = c1->x;
-	int y = c1->y;
-	int w = c1->w;
-	int h = c1->h;
-
-	c1->opacity = c2->opacity;
-	c2->opacity = opacity;
-	c1->isfloating = c2->isfloating;
-	c2->isfloating = isfloating;
-	c1->mon = c2->mon;
-	c2->mon = m;
-	c1->tags = c2->tags;
-	c2->tags = tags;
-	c1->win = c2->win;
-	c2->win = win;
-	c1->x = c2->x;
-	c2->x = x;
-	c1->y = c2->y;
-	c2->y = y;
-	c1->w = c2->w;
-	c2->w = w;
-	c1->h = c2->h;
-	c2->h = h;
-}
-
-void
-swallow(Client *term, Client *c) {
-	unsigned int termtags, clienttags;
-	Monitor *termmon, *cmon;
-
-	if (c->noswallow || c->isterminal)
-		return;
-
-	detach(c);
-	detachstack(c);
-
-	setclientstate(c, WithdrawnState);
-	XUnmapWindow(dpy, term->win);
-
-	term->swallowing = c;
-
-	termmon = term->mon;
-	cmon = c->mon;
-	termtags = term->tags;
-	clienttags = c->tags;
-
-	if (termmon != cmon) {
-		detach(term);
-		detachstack(term);
-	}
-
-	swapclientscontent(term, c);
-
-	if (termmon != cmon) {
-		attach(term);
-		attachstack(term);
-	}
-	else {
-		term->tags = (termtags | clienttags);
-		term->swallowxortags = (termtags ^ clienttags);
-	}
-
-	c->tags = termtags;
-
-	updatetitle(term);
-	arrange(NULL);
-	XMoveResizeWindow(dpy, term->win, term->x, term->y, term->w, term->h);
-	configure(term);
-	updateclientlist();
-
-	setmonitorfocus(term->mon);
-	setfocus(term);
-}
-
-Client*
-unswallowclient(Client *term) {
-	Client* c = term->swallowing;
-	unsigned int swallowxortags = term->swallowxortags;
-	unsigned int termtags;
-
-	if (c) {
-		detach(term);
-		detachstack(term);
-
-		termtags = c->tags;
-
-		swapclientscontent(term, c);
-
-		if (term->mon == c->mon)
-			c->tags = (swallowxortags ^ termtags);
-
-		term->swallowing = NULL;
-		term->swallowxortags = 0;
-
-		updatetitle(term);
-		XMapWindow(dpy, term->win);
-		configure(term);
-		XMoveResizeWindow(dpy, term->win, term->x, term->y, term->w, term->h);
-
-		setclientstate(term, NormalState);
-		setclientopacity(term);
-
-		attach(term);
-		attach(c);
-		attachstack(term);
-		attachstack(c);
-
-		arrange(NULL);
-	}
-
-	return c;
-}
-
-void
-swallowdetach(Client* c) {
-	Client *term = NULL;
-
-	if (c) {
-		term = termforwin(c);
-		if (term) {
-			swallow(term, c);
-			arrange(NULL);
-		}
-	}
-}
-
-void
-unswallowattach(Client* c) {
-	Client *swallowing = NULL;
-	unsigned int intertags;
-
-	if (c)
-		swallowing = unswallowclient(c);
-
-	if (swallowing) {
-		updatetitle(swallowing);
-		XMapWindow(dpy, swallowing->win);
-		XMoveResizeWindow(dpy, swallowing->win, swallowing->x, swallowing->y, swallowing->w, swallowing->h);
-		configure(c);
-		setclientstate(swallowing, NormalState);
-		setclientopacity(swallowing);
-		if ((swallowing->tags & swallowing->mon->vs->tagset) == 0) {
-			intertags = intersecttags(swallowing, swallowing->mon);
-			if (intertags != 0) {
-				monview(swallowing->mon, intertags|swallowing->mon->vs->tagset);
-				restorebar(swallowing->mon);
-			}
-		}
-		arrange(swallowing->mon);
-	}
-}
-
-void
-toggleswallow(const Arg* arg) {
-	Monitor *m;
-	Client *c;
-	Bool swallowedone = False;
-
-	if (selmon && selmon->sel) {
-		if (selmon->sel->swallowing)
-			unswallowattach(selmon->sel);
-		else {
-			for(m = mons; !swallowedone && m; m = m->next)
-				for (c = m->clients; !swallowedone && c; c = c->next) {
-					if (c && c != selmon->sel && termforwin(c) == selmon->sel) {
-						swallowdetach(c);
-						swallowedone = True;
-					}
-				}
-		}
-	}
 }
 
 void
@@ -1435,8 +1241,6 @@ destroynotify(XEvent *e) {
 		resizebarwin(selmon);
 		updatesystray();
 	}
-	else if ((c = swallowingclient(ev->window)))
-		unmanage(c->swallowing, 1);
 }
 
 void
@@ -2094,7 +1898,7 @@ maketagtext(char* text, int maxlength, int i) {
 
 void
 manage(Window w, XWindowAttributes *wa) {
-	Client *c, *t = NULL, *term = NULL;
+	Client *c, *t = NULL;
 	Window trans = None;
 	XWindowChanges wc;
 	int bpx = 0;
@@ -2116,8 +1920,6 @@ manage(Window w, XWindowAttributes *wa) {
 	else {
 		c->mon = selmon;
 		applyrules(c);
-		if (!c->noswallow)
-			term = termforwin(c);
 	}
     if (c->x == 0 && c->y == 0) {
         c->x = c->oldx = wa->x + c->mon->wxo;
@@ -2162,8 +1964,6 @@ manage(Window w, XWindowAttributes *wa) {
 			(unsigned char *) &(c->win), 1);
 	XMoveResizeWindow(dpy, c->win, c->x, c->y, c->w, c->h);
 	XMapWindow(dpy, c->win);
-	if(term)
-		swallow(term, c);
 	setclientstate(c, NormalState);
 	arrange(c->mon);
 	grabremap(c, True);
@@ -3427,23 +3227,8 @@ unfocus(Client *c, Bool setfocus) {
 
 void
 unmanage(Client *c, Bool destroyed) {
-	Client *term = NULL;
 	Monitor *m = c->mon;
 	XWindowChanges wc;
-
-	if (c->swallowing) {
-		term = c;
-		c = unswallowclient(term);
-	}
-
-	Client *s = swallowingclient(c->win);
-	if (s) {
-		free(s->swallowing);
-		s->swallowing = NULL;
-		arrange(m);
-		focus(NULL);
-		return;
-	}
 
 	/* The server grab construct avoids race conditions. */
 	grabremap(c, False);
@@ -3461,16 +3246,10 @@ unmanage(Client *c, Bool destroyed) {
 		XUngrabServer(dpy);
 	}
 	free(c);
-	if (!s) {
-		focus(NULL);
-		updateclientlist();
-		cleartags(m);
-		arrange(m);
-	}
-	if (term) {
-		setmonitorfocus(term->mon);
-		setfocus(term);
-	}
+    focus(NULL);
+    updateclientlist();
+    cleartags(m);
+    arrange(m);
 }
 
 void
@@ -4201,70 +3980,6 @@ winpid(Window w)
 	if (result == (pid_t)-1)
 		result = 0;
 	return result;
-}
-
-pid_t
-getparentprocess(pid_t p)
-{
-	unsigned int v = 0;
-
-#ifdef __linux__
-	FILE *f;
-	char buf[256];
-	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
-
-	if (!(f = fopen(buf, "r")))
-		return 0;
-
-	fscanf(f, "%*u %*s %*c %u", &v);
-	fclose(f);
-#endif /* __linux__ */
-
-	return (pid_t)v;
-}
-
-int
-isdescprocess(pid_t p, pid_t c)
-{
-	while (p != c && c != 0)
-		c = getparentprocess(c);
-
-	return (int)c;
-}
-
-Client *
-termforwin(const Client *w)
-{
-	Client *c;
-	Monitor *m;
-
-	if (!w->pid || w->isterminal)
-		return NULL;
-
-	for (m = mons; m; m = m->next) {
-		for (c = m->clients; c; c = c->next) {
-			if (c->isterminal && !c->swallowing && c->pid && isdescprocess(c->pid, w->pid))
-				return c;
-		}
-	}
-
-	return NULL;
-}
-
-Client *
-swallowingclient(Window w)
-{
-	Client *c;
-	Monitor *m;
-
-	for (m = mons; m; m = m->next) {
-		for (c = m->clients; c; c = c->next) {
-			if (c->swallowing && c->swallowing->win == w)
-				return c;
-		}
-	}
-
-	return NULL;
 }
 
 Client *
