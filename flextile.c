@@ -29,15 +29,21 @@ rotatelayoutaxis(const Arg *arg) {
 }
 
 void
-shiftmastersplit(const Arg *arg) {
+shiftmastersplitimpl(unsigned int i) {
 	unsigned int n;
 	Client *c;
 
 	for(n = 0, c = nexttiled(selmon->clients); c; c = nexttiled(c->next), n++);
-	if(!arg || !selmon->vs->lt[selmon->vs->curlt]->arrange || selmon->vs->msplit + arg->i < 1 || selmon->vs->msplit + arg->i > n)
+	if(!selmon->vs->lt[selmon->vs->curlt]->arrange || selmon->vs->msplit + i < 1 || selmon->vs->msplit + i > n)
 		return;
-	selmon->vs->msplit += arg->i;
+	selmon->vs->msplit += i;
 	arrange(selmon);
+}
+
+void
+shiftmastersplit(const Arg *arg) {
+	if(arg)
+		shiftmastersplitimpl(arg->i);
 }
 
 void
