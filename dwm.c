@@ -284,6 +284,7 @@ static void arrange(Monitor *m);
 static void arrangemon(Monitor *m);
 static void attach(Client *c);
 static void attachabove(Client *c);
+static void attachend(Client *c);
 static void attachstack(Client *c);
 static void buttonpress(XEvent *e);
 static void buttonrelease(XEvent *e);
@@ -343,12 +344,15 @@ static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
 static void pop(Client *c);
+static void push(Client *c);
 static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-static void forcewindowsrepaint();
+/*
+ *static void forcewindowsrepaint();
+ */
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -773,7 +777,9 @@ arrange(Monitor *m) {
 		arrangemon(m);
 	else for(m = mons; m; m = m->next)
 		arrangemon(m);
-	forcewindowsrepaint();
+    /*
+	 *forcewindowsrepaint();
+     */
 	if (m)
 		updateopacities(m);
 	else for(m = mons; m; m = m->next)
@@ -810,6 +816,16 @@ attachabove(Client *c) {
 	for (at = c->mon->clients; at->next != c->mon->sel; at = at->next);
 	c->next = at->next;
 	at->next = c;
+}
+
+void
+attachend(Client *c) {
+	Client **pc = &c->mon->clients;
+
+	while (*pc != NULL)
+		pc = &(*pc)->next;
+	c->next = NULL;
+	*pc = c;
 }
 
 void
@@ -2139,7 +2155,10 @@ manage(Window w, XWindowAttributes *wa) {
 	updatewindowtype(c);
 	updatesizehints(c);
 	updatewmhints(c);
-	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
+	if (c->isoverride && c->isosd)
+		XSelectInput(dpy, w, FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
+	else
+		XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, False);
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
@@ -2158,7 +2177,10 @@ manage(Window w, XWindowAttributes *wa) {
 	if(term)
 		swallow(term, c);
 	setclientstate(c, NormalState);
-	arrange(c->mon);
+	if (!c->isfloating)
+		arrange(c->mon);
+	else
+		updateopacities(c->mon);
 	grabremap(c, True);
 	if(!c->nofocus && !c->isosd && c->tags != TAGMASK) {
 		if (c->mon == selmon)
@@ -2350,6 +2372,13 @@ pop(Client *c) {
 }
 
 void
+push(Client *c) {
+	detach(c);
+	attachend(c);
+	arrange(c->mon);
+}
+
+void
 updatetagshortcuts() {
 	Bool modkeyPressed = False;
 	XkbStateRec r;
@@ -2454,18 +2483,20 @@ updatedpi() {
 	spawnimpl(&arg, False, False);
 }
 
-void
-forcewindowsrepaint() {
-	Client *c;
-	Monitor *m;
-
-	for(m = mons; m; m = m->next)
-		for(c = m->clients; c; c = c->next)
-			if (c->picomfreeze || c->isosd) {
-				fprintf(stderr, "Clearing window: %s\n", c->name ? c->name : "NULL");
-				XClearWindow(dpy, c->win);
-			}
-}
+/*
+ *void
+ *forcewindowsrepaint() {
+ *    Client *c;
+ *    Monitor *m;
+ *
+ *    for(m = mons; m; m = m->next)
+ *        for(c = m->clients; c; c = c->next)
+ *            if (c->picomfreeze || c->isosd) {
+ *                fprintf(stderr, "Clearing window: %s\n", c->name ? c->name : "NULL");
+ *                XClearWindow(dpy, c->win);
+ *            }
+ *}
+ */
 
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
@@ -4033,6 +4064,11 @@ updatemwmtype(Client *c) {
 				if (mwmhints[MwmFunctions] == 0) {
 					c->isoverride = True;
 				}
+				else if ((unsigned int)mwmhints[MwmFunctions] == (MWM_FUNC_MOVE|MWM_FUNC_CLOSE)) {
+					// FIXME: detect Wine tooltips
+					c->isoverride = True;
+					c->isosd = True;
+				}
 			}
 		}
 		XFree(mwmhints);
@@ -4351,10 +4387,14 @@ zoom(const Arg *arg) {
 	|| selmon->vs->lt[selmon->vs->curlt]->arrange == monocle
 	|| (selmon->sel && selmon->sel->isfloating))
 		return;
-	if(c == nexttiled(selmon->clients))
-		if(!c || !(c = nexttiled(c->next)))
+	if(c == nexttiled(selmon->clients)) {
+		if(!c || !nexttiled(c->next))
 			return;
-	pop(c);
+		push(c);
+		focus(nexttiled(selmon->clients));
+	}
+	else
+		pop(c);
 }
 
 int
