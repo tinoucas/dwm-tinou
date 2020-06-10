@@ -51,10 +51,6 @@ static void isterminalparser (const struct nx_json *js, Rule *rule) {
 	rule->isterminal = js->int_value;
 }
 
-static void noswallowparser (const struct nx_json *js, Rule *rule) {
-	rule->noswallow = js->int_value;
-}
-
 static void istransparentparser (const struct nx_json *js, Rule *rule) {
 	rule->istransparent = js->dbl_value;
 }
@@ -117,4 +113,8 @@ static void showdockparser (const struct nx_json *js, Rule *rule) {
 
 static void picomfreezeparser (const struct nx_json *js, Rule *rule) {
 	rule->picomfreeze = (js->int_value != 0);
+}
+
+static void iscenterparser (const struct nx_json *js, Rule *rule) {
+    rule->iscenter = (js->int_value != 0);
 }
