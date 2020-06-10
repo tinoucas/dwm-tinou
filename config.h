@@ -108,12 +108,12 @@ static const Layout layouts[] = {
 };
 
 enum layout {
-	TILE = 0,
+	VARIMONO = 0,
+	TILE,
 	SPIRAL,
 	DWINDLE,
 	FLOAT,
 	MONOCLE,
-	VARIMONO,
 };
 
 static const Rule defaultrule = 
