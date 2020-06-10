@@ -93,9 +93,8 @@ getviewstackof(Monitor* m, const unsigned int tagset) {
 	ViewStack **pvs;
 
 	for(pvs = &m->vs; *pvs && (*pvs)->tagset != tagset; pvs = &(*pvs)->next) ;
-	if (!*pvs) {
+	if(!*pvs)
 		*pvs = createviewstack(m->vs, tagset);
-	}
 	return *pvs;
 }
 

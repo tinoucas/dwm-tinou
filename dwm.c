@@ -587,8 +587,6 @@ applyrules(Client *c) {
 	Bool istransient = False;
 	unsigned int currenttagset = c->mon->vs->tagset;
 	unsigned int nc = 0;
-	const Layout* preflayout;
-	Bool vsshowdock = showdock;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
@@ -667,17 +665,12 @@ applyrules(Client *c) {
 			}
 		}
 		if(lastr) {
-			preflayout = &layouts[initlayout];
-			vsshowdock = c->mon->vs->showdock;
-			if(lastr->preflayout) {
-				preflayout = lastr->preflayout;
-				vsshowdock = preflayout->showdock;
-			}
-			if(lastr->showdock >= 0)
-				vsshowdock = lastr->showdock;
-			storestackviewlayout(c->mon, c->tags, preflayout, vsshowdock);
-			if (c->tags == c->mon->vs->tagset)
-				arrange(c->mon);
+            if(lastr->preflayout)
+                storestackviewlayout(c->mon, c->tags, lastr->preflayout, c->mon->vs->showdock);
+            if(lastr->showdock >= 0)
+                getviewstackof(c->mon, c->tags)->showdock = (lastr->showdock != 0);
+            if(c->tags == c->mon->vs->tagset)
+                arrange(c->mon);
 		}
 		else if (!startup && !c->nofocus && c->tags != TAGMASK ) {
 			c->isurgent = True;
