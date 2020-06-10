@@ -330,6 +330,8 @@ static void grabbuttons(Client *c, Bool focused);
 static void grabkeys(Window window);
 static void grabremap(Client *c, Bool focused);
 static void initfont(const char *fontstr);
+static Bool ismasterclient(Client *c);
+static Bool istiled(Client *c);
 static void keypress(XEvent *e);
 static void keyrelease(XEvent *e);
 static void killclient(const Arg *arg);
@@ -379,6 +381,7 @@ static void setnumdesktops(void);
 static void setup(void);
 static void setviewport(void);
 static void setgeometry();
+static Bool shouldbeopaque(Client *c, Client *tiledsel);
 static void showhide(Client *c);
 static void sigchld(int unused);
 static void spawn(const Arg *arg);
@@ -593,6 +596,8 @@ applyrules(Client *c) {
 	Bool istransient = False;
 	unsigned int currenttagset = c->mon->vs->tagset;
 	unsigned int nc = 0;
+	const Layout* preflayout;
+	Bool vsshowdock = showdock;
 
 	/* rule matching */
 	c->isfloating = c->tags = 0;
@@ -670,8 +675,16 @@ applyrules(Client *c) {
 				updatecurrentdesktop();
 			}
 		}
-		if(lastr && lastr->preflayout) {
-			storestackviewlayout(c->mon, c->tags, lastr->preflayout, lastr->showdock >= 0 ? lastr->showdock : lastr->preflayout->showdock);
+		if(lastr) {
+			preflayout = &layouts[initlayout];
+			vsshowdock = c->mon->vs->showdock;
+			if(lastr->preflayout) {
+				preflayout = lastr->preflayout;
+				vsshowdock = preflayout->showdock;
+			}
+			if(lastr->showdock >= 0)
+				vsshowdock = lastr->showdock;
+			storestackviewlayout(c->mon, c->tags, preflayout, vsshowdock);
 			if (c->tags == c->mon->vs->tagset)
 				arrange(c->mon);
 		}
@@ -1413,12 +1426,21 @@ configurerequest(XEvent *e) {
 
 unsigned int
 counttiledclients (Monitor* m) {
-	unsigned int nc = 0;
+	unsigned int n;
+	int ns = m->vs->msplit;
+	Bool ismonocle = m->vs->lt[m->vs->curlt]->arrange == &monocle;
+	Bool isvarimono = m->vs->lt[m->vs->curlt]->arrange == varimono;
 	Client* c;
 
-	for(c = nexttiled(m->clients); c; c = nexttiled(c->next))
-		++nc;
-	return nc;
+	if(ismonocle)
+		return nexttiled(m->clients) ? 1 : 0;
+	for(n = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), ++n);
+	if(isvarimono) {
+		if(ns > n)
+			ns = n;
+		return ns;
+	}
+	return n;
 }
 
 Monitor *
@@ -1427,7 +1449,7 @@ createmon(void) {
 
 	if(!(m = (Monitor *)calloc(1, sizeof(Monitor))))
 		die("fatal: could not malloc() %u bytes\n", sizeof(Monitor));
-	m->vs = createviewstack(NULL);
+	m->vs = createviewstack(NULL, 1);
 	m->topbar = topbar;
 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
 
@@ -1723,8 +1745,8 @@ focus(Client *c) {
 		XSetWindowBorder(dpy, c->win, dc.sel[ColBorder]);
 		setfocus(c);
 		c->mon->sel = c;
-		updateopacities(c->mon);
 		restack(c->mon);
+		updateopacities(c->mon);
 	}
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
@@ -2030,6 +2052,29 @@ initfont(const char *fontstr) {
 	dc.font.height = dc.font.ascent + dc.font.descent;
 }
 
+Bool
+ismasterclient(Client *c) {
+	int ns = c->mon->vs->msplit;
+	Client *o;
+	int i = -1, n;
+
+	if(c->mon->vs->lt[selmon->vs->curlt]->arrange == varimono) {
+		for(n = 0, o = nexttiled(c->mon->clients); o; o = nexttiled(o->next), ++n)
+			if(o == c)
+				i = n;
+		if(ns > n)
+			ns = n;
+		if(0 <= i && i <= n - ns)
+			return True;
+	}
+	return False;
+}
+
+Bool
+istiled(Client *c) {
+	return !c->isfloating && ISVISIBLE(c);
+}
+
 #ifdef XINERAMA
 static Bool
 isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info) {
@@ -2235,15 +2280,13 @@ intersecttags(Client *c, Monitor *m) {
 void
 updateopacities(Monitor *m) {
 	Client *c;
-	Bool ismonocle = (m->vs->lt[m->vs->curlt]->arrange == &monocle);
 	Client *tiledsel = NULL;
 
 	for(c = m->stack; c && !tiledsel; c = c->snext)
 		if(ISVISIBLE(c) && !ISFLOATING(c))
 			tiledsel = c;
-
 	for(c = m->clients; c; c = c->next) {
-		if(ISVISIBLE(c) && (c == tiledsel || !ismonocle || c->isfloating))
+		if(shouldbeopaque(c, tiledsel))
 			setclientopacity(c);
 		else
 			window_opacity_set(c->win, 0.);
@@ -2359,12 +2402,14 @@ movemouse(const Arg *arg) {
 
 Client *
 nexttiled(Client *c) {
-	for(; c && (c->isfloating || !ISVISIBLE(c)); c = c->next);
+	for(; c && !istiled(c); c = c->next);
 	return c;
 }
 
 void
 pop(Client *c) {
+	if(c->mon->vs->lt[selmon->vs->curlt]->arrange == varimono)
+		shiftmastersplitimpl(-1);
 	detach(c);
 	attach(c);
 	focus(c);
@@ -2373,9 +2418,12 @@ pop(Client *c) {
 
 void
 push(Client *c) {
+	if(c->mon->vs->lt[selmon->vs->curlt]->arrange == varimono)
+		shiftmastersplitimpl(1);
 	detach(c);
 	attachend(c);
 	arrange(c->mon);
+	focus(nexttiled(c->mon->clients));
 }
 
 void
@@ -2501,10 +2549,9 @@ updatedpi() {
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	Bool isfloating = (c->isfloating || !c->mon->vs->lt[c->mon->vs->curlt]->arrange);
-	Bool ismonocle = c->mon->vs->lt[c->mon->vs->curlt]->arrange == &monocle;
 	unsigned int nc;
 
-	if (!isfloating && !ismonocle) {
+	if (!isfloating) {
 		nc = counttiledclients(c->mon);
 		if(nc > 1) {
 			x += windowgap / 2;
@@ -2924,7 +2971,7 @@ monsetlayout(Monitor *m, const void* v) {
 	if (v != m->vs->lt[m->vs->curlt]) {
 		if (!v)
 			v = m->vs->lt[m->vs->curlt ^ 1];
-		onewindowvisible = (counttiledclients(m) == 1 || m->vs->lt[m->vs->curlt] == &layouts[MONOCLE]);
+		onewindowvisible = counttiledclients(m) == 1;
 		if (onewindowvisible && !((Layout*)v)->arrange) {
 			gapw = m->mw / 10;
 			gaph = m->mh / 10;
@@ -3167,6 +3214,42 @@ void
 setgeometry() {
 	long data[] = { mons->ww, mons->wh };
 	XChangeProperty(dpy, root, netatom[NetDesktopGeometry], XA_CARDINAL, 32, PropModeReplace, (unsigned char *)data, 2);
+}
+
+Bool
+shouldbeopaque(Client *c, Client *tiledsel) {
+	int i, j, n;
+	int ns = c ? c->mon->vs->msplit : 0;
+	Client *o;
+	Bool ismonocle = (c->mon->vs->lt[c->mon->vs->curlt]->arrange == &monocle);
+	Window parent, *allwindows;
+	unsigned int nwindows = 0;
+
+	if(!ISVISIBLE(c))
+		return False;
+	if(ismonocle && c == tiledsel || c->isfloating)
+		return True;
+	if(c->mon->vs->lt[c->mon->vs->curlt]->arrange == varimono) {
+		for(n = 0, o = nexttiled(c->mon->clients); o; o = nexttiled(o->next), ++n)
+			if(o == c)
+				i = n;
+		if(ns > n)
+			ns = n;
+		if(i > n - ns)
+			return True;
+		if(c->mon->sel == c)
+			return True;
+		XQueryTree(dpy, root, &parent, &parent, &allwindows, &nwindows);
+		for(j = nwindows - 1; j >= 0; --j) {
+			for(i = 0, o = nexttiled(c->mon->clients); o && o->win != allwindows[j] && i <= n - ns; o = nexttiled(o->next), ++i);
+			if(i <= n - ns) {
+				XFree(allwindows);
+				return o == c;
+			}
+		}
+		XFree(allwindows);
+	}
+	return !ismonocle;
 }
 
 void
@@ -4387,12 +4470,10 @@ zoom(const Arg *arg) {
 	|| selmon->vs->lt[selmon->vs->curlt]->arrange == monocle
 	|| (selmon->sel && selmon->sel->isfloating))
 		return;
-	if(c == nexttiled(selmon->clients)) {
-		if(!c || !nexttiled(c->next))
-			return;
+	if(!c)
+		return ;
+	if(c == nexttiled(selmon->clients) || ismasterclient(c))
 		push(c);
-		focus(nexttiled(selmon->clients));
-	}
 	else
 		pop(c);
 }

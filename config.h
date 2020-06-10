@@ -92,12 +92,14 @@ static int initlayout = 0;
 static double barOpacity = CLEAR;
 
 #include "flextile.c"
+#include "varimono.c"
 #include "fibonacci.c"
 
 #define LT(a) a, #a
 
 static const Layout layouts[] = {
 	/* symbol     arrange function       win border width   showdock */
+	{ "{-}",      LT(varimono),          DEFAULT_BORDER_PX, True  },
 	{ "[]=",      LT(tile),              DEFAULT_BORDER_PX, True  },
 	{ "[]@",      LT(spiral),            DEFAULT_BORDER_PX, True  },
 	{ "[]G",      LT(dwindle),           DEFAULT_BORDER_PX, True  },
@@ -111,6 +113,7 @@ enum layout {
 	DWINDLE,
 	FLOAT,
 	MONOCLE,
+	VARIMONO,
 };
 
 static const Rule defaultrule = 

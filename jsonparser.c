@@ -93,11 +93,12 @@ static const Layout *getlayout(const char *name) {
 		enum layout lt;
 	}
 	layoutnames[] = {
-		{ "tile"    , TILE    },
-		{ "spiral"  , SPIRAL  },
-		{ "dwindle" , DWINDLE },
-		{ "float"   , FLOAT   },
-		{ "monocle" , MONOCLE },
+		{ "tile"     , TILE    },
+		{ "spiral"   , SPIRAL  },
+		{ "dwindle"  , DWINDLE },
+		{ "float"    , FLOAT   },
+		{ "monocle"  , MONOCLE },
+		{ "varimono" , VARIMONO },
 	};
 	int i;
 

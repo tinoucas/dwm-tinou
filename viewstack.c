@@ -49,8 +49,18 @@ copyviewstack(ViewStack *vdst, const ViewStack *vsrc) {
 	vdst->showdock = vsrc->showdock;
 }
 
+int
+tagcount(unsigned int ui) {
+	int n, i;
+
+	for(n = 0, i = 0; i < numtags; ++i)
+		if(ui & (1 << i))
+			++n;
+	return n;
+}
+
 ViewStack*
-createviewstack (const ViewStack *vref) {
+createviewstack (const ViewStack *vref, unsigned int ui) {
 	ViewStack *v = (ViewStack*)calloc(1, sizeof(ViewStack));
 	int i;
 
@@ -61,12 +71,20 @@ createviewstack (const ViewStack *vref) {
 		v->lt[1] = &layouts[FLOAT];
 		v->showbar = showbar;
 		v->showdock = showdock;
-		v->tagset = 1;
 		v->mfact = mfact;
-		v->msplit = 1;
 		for (i = 0; i < 3; ++i)
 			v->ltaxis[i] = layoutaxis[i];
 	}
+	v->tagset = ui;
+	if(v->lt[0] == &layouts[VARIMONO]) {
+		v->msplit = tagcount(ui);
+		if(v->msplit == 0)
+			v->msplit = 1;
+		else if(v->msplit > 2)
+			v->msplit = 2;
+	}
+	else
+		v->msplit = 1;
 	return v;
 }
 
@@ -76,8 +94,7 @@ getviewstackof(Monitor* m, const unsigned int tagset) {
 
 	for(pvs = &m->vs; *pvs && (*pvs)->tagset != tagset; pvs = &(*pvs)->next) ;
 	if (!*pvs) {
-		*pvs = createviewstack(m->vs);
-		(*pvs)->tagset = tagset;
+		*pvs = createviewstack(m->vs, tagset);
 	}
 	return *pvs;
 }
@@ -112,10 +129,9 @@ viewstackadd(Monitor *m, unsigned int ui, Bool newview) {
 		movetoptoend(m);
 	}
 	if (!movetostacktop(m, ui)) {
-		v = createviewstack(newview ? NULL : vref);
+		v = createviewstack(newview ? NULL : vref, ui);
 		v->next = m->vs;
 		m->vs = v;
-		m->vs->tagset = ui;
 	}
 }
 
@@ -126,9 +142,8 @@ storestackviewlayout (Monitor *m, unsigned int ui, const Layout* lt, Bool showdo
 
 	for(v = m->vs; v && v->tagset != ui; pv = &v->next, v = v->next) ;
 	if (!v) {
-		*pv = createviewstack(m->vs);
+		*pv = createviewstack(m->vs, ui);
 		v = *pv;
-		v->tagset = ui;
 	}
 	if (v->lt[v->curlt] != lt)
 		v->curlt ^= 1;
