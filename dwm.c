@@ -2503,14 +2503,14 @@ restackwindows() {
 			for(c = m->stack; c; c = c->snext)
 				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 					windows[w++] = c->win;
-		// clock
-		for(m = mons; m; m = m->next)
-			if(m->clock)
-				windows[w++] = m->clock;
 		// desktop window (plasmashell)
 		for(m = mons; m; m = m->next)
 			if(m->backwin)
 				windows[w++] = m->backwin;
+		// clock
+		for(m = mons; m; m = m->next)
+			if(m->clock)
+				windows[w++] = m->clock;
 		// non-visible windows (other views)
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
@@ -3978,7 +3978,7 @@ updatewindowtype(Client *c) {
 					c->bw = 0;
 					c->nofocus = True;
 					c->isfullscreen = True;
-					c->opacity = 1.;
+					c->opacity = SPCTR;
 					c->mon = m;
 					m->backwin = c->win;
 					resizeclient(c, m->mx, m->my, m->mw, m->mh);
