@@ -229,7 +229,7 @@ struct Monitor {
 	Client *stack;
 	Monitor *next;
 	Window barwin;
-	Bool hasclock;
+	Window clock;
 	ViewStack *vs;
 	Window backwin;
 };
@@ -614,9 +614,9 @@ applyrules(Client *c) {
 		}
 		if (clientmatchesrule(c, class, instance, istransient, wincmdline, &clockrule)) {
 			applyclientrule(c, &clockrule, istransient);
-			for(m = mons; m && m->hasclock; m = m->next);
+			for(m = mons; m && m->clock; m = m->next);
 			if (m) {
-				m->hasclock = True;
+				m->clock = c->win;
 				c->mon = m;
 			}
 		}
@@ -2000,15 +2000,14 @@ manage(Window w, XWindowAttributes *wa) {
 	updatewindowtype(c);
 	updatesizehints(c);
 	updatewmhints(c);
-	if (c->isoverride && c->isosd)
+	if(c->isoverride && c->isosd)
 		XSelectInput(dpy, w, FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	else
 		XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
 	grabbuttons(c, False);
-	if(!c->isfloating) {
+	if(!c->isfloating)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
-	}
-	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
+	if(c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
 	else
 		attachabove(c);
@@ -2027,7 +2026,9 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if (c->tags & c->mon->vs->tagset)
+	if(c->nofocus)
+		unmanage(c, False);
+	else if(c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
 }
 
@@ -2457,6 +2458,8 @@ restackwindows() {
 			++nwindows;
 		if(m->backwin)
 			++nwindows;
+		if(m->clock)
+			++nwindows;
 		for(c = m->stack; c; c = c->snext, ++nwindows);
 	}
 	if(dockwin)
@@ -2500,6 +2503,10 @@ restackwindows() {
 			for(c = m->stack; c; c = c->snext)
 				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 					windows[w++] = c->win;
+		// clock
+		for(m = mons; m; m = m->next)
+			if(m->clock)
+				windows[w++] = m->clock;
 		// desktop window (plasmashell)
 		for(m = mons; m; m = m->next)
 			if(m->backwin)
@@ -3213,8 +3220,9 @@ long
 tagsettonum (unsigned int tagset) {
 	long i=0;
 
-	while(tagset >> i+1)
-		i++;
+	if(0 < tagset && tagset < TAGMASK)
+		while(tagset >> i+1)
+			i++;
 	return i;
 }
 
@@ -3509,7 +3517,7 @@ killclocks(void) {
 	spawnimpl(&arg, True, False);
 
 	for(m = mons; m; m = m->next)
-		m->hasclock = False;
+		m->clock = 0;
 }
 
 void

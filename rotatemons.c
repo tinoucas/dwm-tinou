@@ -53,7 +53,7 @@ movetomon (const unsigned int views, Monitor *msrc, Monitor *mdst) {
 	}
 
 	mdst->topbar = msrc->topbar;
-	mdst->hasclock = msrc->hasclock;
+	mdst->clock = msrc->clock;
 
 	if (views == ~0)
 		mdst->vs = msrc->vs;
