@@ -2582,6 +2582,7 @@ scan(void) {
 void
 sendmon(Client *c, Monitor *m) {
 	int xo = 0, yo = 0;
+	ViewStack *vs;
 
 	if(c->mon == m)
 		return;
@@ -2590,8 +2591,9 @@ sendmon(Client *c, Monitor *m) {
 	detachstack(c);
 	if (!hasclientson(m, c->tags)) {
 		settagsetlayout(m, c->tags, c->mon->vs->lt[c->mon->vs->curlt]);
-		m->vs->showdock = c->mon->vs->showdock;
-		m->vs->showbar = c->mon->vs->showbar;
+		vs = getviewstackof(m, c->tags);
+		vs->showdock = c->mon->vs->showdock;
+		vs->showbar = c->mon->vs->showbar;
 	}
 	if(c->isfloating) {
 		xo = m->mx - c->mon->mx;
