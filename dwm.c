@@ -2008,8 +2008,6 @@ manage(Window w, XWindowAttributes *wa) {
 	if(!c->isfloating) {
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
 	}
-	if(c->nofocus)
-		XLowerWindow(dpy, c->win);
 	if (c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
 		attach(c);
 	else
@@ -2029,9 +2027,7 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if (c->nofocus)
-		unmanage(c, False);
-	else if (c->tags & c->mon->vs->tagset)
+	if (c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
 }
 
