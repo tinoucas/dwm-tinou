@@ -3958,7 +3958,7 @@ updatewindowtype(Client *c) {
     updatemwmtype(c);
 	for(i = 0; i < numtypes; ++i) {
 		wtype = wtypes[i];
-		if(wtype == netatom[NetWMWindowTypeDock]) {
+		if(wtype == netatom[NetWMWindowTypeDock] && !dockwin) {
 			c->nofocus = True;
 			c->isfloating = True;
 			c->tags = ~0;
