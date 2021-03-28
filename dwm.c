@@ -55,7 +55,7 @@
 #define CLEANMASK(mask)			(mask & ~(numlockmask|LockMask) & (ShiftMask|ControlMask|Mod1Mask|Mod2Mask|Mod3Mask|Mod4Mask|Mod5Mask))
 #define INTERSECT(x,y,w,h,m)    (MAX(0, MIN((x)+(w),(m)->wx+(m)->ww) - MAX((x),(m)->wx)) \
                                * MAX(0, MIN((y)+(h),(m)->wy+(m)->wh) - MAX((y),(m)->wy)))
-#define ISVISIBLE(C)			((C->tags & C->mon->vs->tagset))
+#define ISVISIBLE(C)			((C->tags & C->mon->vs->tagset) || C->tags == C->mon->vs->tagset)
 #define ISFLOATING(C)           ((!C->mon->vs->lt[selmon->vs->curlt]->arrange || C->isfloating))
 #define LENGTH(X)				(sizeof X / sizeof X[0])
 #ifndef MAX
@@ -87,6 +87,8 @@
 #define VERSION_MAJOR               0
 #define VERSION_MINOR               0
 #define XEMBED_EMBEDDED_VERSION (VERSION_MAJOR << 16) | VERSION_MINOR
+
+#define OPACITY_BYTES(o) ((double)o * (unsigned int)-1)
 
 /* enums */
 enum { CurNormal, CurResize, CurMove, CurLast };		/* cursor */
@@ -150,6 +152,7 @@ struct Client {
 	Monitor *mon;
 	Window win;
 	double opacity;
+	unsigned int actual_opacity;
 	Bool rh;
 	const Remap* remap;
 };
@@ -292,7 +295,6 @@ static void cleanupmon(Monitor *mon);
 static void cleartags(Monitor *m);
 static void clearurgent(Client *c);
 static void clientmessage(XEvent *e);
-static void client_opacity_set(Client *c, double opacity);
 static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
@@ -425,7 +427,7 @@ static void view(const Arg *arg);
 static void monview(Monitor* m, unsigned int ui);
 static void monshowbar(Monitor* m, Bool show);
 static void monshowdock(Monitor* m, Bool show);
-static void window_opacity_set(Window win, double opacity);
+static void window_opacity_set(Window win, unsigned int opacitybyte);
 static Client *wintoclient(Window w);
 static Monitor *wintomon(Window w);
 static Client *wintosystrayicon(Window w);
@@ -1482,6 +1484,8 @@ enternotify(XEvent *e) {
 	if((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
 		return;
 	c = wintoclient(ev->window);
+	if(c && c->actual_opacity == 0)
+		return;
 	if((m = wintomon(ev->window)) && m != selmon && ev->window != root) {
 		unfocus(selmon->sel, True);
 		selectmon(m);
@@ -1504,21 +1508,15 @@ expose(XEvent *e) {
 }
 
 void
-window_opacity_set(Window win, double opacity) {
-	unsigned int opacitybyte;
-	const unsigned int maxopacity = (unsigned int)-1;
-
-	if(opacity >= 0. && opacity <= 1.) {
-		opacitybyte = (unsigned int)(opacity * maxopacity);
-		XChangeProperty(dpy, win, netatom[NetWMOpacity], XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacitybyte, 1L);
-  XSync(dpy, False);
-	}
+window_opacity_set(Window win, unsigned int opacitybyte) {
+	XChangeProperty(dpy, win, netatom[NetWMOpacity], XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &opacitybyte, 1L);
 	XSync(dpy, False);
 }
 
 void
 setclientopacity(Client *c) {
-	window_opacity_set(c->win, c->opacity);
+	c->actual_opacity = OPACITY_BYTES(c->opacity);
+	window_opacity_set(c->win, c->actual_opacity);
 }
 
 void
@@ -2089,7 +2087,10 @@ updateopacities(Monitor *m) {
 		if(shouldbeopaque(c, tiledsel))
 			setclientopacity(c);
 		else
-			window_opacity_set(c->win, 0.);
+		{
+			c->actual_opacity = 0;
+			window_opacity_set(c->win, 0);
+		}
 	}
 }
 
@@ -2286,12 +2287,6 @@ propertynotify(XEvent *e) {
 		if(ev->atom == netatom[NetWMWindowType])
 			updatewindowtype(c);
 	}
-}
-
-void
-client_opacity_set(Client *c, double opacity)
-{
-	window_opacity_set(c->win, opacity);
 }
 
 void
@@ -2725,7 +2720,8 @@ setfullscreen(Client *c, Bool fullscreen) {
 		}
 		if(fullscreendenied)
 			return ;
-		window_opacity_set(c->win, 1.);
+		c->actual_opacity = (unsigned int)-1;
+		window_opacity_set(c->win, c->actual_opacity);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 		if (!c->isfullscreen) {
@@ -3422,7 +3418,7 @@ updatebars(void) {
 		if(showsystray && m == systraytomon(m))
 			XMapRaised(dpy, systray->win);
 		XMapRaised(dpy, m->barwin);
-		window_opacity_set(m->barwin, barOpacity);
+		window_opacity_set(m->barwin, OPACITY_BYTES(barOpacity));
 	}
 }
 
@@ -3828,7 +3824,7 @@ updatesystray(void) {
 				PropModeReplace, (unsigned char *)&netatom[NetSystemTrayOrientationHorz], 1);
 		XChangeWindowAttributes(dpy, systray->win, CWEventMask|CWOverrideRedirect|CWBackPixel, &wa);
 		XMapRaised(dpy, systray->win);
-		window_opacity_set(systray->win, barOpacity);
+		window_opacity_set(systray->win, OPACITY_BYTES(barOpacity));
 		XSetSelectionOwner(dpy, netatom[NetSystemTray], systray->win, CurrentTime);
 		if(XGetSelectionOwner(dpy, netatom[NetSystemTray]) == systray->win) {
 			sendevent(root, xatom[Manager], StructureNotifyMask, CurrentTime, netatom[NetSystemTray], systray->win, 0, 0);
@@ -3976,11 +3972,10 @@ updatewindowtype(Client *c) {
 					c->bw = 0;
 					c->nofocus = True;
 					c->isfullscreen = True;
-					c->opacity = 0.;
+					c->opacity = 1.;
 					c->mon = m;
 					m->backwin = c->win;
 					resizeclient(c, m->mx, m->my, m->mw, m->mh);
-					window_opacity_set(m->backwin, 0.);
 				}
 			}
 		}
@@ -3992,11 +3987,6 @@ updatewindowtype(Client *c) {
 			c->noborder = True;
 			c->x = c->mon->mx + c->mon->mw - WIDTH(c) - c->mon->mw / 40;
 			c->y = c->mon->my + bh + c->mon->mh / 40;
-		}
-		else if(wtype == netatom[NetWMWindowTypeKDEOVERRIDE]) {
-			c->bw = 0;
-			c->isfloating = True;
-			c->isoverride = True;
 		}
 		else if(wtype == netatom[NetWMWindowTypeNotification]) {
 			c->isfloating = True;
