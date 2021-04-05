@@ -2026,8 +2026,6 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if(c->win == c->mon->backwin)
-		setclientstate(c, WithdrawnState);
 	if(c->nofocus)
 		unmanage(c, False);
 	else if(c->tags & c->mon->vs->tagset)
@@ -2458,8 +2456,6 @@ restackwindows() {
 	for(m = mons; m; m = m->next) {
 		if(m->barwin)
 			++nwindows;
-		if(m->backwin)
-			++nwindows;
 		if(m->clock)
 			++nwindows;
 		for(c = m->stack; c; c = c->snext, ++nwindows);
@@ -2476,12 +2472,12 @@ restackwindows() {
 		// visible floating
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd)
+				if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// fullscreen window
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd)
+				if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// bar
 		for(m = mons; m; m = m->next)
@@ -2493,12 +2489,12 @@ restackwindows() {
 		// visible tiled sel
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
+				if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// visible tiled non-sel
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd)
+				if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// nofocus
 		for(m = mons; m; m = m->next)
@@ -2516,7 +2512,7 @@ restackwindows() {
 		// non-visible windows (other views)
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(!ISVISIBLE(c) && !c->isosd)
+				if(!ISVISIBLE(c) && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		XRestackWindows(dpy, windows, w);
 		free(windows);
@@ -3028,6 +3024,8 @@ shouldbeopaque(Client *c, Client *tiledsel) {
 	Window parent, *allwindows;
 	unsigned int nwindows = 0;
 
+	if(c->win == c->mon->backwin)
+		return True;
 	if(!ISVISIBLE(c))
 		return False;
 	if(ismonocle && c == tiledsel || c->isfloating)
@@ -3973,9 +3971,9 @@ updatewindowtype(Client *c) {
 							break;
 				if(m && !m->backwin) {
 					c->isfloating = True;
-					c->tags = TAGMASK;
+					c->tags = 0;
 					c->bw = 0;
-					c->nofocus = True;
+					c->nofocus = False;
 					c->isfullscreen = True;
 					c->opacity = SPCTR;
 					c->mon = m;
