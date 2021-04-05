@@ -2026,7 +2026,7 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if(c->nofocus)
+	if(c->nofocus && c->win != c->mon->backwin)
 		unmanage(c, False);
 	else if(c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2456,8 +2456,6 @@ restackwindows() {
 	for(m = mons; m; m = m->next) {
 		if(m->barwin)
 			++nwindows;
-		if(m->backwin)
-			++nwindows;
 		if(m->clock)
 			++nwindows;
 		for(c = m->stack; c; c = c->snext, ++nwindows);
@@ -2501,7 +2499,7 @@ restackwindows() {
 		// nofocus
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
+				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// desktop window (plasmashell)
 		for(m = mons; m; m = m->next)
@@ -2514,7 +2512,7 @@ restackwindows() {
 		// non-visible windows (other views)
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(!ISVISIBLE(c) && !c->isosd)
+				if(!ISVISIBLE(c) && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		XRestackWindows(dpy, windows, w);
 		free(windows);
@@ -3974,7 +3972,7 @@ updatewindowtype(Client *c) {
 							break;
 				if(m && !m->backwin) {
 					c->isfloating = True;
-					c->tags = TAGMASK;
+					c->tags = 0;
 					c->bw = 0;
 					c->nofocus = True;
 					c->isfullscreen = True;
