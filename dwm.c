@@ -2026,7 +2026,9 @@ manage(Window w, XWindowAttributes *wa) {
 		if (c->mon == selmon)
 			focus(c);
 	}
-	if(c->nofocus && c->win != c->mon->backwin)
+	if(c->win == c->mon->backwin)
+		setclientstate(c, WithdrawnState);
+	if(c->nofocus)
 		unmanage(c, False);
 	else if(c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
@@ -2456,6 +2458,8 @@ restackwindows() {
 	for(m = mons; m; m = m->next) {
 		if(m->barwin)
 			++nwindows;
+		if(m->backwin)
+			++nwindows;
 		if(m->clock)
 			++nwindows;
 		for(c = m->stack; c; c = c->snext, ++nwindows);
@@ -2499,7 +2503,7 @@ restackwindows() {
 		// nofocus
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd && c->win != c->mon->backwin)
+				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 					windows[w++] = c->win;
 		// desktop window (plasmashell)
 		for(m = mons; m; m = m->next)
@@ -2512,7 +2516,7 @@ restackwindows() {
 		// non-visible windows (other views)
 		for(m = mons; m; m = m->next)
 			for(c = m->stack; c; c = c->snext)
-				if(!ISVISIBLE(c) && !c->isosd && c->win != c->mon->backwin)
+				if(!ISVISIBLE(c) && !c->isosd)
 					windows[w++] = c->win;
 		XRestackWindows(dpy, windows, w);
 		free(windows);
@@ -3219,8 +3223,9 @@ tagsettonum (unsigned int tagset) {
 	long i=0;
 
 	if(0 < tagset && tagset < TAGMASK)
-		while(tagset >> i+1)
-			i++;
+		do
+			++i;
+		while(tagset >> i+1);
 	return i;
 }
 
@@ -3457,13 +3462,9 @@ updateclientlist() {
 
 void
 updateclientdesktop(Client* c) {
-	long data;
+	long data = tagsettonum(ISVISIBLE(c) ? c->mon->vs->tagset : c->tags);
 
-	if (c->mon->num == dockmonitor) {
-		data = tagsettonum(ISVISIBLE(c) ? c->mon->vs->tagset : c->tags);
-
-		XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&data, 1);
-	}
+	XChangeProperty(dpy, c->win, netatom[NetWMDesktop], XA_CARDINAL, 32, PropModeReplace, (unsigned char*)&data, 1);
 }
 
 void
@@ -3972,7 +3973,7 @@ updatewindowtype(Client *c) {
 							break;
 				if(m && !m->backwin) {
 					c->isfloating = True;
-					c->tags = 0;
+					c->tags = TAGMASK;
 					c->bw = 0;
 					c->nofocus = True;
 					c->isfullscreen = True;
