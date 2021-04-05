@@ -3225,7 +3225,7 @@ tagsettonum (unsigned int tagset) {
 	if(0 < tagset && tagset < TAGMASK)
 		do
 			++i;
-		while(tagset >> i+1);
+		while(tagset >> i);
 	return i;
 }
 
