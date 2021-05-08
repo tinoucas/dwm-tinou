@@ -2448,7 +2448,6 @@ void
 restackwindows() {
 	Monitor *m;
 	Client *c;
-	XEvent ev;
 	Window *windows;
 	int nwindows = 0;
 	int w = 0;
@@ -2518,7 +2517,6 @@ restackwindows() {
 		free(windows);
 	}
 	XSync(dpy, False);
-	while(XCheckMaskEvent(dpy, EnterWindowMask, &ev));
 }
 
 void
