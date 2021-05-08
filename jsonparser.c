@@ -40,6 +40,7 @@ static ArgFunction texttofunction(const char *name) {
 		FUNC(togglefloating),
 		FUNC(togglefoldtags),
 		FUNC(toggletag),
+		FUNC(togglevarilayout),
 		FUNC(toggleview),
 		FUNC(updatecolors),
 		FUNC(view),
@@ -129,3 +130,18 @@ static void argparser(const struct nx_json *json, Arg *arg) {
 	}
 }
 
+static Bool argislayout(void (*func)(const Arg *)) {
+	const struct {
+		void (*func)(const Arg *);
+	} layoutfuncs[] = {
+		{ &setlayout        },
+		{ &togglevarilayout },
+	};
+	int i = 0;
+	Bool needslayout = False;
+
+	while(!needslayout && i < LENGTH(layoutfuncs))
+		if(layoutfuncs[i++].func == func)
+			needslayout = True;
+	return needslayout;
+}

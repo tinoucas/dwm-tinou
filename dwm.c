@@ -397,6 +397,7 @@ static void togglebar(const Arg *arg);
 static void toggledock(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void toggletag(const Arg *arg);
+static void togglevarilayout(const Arg *arg);
 static void toggleview(const Arg *arg);
 static void togglefoldtags(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
@@ -3278,6 +3279,24 @@ toggletag(const Arg *arg) {
 		arrange(selmon);
 	}
 	updatecurrentdesktop();
+}
+
+void
+togglevarilayout(const Arg *arg) {
+	const Layout *togglelayouts[2] =
+	{
+		(Layout*)arg->v,
+		&layouts[VARIMONO],
+	};
+	int i = 0;
+
+	if((Layout*)arg->v == selmon->vs->lt[selmon->vs->curlt])
+		i = 1;
+	monsetlayout(selmon, togglelayouts[i]);
+	if(selmon->sel)
+		arrange(selmon);
+	else
+		drawbar(selmon);
 }
 
 void

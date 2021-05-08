@@ -41,7 +41,7 @@ static void keyactionparser(const struct nx_json *json, Key *key) {
 		for (i = 0; i < LENGTH(parsers); ++i)
 			if (!strcmp(js->key, parsers[i].key))
 				parsers[i].parse(js, key);
-	if(key->arg.shcmd && key->func == &setlayout) {
+	if(key->arg.shcmd && argislayout(key->func)) {
 		shcmd = key->arg.shcmd;
 		key->arg.v = (void*)getlayout(key->arg.shcmd);
 		free(shcmd);

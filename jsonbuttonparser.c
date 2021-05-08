@@ -25,7 +25,7 @@ static void buttonactionparser(const struct nx_json *json, Button *button) {
             if (!strcmp(js->key, parsers[i].key))
                 parsers[i].parse(js, button);
     if(button->arg.shcmd) {
-        if (button->func == &setlayout) {
+        if (button->arg.shcmd && argislayout(button->func)) {
             shcmd = button->arg.shcmd;
             button->arg.v = (void*)getlayout(button->arg.shcmd);
             free(shcmd);
