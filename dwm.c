@@ -352,9 +352,6 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void updatedpi();
-/*
- *static void forcewindowsrepaint();
- */
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -776,9 +773,6 @@ arrange(Monitor *m) {
 		arrangemon(m);
 	else for(m = mons; m; m = m->next)
 		arrangemon(m);
-    /*
-	 *forcewindowsrepaint();
-     */
 	if (m)
 		updateopacities(m);
 	else for(m = mons; m; m = m->next)
@@ -2323,21 +2317,6 @@ updatedpi() {
 	spawnimpl(&arg, False, False);
 }
 
-/*
- *void
- *forcewindowsrepaint() {
- *    Client *c;
- *    Monitor *m;
- *
- *    for(m = mons; m; m = m->next)
- *        for(c = m->clients; c; c = c->next)
- *            if (c->picomfreeze || c->isosd) {
- *                fprintf(stderr, "Clearing window: %s\n", c->name ? c->name : "NULL");
- *                XClearWindow(dpy, c->win);
- *            }
- *}
- */
-
 void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	Bool isfloating = (c->isfloating || !c->mon->vs->lt[c->mon->vs->curlt]->arrange);
@@ -2603,10 +2582,10 @@ sendmon(Client *c, Monitor *m) {
 	c->y += yo;
 	attach(c);
 	attachstack(c);
-	if (!(m->vs->tagset & c->tags)) {
+	if (!(m->vs->tagset & c->tags))
 		monview(m, c->tags);
-	}
-	focus(NULL);
+	selectmon(m);
+	focus(c);
 	arrange(NULL);
 	for(m = mons; m; m = m->next)
 		cleartags(m);
