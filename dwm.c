@@ -396,10 +396,11 @@ static void tile(Monitor *);
 static void togglebar(const Arg *arg);
 static void toggledock(const Arg *arg);
 static void togglefloating(const Arg *arg);
+static void togglefoldtags(const Arg *arg);
 static void toggletag(const Arg *arg);
 static void togglevarilayout(const Arg *arg);
 static void toggleview(const Arg *arg);
-static void togglefoldtags(const Arg *arg);
+static void togglewindowgap(const Arg *arg);
 static void unfocus(Client *c, Bool setfocus);
 static void unmanage(Client *c, Bool destroyed);
 static void unmapnotify(XEvent *e);
@@ -482,6 +483,7 @@ static unsigned int statuscommutator = 0;
 #include "config.h"
 
 static char ooftraysbl[OOFTRAYLEN];
+static int windowgap = defaultwindowgap;
 
 Window getWindowParent (Window winId) {
 	Window wroot, parent, *children = NULL;
@@ -2002,9 +2004,11 @@ manage(Window w, XWindowAttributes *wa) {
 	grabbuttons(c, False);
 	if(!c->isfloating)
 		c->isfloating = c->oldstate = trans != None || c->isfixed;
-	if(c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
-		attach(c);
-	else
+    /*
+	 *if(c->isfloating || !c->mon->vs->lt[selmon->vs->curlt]->arrange)
+	 *    attach(c);
+	 *else
+     */
 		attachabove(c);
 	attachstack(c);
 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
@@ -3267,6 +3271,12 @@ togglefloating(const Arg *arg) {
 }
 
 void
+togglefoldtags(const Arg *arg) {
+	foldtags = !foldtags;
+	drawbars();
+}
+
+void
 toggletag(const Arg *arg) {
 	unsigned int newtags;
 
@@ -3314,9 +3324,23 @@ toggleview(const Arg *arg) {
 }
 
 void
-togglefoldtags(const Arg *arg) {
-	foldtags = !foldtags;
-	drawbars();
+togglewindowgap(const Arg *arg) {
+	Bool multipletiled = False;
+	Monitor *m;
+
+	for(m = mons; !multipletiled && m; m = m->next)
+		if (counttiledclients(m) > 1)
+			multipletiled = True;
+	if(multipletiled) {
+		if(windowgap == 0) {
+			windowgap = defaultwindowgap;
+			arrange(NULL);
+		}
+		else if (windowgap > 0) {
+			windowgap = 0;
+			arrange(NULL);
+		}
+	}
 }
 
 void

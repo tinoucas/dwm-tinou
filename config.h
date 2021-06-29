@@ -60,7 +60,7 @@ static const Bool topbar            = True;    /* False means bottom bar */
 static const Bool centretitle       = True;
 static Bool foldtags                = True;
 static Bool showtagshortcuts        = False;
-static const int windowgap			= 36; /* gap between windows */
+static const int defaultwindowgap	= 36; /* gap between windows */
 static const int focusmonstart		= 0;
 static const Bool statusallmonitor  = True;
 #define OOFTRAYLEN 5
@@ -87,8 +87,17 @@ static const int layoutaxis[] = {
 	2,    /* stack axis:  1 = x (from left to right), 2 = y (from top to bottom), 3 = z (monocle) */
 };
 /* layout(s) */
+enum layout {
+	VARIMONO = 0,
+	TILE,
+	SPIRAL,
+	DWINDLE,
+	FLOAT,
+	MONOCLE,
+};
+
 static const float mfact      = 0.55; /* factor of master area size [0.05..0.95] */
-static int initlayout = 0;
+static int initlayout = VARIMONO;
 static double barOpacity = CLEAR;
 
 #include "flextile.c"
@@ -105,15 +114,6 @@ static const Layout layouts[] = {
 	{ "[]G",      LT(dwindle),           DEFAULT_BORDER_PX, True  },
 	{ "><>",      NULL, "",              DEFAULT_BORDER_PX, True  },
 	{ "[M]",      LT(monocle),           0,                 False },
-};
-
-enum layout {
-	VARIMONO = 0,
-	TILE,
-	SPIRAL,
-	DWINDLE,
-	FLOAT,
-	MONOCLE,
 };
 
 static const Rule defaultrule = 
