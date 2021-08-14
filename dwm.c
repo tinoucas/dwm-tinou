@@ -916,10 +916,8 @@ buttonrelease(XEvent *e) {
 		for(i = 0; cfocus->remap[i].keysymto; i++)
 			if(click == cfocus->remap[i].click
 					&& cfocus->remap[i].mousebuttonfrom
-					&& cfocus->remap[i].mousebuttonfrom == ev->button) {
-				fprintf(stderr, "inhibit from remap[%i]\n", i);
+					&& cfocus->remap[i].mousebuttonfrom == ev->button)
 				sendevent = False;
-			}
 	if(sendevent)
 		XSendEvent(dpy, c->win, False, ButtonReleaseMask, e);
 }
@@ -1053,7 +1051,6 @@ cleanupmon(Monitor *mon) {
 		for(m = mons; m && m->next != mon; m = m->next);
 		m->next = mon->next;
 	}
-	fprintf(stderr, "deleting barwin of mon[%d]\n", mon->num);
 	XUnmapWindow(dpy, mon->barwin);
 	XDestroyWindow(dpy, mon->barwin);
 	cleanupviewstack(mon->vs);
