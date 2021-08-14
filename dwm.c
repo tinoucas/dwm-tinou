@@ -129,6 +129,7 @@ typedef struct Button {
 
 typedef struct {
 	unsigned int mousebuttonfrom;
+	unsigned int click;
 	KeySym keysymfrom;
 	KeySym keysymto;
 	int modifier;
@@ -835,10 +836,10 @@ buttonpress(XEvent *e) {
 	unsigned int i, x, click;
 	Arg arg = {0};
 	Button *button = buttons;
-	Client *c;
+	Client *c, *cfocus = selmon ? selmon->sel : NULL;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
-	Bool sendevent = False;
+	Bool sendevent = False, remapped = False;
 	unsigned int occ = 0;
 	char text[32];
 
@@ -876,26 +877,32 @@ buttonpress(XEvent *e) {
 		click = ClkClientWin;
         sendevent = True;
 	}
-	while(button) {
-		if(click == button->click && button->func && button->button == ev->button
-		&& CLEANMASK(button->mask) == CLEANMASK(ev->state))
-			button->func(click == ClkTagBar && button->arg.i == 0 ? &arg : &button->arg);
-		button = button->next;
+	if(c)
+		cfocus = c;
+	if(cfocus && cfocus->remap)
+		for(i = 0; cfocus->remap[i].keysymto; i++)
+			if(click == cfocus->remap[i].click
+					&& cfocus->remap[i].mousebuttonfrom
+					&& cfocus->remap[i].mousebuttonfrom == ev->button) {
+				remapped = True;
+				sendKey(XKeysymToKeycode(dpy, cfocus->remap[i].keysymto), cfocus->remap[i].modifier);
+			}
+	if(!remapped) {
+		while(button) {
+			if(click == button->click && button->func && button->button == ev->button
+			&& CLEANMASK(button->mask) == CLEANMASK(ev->state))
+				button->func(click == ClkTagBar && button->arg.i == 0 ? &arg : &button->arg);
+			button = button->next;
+		}
+		if (sendevent)
+			XSendEvent(dpy, c->win, False, ButtonPressMask, e);
 	}
-	if (c && c->remap)
-		for(i = 0; c->remap[i].keysymto; i++)
-			if(click == ClkClientWin
-					&& c->remap[i].mousebuttonfrom
-					&& c->remap[i].mousebuttonfrom == ev->button)
-				sendevent = False;
-	if (sendevent)
-		XSendEvent(dpy, c->win, False, ButtonPressMask, e);
 }
 
 void
 buttonrelease(XEvent *e) {
 	unsigned int i, click;
-	Client* c;
+	Client *c, *cfocus = selmon ? selmon->sel : NULL;
 	XButtonReleasedEvent *ev = &e->xbutton;
 	Bool sendevent = False;
 
@@ -903,16 +910,17 @@ buttonrelease(XEvent *e) {
 	if((c = wintoclient(ev->window))) {
 		click = ClkClientWin;
 		sendevent = True;
+		cfocus = c;
 	}
-	if (c && c->remap)
-		for(i = 0; c->remap[i].keysymto; i++)
-			if(click == ClkClientWin
-					&& c->remap[i].mousebuttonfrom
-					&& c->remap[i].mousebuttonfrom == ev->button) {
-				sendKey(XKeysymToKeycode(dpy, c->remap[i].keysymto), c->remap[i].modifier);
+	if(cfocus && cfocus->remap)
+		for(i = 0; cfocus->remap[i].keysymto; i++)
+			if(click == cfocus->remap[i].click
+					&& cfocus->remap[i].mousebuttonfrom
+					&& cfocus->remap[i].mousebuttonfrom == ev->button) {
+				fprintf(stderr, "inhibit from remap[%i]\n", i);
 				sendevent = False;
 			}
-	if (sendevent)
+	if(sendevent)
 		XSendEvent(dpy, c->win, False, ButtonReleaseMask, e);
 }
 
@@ -1755,20 +1763,19 @@ grabremap(Client *c, Bool manage) {
 	KeyCode code;
 
 	grabkeys(c->win);
-	if (c && c->remap && c->win) {
+	if (c && c->remap && c->win)
 		for(i = 0; c->remap[i].keysymto; ++i)
-			for(j = 0; j < LENGTH(modifiers); j++) {
-				if (c->remap[i].keysymfrom && (code = XKeysymToKeycode(dpy, c->remap[i].keysymfrom))) {
-					if (manage) {
-						XGrabKey(dpy, code, modifiers[j], c->win,
-								True, GrabModeSync, GrabModeAsync);
+			if(c->remap[i].click == ClkClientWin)
+				for(j = 0; j < LENGTH(modifiers); j++)
+					if (c->remap[i].keysymfrom && (code = XKeysymToKeycode(dpy, c->remap[i].keysymfrom))) {
+						if (manage) {
+							XGrabKey(dpy, code, modifiers[j], c->win,
+									True, GrabModeSync, GrabModeAsync);
+						}
+						else {
+							XUngrabKey(dpy, code, modifiers[j], c->win);
+						}
 					}
-					else {
-						XUngrabKey(dpy, code, modifiers[j], c->win);
-					}
-				}
-			}
-	}
 }
 
 void
@@ -1791,12 +1798,13 @@ grabbuttons(Client *c, Bool focused) {
 		}
 		if (c->remap)
 			for(i = 0; c->remap[i].keysymto; i++)
-				for(j = 0; j < LENGTH(modifiers); j++)
-					if (c->remap[i].mousebuttonfrom)
-						XGrabButton(dpy, c->remap[i].mousebuttonfrom,
-								modifiers[j],
-								c->win, True, BUTTONMASK,
-								GrabModeAsync, GrabModeSync, None, CurrentTime);
+				if(c->remap[i].click == ClkClientWin)
+					for(j = 0; j < LENGTH(modifiers); j++)
+						if (c->remap[i].mousebuttonfrom)
+							XGrabButton(dpy, c->remap[i].mousebuttonfrom,
+									modifiers[j],
+									c->win, True, BUTTONMASK,
+									GrabModeAsync, GrabModeSync, None, CurrentTime);
 	}
 	else
 		XGrabButton(dpy, AnyButton, AnyModifier, c->win, False,
