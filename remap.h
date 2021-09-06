@@ -24,7 +24,7 @@ static const Remap chrome[] = {
 	{ Button9, ClkClientWin, 0, XK_k, 0},
 	{ Button8, ClkClientWin, 0, XK_j, 0},
 	{ Button12, ClkClientWin, 0, XK_r, 0},
-	{ Button1, ClkWinTitle, 0, XK_t, ControlMask },
+	{ Button1, ClkWinTitle, 0, XK_Home, 0 },
 	{ Button2, ClkWinTitle, 0, XK_w, ControlMask },
 	{ Button4, ClkWinTitle, 0, XK_Tab, ShiftMask|ControlMask },
 	{ Button5, ClkWinTitle, 0, XK_Tab, ControlMask },
