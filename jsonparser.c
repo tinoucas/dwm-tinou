@@ -47,6 +47,7 @@ static ArgFunction texttofunction(const char *name) {
 		FUNC(view),
 		FUNC(viewscroll),
 		FUNC(zoom),
+		FUNC(noop),
 	};
 	int i;
 	ArgFunction func = NULL;

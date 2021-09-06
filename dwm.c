@@ -435,6 +435,7 @@ static int xerror(Display *dpy, XErrorEvent *ee);
 static int xerrordummy(Display *dpy, XErrorEvent *ee);
 static int xerrorstart(Display *dpy, XErrorEvent *ee);
 static void zoom(const Arg *arg);
+static void noop(const Arg *arg);
 static void updatetagshortcuts();
 static pid_t winpid(Window w);
 
@@ -836,7 +837,7 @@ buttonpress(XEvent *e) {
 	unsigned int i, x, click;
 	Arg arg = {0};
 	Button *button = buttons;
-	Client *c, *cfocus = selmon ? selmon->sel : NULL;
+	Client *c, *cfocus;
 	Monitor *m;
 	XButtonPressedEvent *ev = &e->xbutton;
 	Bool sendevent = False, remapped = False;
@@ -850,6 +851,7 @@ buttonpress(XEvent *e) {
 		selectmon(m);
 		focus(NULL);
 	}
+	cfocus = selmon ? selmon->sel : NULL;
 	if(ev->window == selmon->barwin) {
 		i = x = 0;
 		for(c = m->clients; c; c = c->next)
@@ -876,9 +878,8 @@ buttonpress(XEvent *e) {
 		focus(c);
 		click = ClkClientWin;
         sendevent = True;
-	}
-	if(c)
 		cfocus = c;
+	}
 	if(cfocus && cfocus->remap)
 		for(i = 0; cfocus->remap[i].keysymto; i++)
 			if(click == cfocus->remap[i].click
@@ -2517,9 +2518,9 @@ restack(Monitor *m) {
 		for(c = m->clients; c; c = c->next)
 			if(!c->nofocus && ISVISIBLE(c) && c->tags != TAGMASK)
 				break;
-		if (c)
+		if (c && c->mon == selmon)
 			focus(c);
-		else
+		else if (!c)
 			m->sel = c;
 	}
 	restackwindows();
@@ -3385,6 +3386,8 @@ unmanage(Client *c, Bool destroyed) {
     updateclientlist();
     cleartags(m);
     arrange(m);
+	if(m != selmon)
+		arrange(selmon);
 }
 
 void
@@ -3980,7 +3983,7 @@ updatewindowtype(Client *c) {
     updatemwmtype(c);
 	for(i = 0; i < numtypes; ++i) {
 		wtype = wtypes[i];
-		if(wtype == netatom[NetWMWindowTypeDock] && !dockwin) {
+		if(wtype == netatom[NetWMWindowTypeDock]) {
 			c->nofocus = True;
 			c->isfloating = True;
 			c->tags = ~0;
@@ -4209,6 +4212,13 @@ zoom(const Arg *arg) {
 		push(c);
 	else
 		pop(c);
+}
+
+void
+noop(const Arg *arg) {
+	fprintf(stderr, "NOOP\n");
+	if(selmon && selmon->sel)
+		fprintf(stderr, "selmon->sel->name: '%s'\n", selmon->sel->name);
 }
 
 int
