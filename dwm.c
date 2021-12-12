@@ -1452,13 +1452,14 @@ drawtext(const char *text, unsigned long col[ColLast], Bool invert, Bool centre)
 	len = MIN(olen, sizeof(buf));
 	memcpy(buf, text, len);
 	while(len) {
-		for (i = len; i && i > len - MIN(olen - len, 3); buf[--i] = '.') ;
-		if ((buf[len - 4] & (char)0x80) == 0 && textnw(buf, len) <= dc.w - h)
+		if ((len < 4 || (buf[len - 4] & (char)0x80) == 0) && textnw(buf, len) <= dc.w - h)
 			break;
 		--len;
 	}
 	if(!len)
 		return;
+	if(len < olen)
+		for (i = len; i && i > len - MIN(olen - len, 3); buf[--i] = '.');
 	pango_layout_set_text(dc.cairo.layout, buf, len);
 	pango_layout_get_extents(dc.cairo.layout, 0, &pr);
 	if(centre) {
@@ -3521,9 +3522,9 @@ updatedockpos(Monitor *m) {
 			m->wh = m->who - m->who * 45 / 1000;
 			break;
 		case Left:
-			m->wx = m->wxo + m->wwo * 25 / 1000;
+			m->wx = m->wxo + m->wwo * 26 / 1000;
 		case Right:
-			m->ww = m->wwo - m->wwo * 25 / 1000;
+			m->ww = m->wwo - m->wwo * 26 / 1000;
 			break;
 		}
 	}
