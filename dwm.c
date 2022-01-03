@@ -359,6 +359,7 @@ static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
 static void resizerequest(XEvent *e);
 static void restack(Monitor *m);
+static void restackwindows();
 static void restorebar(Monitor *m);
 static void run(void);
 static void scan(void);
@@ -1175,6 +1176,7 @@ configurenotify(XEvent *e) {
 		}
 		focus(NULL);
 		arrange(NULL);
+		restackwindows();
 	}
 }
 
@@ -1272,6 +1274,8 @@ destroynotify(XEvent *e) {
 
 	if((c = wintoclient(ev->window)))
 		unmanage(c, True);
+	else if(dockwin && ev->window == dockwin)
+		dockwin = 0;
 	else if((c = wintosystrayicon(ev->window))) {
 		removesystrayicon(c);
 		resizebarwin(selmon);
@@ -2443,6 +2447,7 @@ restackwindows() {
 	int nwindows = 0;
 	int w = 0;
 
+	XGrabServer(dpy);
 	for(m = mons; m; m = m->next) {
 		if(m->barwin)
 			++nwindows;
@@ -2456,21 +2461,21 @@ restackwindows() {
 		windows = (Window *)calloc(nwindows, sizeof(Window));
 		// notifications
 		for(m = mons; m; m = m->next)
-			for(c = m->stack; c; c = c->snext)
+			for(c = m->stack; c && w < nwindows; c = c->snext)
 				if(c->isosd)
 					windows[w++] = c->win;
 		// visible floating
-		for(m = mons; m; m = m->next)
+		for(m = mons; m && w < nwindows; m = m->next)
 			for(c = m->stack; c; c = c->snext)
 				if(ISVISIBLE(c) && ISFLOATING(c) && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// fullscreen window
 		for(m = mons; m; m = m->next)
-			for(c = m->stack; c; c = c->snext)
+			for(c = m->stack; c && w < nwindows; c = c->snext)
 				if(ISVISIBLE(c) && !c->nofocus && c->isfullscreen && c->win != m->barwin && c->win != dockwin && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// bar
-		for(m = mons; m; m = m->next)
+		for(m = mons; m && w < nwindows; m = m->next)
 			if(m->barwin)
 				windows[w++] = m->barwin;
 		// dock
@@ -2478,36 +2483,37 @@ restackwindows() {
 			windows[w++] = dockwin;
 		// visible tiled sel
 		for(m = mons; m; m = m->next)
-			for(c = m->stack; c; c = c->snext)
+			for(c = m->stack; c && w < nwindows; c = c->snext)
 				if(ISVISIBLE(c) && !ISFLOATING(c) && c == m->sel && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// visible tiled non-sel
 		for(m = mons; m; m = m->next)
-			for(c = m->stack; c; c = c->snext)
+			for(c = m->stack; c && w < nwindows; c = c->snext)
 				if(ISVISIBLE(c) && !ISFLOATING(c) && c != m->sel && !c->nofocus && !c->isfullscreen && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		// nofocus
-		for(m = mons; m; m = m->next)
+		for(m = mons; m && w < nwindows; m = m->next)
 			for(c = m->stack; c; c = c->snext)
 				if(ISVISIBLE(c) && c != m->sel && c->nofocus && !c->isosd)
 					windows[w++] = c->win;
 		// desktop window (plasmashell)
-		for(m = mons; m; m = m->next)
+		for(m = mons; m && w < nwindows; m = m->next)
 			if(m->backwin)
 				windows[w++] = m->backwin;
 		// clock
-		for(m = mons; m; m = m->next)
+		for(m = mons; m && w < nwindows; m = m->next)
 			if(m->clock)
 				windows[w++] = m->clock;
 		// non-visible windows (other views)
 		for(m = mons; m; m = m->next)
-			for(c = m->stack; c; c = c->snext)
+			for(c = m->stack; c && w < nwindows; c = c->snext)
 				if(!ISVISIBLE(c) && !c->isosd && c->win != c->mon->backwin)
 					windows[w++] = c->win;
 		XRestackWindows(dpy, windows, w);
 		free(windows);
 	}
 	XSync(dpy, False);
+	XUngrabServer(dpy);
 }
 
 void
@@ -3994,11 +4000,11 @@ updatewindowtype(Client *c) {
 		else if(wtype == netatom[NetWMWindowTypeDesktop]) {
 			if (XGetWindowAttributes(dpy, c->win, &wa)) {
 				m = recttomon(wa.x, wa.y, wa.width, wa.height);
-				if(!m || m->backwin)
+				if(!m)
 					for(m = mons; m; m = m->next)
 						if(!m->backwin)
 							break;
-				if(m && !m->backwin) {
+				if(m) {
 					c->isfloating = True;
 					c->tags = 0;
 					c->bw = 0;
