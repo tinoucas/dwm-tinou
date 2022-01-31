@@ -3389,12 +3389,11 @@ unmanage(Client *c, Bool destroyed) {
 		XUngrabServer(dpy);
 	}
 	free(c);
-    focus(NULL);
+	if(m == selmon)
+		focus(NULL);
     updateclientlist();
     cleartags(m);
     arrange(m);
-	if(m != selmon)
-		arrange(selmon);
 }
 
 void
