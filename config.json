@@ -534,6 +534,12 @@
 			"istransparent": 0.75
 		},
 		{
+			"class": "TelegramDesktop",
+			"instance": "telegram-desktop",
+			"title": "Media viewer",
+			"istransparent": 1.0
+		},
+		{
 			"class": "Steam",
 			"instance": "Steam",
 			"tag": "7",
