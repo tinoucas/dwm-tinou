@@ -69,7 +69,7 @@ createviewstack (const ViewStack *vref, unsigned int ui) {
 	else {
 		v->lt[0] = &layouts[initlayout];
 		v->lt[1] = &layouts[FLOAT];
-		v->showbar = showbar;
+		v->showbar = ui == vtag ? False : showbar;
 		v->showdock = showdock;
 		v->mfact = mfact;
 		for (i = 0; i < 3; ++i)
