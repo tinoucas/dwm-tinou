@@ -146,7 +146,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, isterminal, isosd, isoverride, picomfreeze;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, exfocus, isterminal, isosd, isoverride, picomfreeze;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
@@ -247,6 +247,7 @@ struct Rule {
 	int isterminal;
 	double istransparent;
 	Bool nofocus;
+	Bool exfocus;
 	Bool noborder;
 	Bool rh;
 	int monitor;
@@ -280,6 +281,7 @@ struct Systray {
 };
 
 /* function declarations */
+static void applylastruleviews(Client *c);
 static void applyrules(Client *c);
 static Bool applysizehints(Client *c, int *x, int *y, int *w, int *h, Bool interact);
 static void arrange(Monitor *m);
@@ -336,8 +338,9 @@ static Bool istiled(Client *c);
 static void keypress(XEvent *e);
 static void keyrelease(XEvent *e);
 static void killclient(const Arg *arg);
-static void killclientimpl (Client *c);
-static void maketagtext (char* text, int maxlength, int i);
+static void killclientimpl(Client *c);
+static void killclocks(void);
+static void maketagtext(char* text, int maxlength, int i);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
@@ -352,7 +355,6 @@ static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
-static void updatedpi();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
@@ -481,6 +483,7 @@ static Client* lastclient = NULL;
 static Bool startup = True;
 static Bool rotatingMons = False;
 static unsigned int statuscommutator = 0;
+static const Rule *lastruleapplied = NULL;
 
 /* configuration, allows nested code to access above variables */
 #include "config.h"
@@ -520,6 +523,8 @@ applyclientrule (Client *c, const Rule *r, Bool istransient) {
 	c->isterminal = r->isterminal;
 	if (r->nofocus)
 		c->nofocus = True;
+	else if (r->exfocus)
+		c->exfocus = True;
 	if (r->noborder)
 		c->noborder = True;
 	if (r->picomfreeze)
@@ -585,7 +590,6 @@ applyrules(Client *c) {
 	char* wincmdline = NULL;
 	unsigned int i;
 	const Rule *r;
-	const Rule *lastr = NULL;
 	Monitor *m;
 	XClassHint ch = { 0 };
 	Bool found = False;
@@ -593,6 +597,7 @@ applyrules(Client *c) {
 	unsigned int currenttagset = c->mon->vs->tagset;
 	unsigned int nc = 0;
 
+	lastruleapplied = NULL;
 	/* rule matching */
 	c->isfloating = c->tags = 0;
 	c->rh = True;
@@ -610,7 +615,7 @@ applyrules(Client *c) {
 			if (clientmatchesrule(c, class, instance, istransient, wincmdline, r))
 			{
 				applyclientrule(c, r, istransient);
-				lastr = r;
+				lastruleapplied = r;
 				found = True;
 			}
 			++i;
@@ -640,7 +645,7 @@ applyrules(Client *c) {
 				if(m)
 					c->mon = m;
 				found = True;
-				lastr = r;
+				lastruleapplied = r;
 			}
 			++i;
 		}
@@ -669,19 +674,24 @@ applyrules(Client *c) {
 				updatecurrentdesktop();
 			}
 		}
-		if(lastr) {
-            if(lastr->preflayout)
-                storestackviewlayout(c->mon, c->tags, lastr->preflayout, c->mon->vs->showdock);
-            if(lastr->showdock >= 0)
-                getviewstackof(c->mon, c->tags)->showdock = (lastr->showdock != 0);
-            if(c->tags == c->mon->vs->tagset)
-                arrange(c->mon);
-		}
-		else if (!startup && !c->nofocus && c->tags != TAGMASK ) {
-			c->isurgent = True;
-			if ((c->tags & c->mon->vs->tagset) == 0)
-				drawbar(c->mon);
-		}
+	}
+}
+
+void
+applylastruleviews(Client *c) {
+	if(lastruleapplied) {
+		if(lastruleapplied->preflayout)
+			storestackviewlayout(c->mon, c->tags, lastruleapplied->preflayout, c->mon->vs->showdock);
+		if(lastruleapplied->showdock >= 0)
+			getviewstackof(c->mon, c->tags)->showdock = (lastruleapplied->showdock != 0);
+		if(c->tags == c->mon->vs->tagset)
+			arrange(c->mon);
+		lastruleapplied = NULL;
+	}
+	else if (!startup && !c->nofocus && c->tags != TAGMASK ) {
+		c->isurgent = True;
+		if ((c->tags & c->mon->vs->tagset) == 0)
+			drawbar(c->mon);
 	}
 }
 
@@ -1116,7 +1126,7 @@ clientmessage(XEvent *e) {
 						  || (cme->data.l[0] == 2 /* _NET_WM_STATE_TOGGLE */ && !c->isfullscreen)));
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
-		if(c != c->mon->sel) {
+		if(c != c->mon->sel && c->tags != vtag) {
 			if(!ISVISIBLE(c)) {
 				monview(c->mon, c->tags);
 			}
@@ -1165,7 +1175,6 @@ configurenotify(XEvent *e) {
 		dc.drawable = XCreatePixmap(dpy, root, sw, bh, DefaultDepth(dpy, screen));
 		dc.cairo.surface = cairo_xlib_surface_create(dpy, dc.drawable, DefaultVisual(dpy, screen), DisplayWidth(dpy, screen), bh);
 		dc.cairo.context = cairo_create(dc.cairo.surface);
-		updatedpi();
 		updategeom();
 		updatebars();
 		for(m = mons; m; m = m->next) {
@@ -1177,6 +1186,8 @@ configurenotify(XEvent *e) {
 		focus(NULL);
 		arrange(NULL);
 		restackwindows();
+		killclocks();
+		createclocks();
 	}
 }
 
@@ -1530,7 +1541,13 @@ setclientopacity(Client *c) {
 void
 focus(Client *c) {
 	Client *inc = c;
+	Client *oc;
+	Monitor *m;
 
+	for(m = mons; m; m = m->next)
+		for(oc = m->clients; oc; oc = oc->next)
+			if (oc->exfocus && ISVISIBLE(oc))
+				c = oc;
 	if(!c || !ISVISIBLE(c))
 		for(c = selmon->stack; c && (!ISVISIBLE(c) || c->tags == TAGMASK); c = c->snext);
 	/* was if(selmon->sel) */
@@ -1559,6 +1576,8 @@ focus(Client *c) {
 	else {
 		XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
 		XDeleteProperty(dpy, root, netatom[NetActiveWindow]);
+		if(selmon)
+			restack(selmon);
 	}
 	drawbars();
 	XSync(dpy, False);
@@ -2040,6 +2059,9 @@ manage(Window w, XWindowAttributes *wa) {
 		unmanage(c, False);
 	else if(c->tags & c->mon->vs->tagset)
 		cleartags(c->mon);
+	if (c->exfocus)
+		focus(c);
+	applylastruleviews(c);
 }
 
 void
@@ -2324,13 +2346,6 @@ removesystrayicon(Client *i) {
 	if(ii)
 		*ii = i->next;
 	free(i);
-}
-
-void
-updatedpi() {
-	const Arg arg = {.v = updatedpicmd };
-
-	spawnimpl(&arg, False, False);
 }
 
 void
@@ -2738,7 +2753,8 @@ setfullscreen(Client *c, Bool fullscreen) {
 		setclientopacity(c);
 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
 						PropModeReplace, (unsigned char*)0, 0);
-		c->tags = c->isfullscreen;
+		if(c->isfullscreen)
+			c->tags = c->isfullscreen;
 		c->isfullscreen = 0;
 		c->isfloating = c->oldstate;
 		c->bw = c->oldbw;
@@ -2996,6 +3012,8 @@ setup(void) {
 	XSelectInput(dpy, root, wa.event_mask);
 	grabkeys(root);
 	startuserscript();
+	killclocks();
+	createclocks();
 }
 
 void
@@ -3555,7 +3573,6 @@ void
 createclocks(void) {
 	Monitor* m;
 
-	killclocks();
 	for(m = mons; m; m = m->next) {
 		const Arg arg = {.v = clockcmd };
 		spawnimpl(&arg, False, False);
@@ -3625,8 +3642,19 @@ updategeom(void) {
 				nm = nm->next;
 			}
 		}
-		for(om = oldmons, m = mons; om && m; om = om->next, m = m->next)
+		for(om = oldmons, m = mons; om && m; om = om->next, m = m->next) {
 			m->backwin = om->backwin;
+			m->clock = om->clock;
+			m->clock = 0;
+		}
+		XGrabServer(dpy);
+		for(; om; om = om->next)
+			if(om->clock) {
+				XKillClient(dpy, om->clock);
+				XSync(dpy, False);
+			}
+		XSetErrorHandler(xerror);
+		XUngrabServer(dpy);
 		while (oldmons) {
 			om = oldmons;
 			XUnmapWindow(dpy, om->barwin);
@@ -3652,7 +3680,6 @@ updategeom(void) {
 		centerMouseInMonitorIndex(focusmonstart);
 	}
 	selectmon(wintomon(root));
-	createclocks();
 }
 
 void

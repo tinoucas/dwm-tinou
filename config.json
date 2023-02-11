@@ -611,6 +611,12 @@
 			"nofocus": 1,
 			"noborder": 1,
 			"isfullscreen": 1
+		},
+		{
+			"instance": "albert",
+			"class": "albert",
+			"istransient": 1,
+			"exfocus": 1
 		}
 	]
 }

@@ -36,6 +36,7 @@ static void readRuleAttribute (const struct nx_json *js, Rule *rule) {
 		PARSE_ATTRIBUTE(isfullscreen),
 		PARSE_ATTRIBUTE(showdock),
 		PARSE_ATTRIBUTE(picomfreeze),
+		PARSE_ATTRIBUTE(exfocus),
 	};
 
 	for (i = 0; i < LENGTH(parsers); ++i)

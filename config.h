@@ -117,8 +117,8 @@ static const Layout layouts[] = {
 };
 
 static const Rule defaultrule = 
-	/* class , instance , title , tags mask , float , center, term  , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
-	{   NULL , NULL     , NULL  , anytag    , False , False , False , OPAQU , False , False , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     ,       False, NULL };
+	/* class , instance , title , tags mask , float , center, term  , trnsp , nofcs , exfcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
+	{   NULL , NULL     , NULL  , anytag    , False , False , False , OPAQU , False , False , False , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     ,       False, NULL };
 
 static Rule* rules = NULL;
 
@@ -140,10 +140,9 @@ static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
 
 /* commands */
 static const char *clockcmd[] = { "oclock", NULL };
-static const char *updatedpicmd[] = { "/bin/sh", "-c", "/home/tinou/hacks/scripts/updateDpi.sh", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const Rule clockrule =
-	/* class , instance , title , tags mask , float , center, term  , trnsp , nofcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
-	{  NULL  , "oclock" , NULL  , alltags   , True  , False , False , SPCTR , True  , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , False,       NULL };
+	/* class , instance , title , tags mask , float , center, term  , trnsp , nofcs , exfcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
+	{  NULL  , "oclock" , NULL  , alltags   , True  , False , False , SPCTR , True  , False , True  , True , -1  , NULL  , NULL   , False   , False        , -1       , NULL     , False,       NULL };
 
 #endif
