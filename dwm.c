@@ -689,7 +689,7 @@ applylastruleviews(Client *c) {
 			arrange(c->mon);
 		lastruleapplied = NULL;
 	}
-	if (!startup && !c->nofocus && c->tags != TAGMASK ) {
+	if (!startup && !c->nofocus && c->tags != TAGMASK && (c->tags & c->mon->vs->tagset) == 0) {
 		moveviewstacksecond(c->mon, c->tags);
 		if ((c->tags & c->mon->vs->tagset) == 0)
 			drawbar(c->mon);
@@ -2058,11 +2058,13 @@ manage(Window w, XWindowAttributes *wa) {
 	}
 	if(c->nofocus)
 		unmanage(c, False);
-	else if(c->tags & c->mon->vs->tagset)
-		cleartags(c->mon);
-	if (c->exfocus)
-		focus(c);
-	applylastruleviews(c);
+	else {
+		if(c->tags & c->mon->vs->tagset)
+			cleartags(c->mon);
+		if (c->exfocus)
+			focus(c);
+		applylastruleviews(c);
+	}
 }
 
 void
