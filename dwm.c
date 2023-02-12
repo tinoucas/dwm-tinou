@@ -3344,14 +3344,15 @@ void
 toggleview(const Arg *arg) {
 	unsigned int newtagset = selmon->vs->tagset ^ (arg->ui & TAGMASK);
 
-	if (selmon->vs->tagset != newtagset)
-	{
-		viewstackadd(selmon, newtagset, False);
-		if(selmon->sel && !ISVISIBLE(selmon->sel))
-			focus(NULL);
-		arrange(selmon);
+	if(newtagset != 0) {
+		if(selmon->vs->tagset != newtagset) {
+			viewstackadd(selmon, newtagset, False);
+			if(selmon->sel && !ISVISIBLE(selmon->sel))
+				focus(NULL);
+			arrange(selmon);
+		}
+		updatecurrentdesktop();
 	}
-	updatecurrentdesktop();
 }
 
 void
