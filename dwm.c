@@ -356,6 +356,7 @@ static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
+static void resizebackwins();
 static void resizebarwin(Monitor *m);
 static void resizeclient(Client *c, int x, int y, int w, int h);
 static void resizemouse(const Arg *arg);
@@ -1127,7 +1128,7 @@ clientmessage(XEvent *e) {
 	}
 	else if(cme->message_type == netatom[NetActiveWindow]) {
 		if(c != c->mon->sel && c->tags != vtag) {
-			if(!ISVISIBLE(c)) {
+			if(!ISVISIBLE(c) && c->tags != 0) {
 				monview(c->mon, c->tags);
 			}
 			focus(c);
@@ -2367,6 +2368,35 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 }
 
 void
+resizebackwins() {
+	Monitor *m;
+	XWindowChanges wc;
+	XConfigureEvent ce;
+
+	wc.border_width = 0;
+	ce.type = ConfigureNotify;
+	ce.display = dpy;
+	ce.border_width = 0;
+	ce.above = None;
+	ce.override_redirect = False;
+	for(m = mons; m; m = m->next)
+		if(m->backwin) {
+			wc.x = m->mx;
+			wc.y = m->my;
+			wc.width = m->mw;
+			wc.height = m->mh;
+			ce.event = m->backwin;
+			ce.window = m->backwin;
+			ce.x = m->mx;
+			ce.y = m->my;
+			ce.width = m->mw;
+			ce.height = m->mh;
+			XConfigureWindow(dpy, m->backwin, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
+			XSendEvent(dpy, m->backwin, False, StructureNotifyMask, (XEvent *)&ce);
+		}
+	XSync(dpy, False);
+}
+void
 resizebarwin(Monitor *m) {
 	unsigned int w = m->wwo;
 	if(showsystray && m == systraytomon(m))
@@ -3253,6 +3283,7 @@ void
 monshowbar(Monitor* m, Bool show) {
 	m->vs->showbar = show;
 	updatebarpos(m);
+	resizebackwins();
 	resizebarwin(m);
 	if(showsystray) {
 		XWindowChanges wc;
@@ -3450,6 +3481,7 @@ updateborderswidth(Monitor* m) {
 		XSync(dpy, False);
 	if (m == mons) {
 		updatebarpos(m);
+		resizebackwins();
 	}
 }
 
@@ -3618,6 +3650,7 @@ updategeom(void) {
 			m->wwo = m->mw = m->ww = unique[i].width;
 			m->who = m->mh = m->wh = unique[i].height;
 			updatebarpos(m);
+			resizebackwins();
 		}
 		free(unique);
 		/* re-attach old clients and cleanup old monitor structure */
@@ -3645,7 +3678,6 @@ updategeom(void) {
 		}
 		for(om = oldmons, m = mons; om && m; om = om->next, m = m->next) {
 			m->backwin = om->backwin;
-			m->clock = om->clock;
 			m->clock = 0;
 		}
 		XGrabServer(dpy);
@@ -3674,6 +3706,7 @@ updategeom(void) {
 			mons->mw = mons->ww = sw;
 			mons->mh = mons->wh = sh;
 			updatebarpos(mons);
+			resizebackwins();
 		}
 	}
 	if (selmon != mons) {
@@ -3681,6 +3714,7 @@ updategeom(void) {
 		centerMouseInMonitorIndex(focusmonstart);
 	}
 	selectmon(wintomon(root));
+	resizebackwins();
 }
 
 void
@@ -4027,7 +4061,7 @@ updatewindowtype(Client *c) {
 		else if(wtype == netatom[NetWMWindowTypeDesktop]) {
 			if (XGetWindowAttributes(dpy, c->win, &wa)) {
 				m = recttomon(wa.x, wa.y, wa.width, wa.height);
-				if(!m)
+				if(!m || m->backwin)
 					for(m = mons; m; m = m->next)
 						if(!m->backwin)
 							break;
@@ -4040,7 +4074,7 @@ updatewindowtype(Client *c) {
 					c->opacity = SPCTR;
 					c->mon = m;
 					m->backwin = c->win;
-					resizeclient(c, m->mx, m->my, m->mw, m->mh);
+					resizebackwins();
 				}
 			}
 		}
