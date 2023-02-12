@@ -99,6 +99,13 @@ getviewstackof(Monitor* m, const unsigned int tagset) {
 }
 
 void
+moveviewstacksecond(Monitor* m, unsigned int ui) {
+	movetostacktop(m, ui);
+	if(m->vs->next)
+		movetostacktop(m, m->vs->next->tagset);
+}
+
+void
 cleanupviewstack(ViewStack *v) {
 	ViewStack *vnext;
 

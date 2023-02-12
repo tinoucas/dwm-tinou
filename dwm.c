@@ -689,8 +689,8 @@ applylastruleviews(Client *c) {
 			arrange(c->mon);
 		lastruleapplied = NULL;
 	}
-	else if (!startup && !c->nofocus && c->tags != TAGMASK ) {
-		c->isurgent = True;
+	if (!startup && !c->nofocus && c->tags != TAGMASK ) {
+		moveviewstacksecond(c->mon, c->tags);
 		if ((c->tags & c->mon->vs->tagset) == 0)
 			drawbar(c->mon);
 	}
