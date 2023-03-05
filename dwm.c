@@ -146,7 +146,7 @@ struct Client {
 	int bw, oldbw;
 	unsigned int tags;
 	Client *next;
-	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, exfocus, isterminal, isosd, isoverride, picomfreeze;
+	Bool isfixed, isfloating, isurgent, neverfocus, oldstate, noborder, nofocus, exfocus, isterminal, isosd, isoverride, picomfreeze, isbackwin;
 	unsigned int isfullscreen;
 	pid_t pid;
 	Client *snext;
@@ -355,6 +355,7 @@ static void propertynotify(XEvent *e);
 static void quit(const Arg *arg);
 static Monitor *recttomon(int x, int y, int w, int h);
 static void removesystrayicon(Client *i);
+static void resetprimarymonitor();
 static void resize(Client *c, int x, int y, int w, int h, Bool interact);
 static void resizebackwins();
 static void resizebarwin(Monitor *m);
@@ -689,9 +690,10 @@ applylastruleviews(Client *c) {
 			arrange(c->mon);
 		lastruleapplied = NULL;
 	}
-	if (!startup && !c->nofocus && c->tags != TAGMASK && (c->tags & c->mon->vs->tagset) == 0) {
-		moveviewstacksecond(c->mon, c->tags);
-		if ((c->tags & c->mon->vs->tagset) == 0)
+	if(!startup && !c->nofocus && (c->tags & c->mon->vs->tagset) == 0) {
+		if(c->tags && c->tags != TAGMASK && c->tags != ~0)
+			moveviewstacksecond(c->mon, c->tags);
+		if((c->tags & c->mon->vs->tagset) == 0)
 			drawbar(c->mon);
 	}
 }
@@ -2352,6 +2354,14 @@ removesystrayicon(Client *i) {
 }
 
 void
+resetprimarymonitor(void) {
+	const Arg arg = {.v = xrandrcmd };
+
+	spawnimpl(&arg, False, False);
+}
+
+
+void
 resize(Client *c, int x, int y, int w, int h, Bool interact) {
 	Bool isfloating = (c->isfloating || !c->mon->vs->lt[c->mon->vs->curlt]->arrange);
 	unsigned int nc;
@@ -2371,17 +2381,29 @@ resize(Client *c, int x, int y, int w, int h, Bool interact) {
 
 void
 resizebackwins() {
-	Monitor *m;
+	Monitor *m, *om;
+	Client *c;
 	XWindowChanges wc;
 	XConfigureEvent ce;
 
+	for(m = mons; m; m = m->next)
+		m->backwin = 0;
+	for(m = mons; m; m = m->next)
+		for(c = m->clients; c; c = c->next)
+			if(c->isbackwin)
+				for(om = mons; om; om = om->next)
+					if(!om->backwin) {
+						om->backwin = c->win;
+						c->tags = 0;
+						break;
+					}
 	wc.border_width = 0;
 	ce.type = ConfigureNotify;
 	ce.display = dpy;
 	ce.border_width = 0;
 	ce.above = None;
 	ce.override_redirect = False;
-	for(m = mons; m; m = m->next)
+	for(m = mons; m; m = m->next) {
 		if(m->backwin) {
 			wc.x = m->mx;
 			wc.y = m->my;
@@ -2396,7 +2418,7 @@ resizebackwins() {
 			XConfigureWindow(dpy, m->backwin, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
 			XSendEvent(dpy, m->backwin, False, StructureNotifyMask, (XEvent *)&ce);
 		}
-	XSync(dpy, False);
+	}
 }
 void
 resizebarwin(Monitor *m) {
@@ -2495,6 +2517,7 @@ restackwindows() {
 	int w = 0;
 
 	XGrabServer(dpy);
+	resizebackwins();
 	for(m = mons; m; m = m->next) {
 		if(m->barwin)
 			++nwindows;
@@ -2596,6 +2619,35 @@ run(void) {
 			handler[ev.type](&ev); /* call handler */
 }
 
+Bool
+isdesktop(Window win) {
+	Atom wtype;
+	int i, di, numtypes;
+	unsigned long dl, ni;
+	Atom req = XA_ATOM;
+	Atom da, *atoms = NULL;
+	unsigned char *p = NULL;
+	Bool winisdesktop = False;
+
+	if(XGetWindowProperty(dpy, win, netatom[NetWMWindowType], 0L, sizeof(Atom), False, req,
+						  &da, &di, &ni, &dl, &p) == Success && p) {
+		atoms = (Atom*)p;
+		numtypes = ni;
+	}
+	else
+		numtypes = 0;
+	for(i = 0; i < numtypes; ++i) {
+		wtype = atoms[i];
+		if(wtype == netatom[NetWMWindowTypeDesktop]) {
+			winisdesktop = True;
+			break;
+		}
+	}
+	if(atoms != NULL)
+		XFree(atoms);
+	return winisdesktop;
+}
+
 void
 scan(void) {
 	unsigned int i, num;
@@ -2604,10 +2656,25 @@ scan(void) {
 
 	if(XQueryTree(dpy, root, &d1, &d2, &wins, &num)) {
 		for(i = 0; i < num; i++) {
+			char name[256];
+			if(!gettextprop(wins[i], netatom[NetWMName], name, sizeof name))
+				gettextprop(wins[i], XA_WM_NAME, name, sizeof name);
+			if(name[0] == '\0') /* hack to mark broken clients */
+				strcpy(name, broken);
+		}
+		for(i = 0; i < num; i++) {
+			char name[256];
+			if(!gettextprop(wins[i], netatom[NetWMName], name, sizeof name))
+				gettextprop(wins[i], XA_WM_NAME, name, sizeof name);
+			if(name[0] == '\0') /* hack to mark broken clients */
+				strcpy(name, broken);
+			if(strcmp(name, "Desktop — Plasma") == 0) {
+				fprintf(stderr, "break here\n");
+			}
 			if(!XGetWindowAttributes(dpy, wins[i], &wa)
 			|| wa.override_redirect || XGetTransientForHint(dpy, wins[i], &d1))
 				continue;
-			if(wa.map_state == IsViewable || getstate(wins[i]) == IconicState)
+			if(wa.map_state == IsViewable || getstate(wins[i]) == IconicState || isdesktop(wins[i]))
 				manage(wins[i], &wa);
 		}
 		for(i = 0; i < num; i++) { /* now the transients */
@@ -3285,7 +3352,6 @@ void
 monshowbar(Monitor* m, Bool show) {
 	m->vs->showbar = show;
 	updatebarpos(m);
-	resizebackwins();
 	resizebarwin(m);
 	if(showsystray) {
 		XWindowChanges wc;
@@ -3483,7 +3549,6 @@ updateborderswidth(Monitor* m) {
 		XSync(dpy, False);
 	if (m == mons) {
 		updatebarpos(m);
-		resizebackwins();
 	}
 }
 
@@ -3652,7 +3717,6 @@ updategeom(void) {
 			m->wwo = m->mw = m->ww = unique[i].width;
 			m->who = m->mh = m->wh = unique[i].height;
 			updatebarpos(m);
-			resizebackwins();
 		}
 		free(unique);
 		/* re-attach old clients and cleanup old monitor structure */
@@ -3678,10 +3742,6 @@ updategeom(void) {
 				nm = nm->next;
 			}
 		}
-		for(om = oldmons, m = mons; om && m; om = om->next, m = m->next) {
-			m->backwin = om->backwin;
-			m->clock = 0;
-		}
 		XGrabServer(dpy);
 		for(; om; om = om->next)
 			if(om->clock) {
@@ -3697,6 +3757,7 @@ updategeom(void) {
 			oldmons = oldmons->next;
 			free(om);
 		}
+		resetprimarymonitor();
 	}
 	else
 #endif /* XINERAMA */
@@ -3708,7 +3769,6 @@ updategeom(void) {
 			mons->mw = mons->ww = sw;
 			mons->mh = mons->wh = sh;
 			updatebarpos(mons);
-			resizebackwins();
 		}
 	}
 	if (selmon != mons) {
@@ -3716,7 +3776,6 @@ updategeom(void) {
 		centerMouseInMonitorIndex(focusmonstart);
 	}
 	selectmon(wintomon(root));
-	resizebackwins();
 }
 
 void
@@ -4040,13 +4099,11 @@ updatemwmtype(Client *c) {
 
 void
 updatewindowtype(Client *c) {
-	XWindowAttributes wa;
 	int i, numtypes, bw = c->bw;
 	const Atom state = getatomprop(c, netatom[NetWMState]);
 	Atom* wtypes = getatomprops(c, netatom[NetWMWindowType], &numtypes);
 	Atom wtype;
 	XWindowChanges wc;
-	Monitor *m;
 
 	if(state == netatom[NetWMFullscreen])
 		setfullscreen(c, True);
@@ -4061,24 +4118,13 @@ updatewindowtype(Client *c) {
 			dockwin = c->win;
 		}
 		else if(wtype == netatom[NetWMWindowTypeDesktop]) {
-			if (XGetWindowAttributes(dpy, c->win, &wa)) {
-				m = recttomon(wa.x, wa.y, wa.width, wa.height);
-				if(!m || m->backwin)
-					for(m = mons; m; m = m->next)
-						if(!m->backwin)
-							break;
-				if(m) {
-					c->isfloating = True;
-					c->tags = 0;
-					c->bw = 0;
-					c->nofocus = False;
-					c->isfullscreen = True;
-					c->opacity = SPCTR;
-					c->mon = m;
-					m->backwin = c->win;
-					resizebackwins();
-				}
-			}
+			c->isfloating = True;
+			c->tags = 0;
+			c->bw = 0;
+			c->nofocus = False;
+			c->isfullscreen = True;
+			c->opacity = SPCTR;
+			c->isbackwin = True;
 		}
 		else if(wtype == netatom[NetWMWindowTypeKDEOSD]) {
 			c->isfloating = True;

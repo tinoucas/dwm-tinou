@@ -140,6 +140,7 @@ static const KeySym modkeysyms[] = { XK_Super_L, XK_Super_R };
 
 /* commands */
 static const char *clockcmd[] = { "sh", "-c", "picom & oclock", NULL };
+static const char *xrandrcmd[] = { "xrandr", "--output", "DP-5", "--primary", NULL };
 static const char *killclockscmd[] = { "killall", "oclock", NULL };
 static const Rule clockrule =
 	/* class , instance , title , tags mask , float , center, term  , trnsp , nofcs , exfcs , nobdr , rh   , mon , remap , preflt , istrans , isfullscreen , showdock , procname , picomfreeze, next */
