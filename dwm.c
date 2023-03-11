@@ -3528,9 +3528,9 @@ updatedockpos(Monitor *m) {
 			m->wh = m->who - m->who * 45 / 1000;
 			break;
 		case Left:
-			m->wx = m->wxo + m->wwo * 26 / 1000;
+			m->wx = m->wxo + m->wwo * 32 / 1000;
 		case Right:
-			m->ww = m->wwo - m->wwo * 26 / 1000;
+			m->ww = m->wwo - m->wwo * 32 / 1000;
 			break;
 		}
 	}
