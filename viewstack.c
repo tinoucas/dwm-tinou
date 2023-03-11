@@ -69,7 +69,7 @@ createviewstack (const ViewStack *vref, unsigned int ui) {
 	else {
 		v->lt[0] = &layouts[initlayout];
 		v->lt[1] = &layouts[FLOAT];
-		v->showbar = showbar;
+		v->showbar = ui == vtag ? False : showbar;
 		v->showdock = showdock;
 		v->mfact = mfact;
 		for (i = 0; i < 3; ++i)
@@ -96,6 +96,13 @@ getviewstackof(Monitor* m, const unsigned int tagset) {
 	if(!*pvs)
 		*pvs = createviewstack(m->vs, tagset);
 	return *pvs;
+}
+
+void
+moveviewstacksecond(Monitor* m, unsigned int ui) {
+	movetostacktop(m, ui);
+	if(m->vs->next)
+		movetostacktop(m, m->vs->next->tagset);
 }
 
 void

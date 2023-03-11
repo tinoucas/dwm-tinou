@@ -1,7 +1,3 @@
- * transient window rules are broken
-
- * unswallow should attachabove (same as 'new window')
-
  * layout each tag with its layout, combining multiple layout a sub-clients
 
 	required change:

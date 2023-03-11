@@ -118,3 +118,7 @@ static void picomfreezeparser (const struct nx_json *js, Rule *rule) {
 static void iscenterparser (const struct nx_json *js, Rule *rule) {
     rule->iscenter = (js->int_value != 0);
 }
+
+static void exfocusparser (const struct nx_json *js, Rule *rule) {
+	rule->exfocus = (js->int_value != 0);
+}
